@@ -1,0 +1,61 @@
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  security:
+    name: Repository secrets
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: ./vendor/toko-tooling/.github/actions/cache-tool-downloads
+      - name: Prepare pinned CI tools
+        run: |
+          for tool in gitleaks actionlint shellcheck; do
+            bash vendor/toko-tooling/scripts/ci/install-ci-tool.sh "$tool" --install-dir "$RUNNER_TEMP/ci-tools"
+          done
+      - uses: ./vendor/toko-tooling/.github/actions/cache-tool-downloads
+        with:
+          mode: save
+      - name: Scan full history once
+        run: '"$RUNNER_TEMP/ci-tools/gitleaks" git --redact=100 --no-banner --no-color --log-level error'
+      - name: Check workflow and shell callers
+        run: |
+          "$RUNNER_TEMP/ci-tools/actionlint" .github/workflows/ci.yml
+          "$RUNNER_TEMP/ci-tools/shellcheck" scripts/*.sh scripts/tests/*.sh
+  qualify:
+    name: Qualify (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, macos-15]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          persist-credentials: false
+      - uses: ./vendor/toko-tooling/.github/actions/cache-tool-downloads
+      - name: Prepare compiler
+        run: rustup toolchain install 1.100.0 --profile minimal --component rustfmt,clippy --target wasm32-unknown-unknown
+      - name: Prepare repository tools and fixtures
+        run: |
+          make install-tools
+          make tools-check
+          make qualification-setup
+      - uses: ./vendor/toko-tooling/.github/actions/cache-tool-downloads
+        with:
+          mode: save
+      - name: Qualify product and installed behavior
+        run: make ci

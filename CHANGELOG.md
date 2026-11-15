@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.2.3] - Unreleased
+
+### 🧪 Tests
+
+- Qualify deletion, replay and cancellation at the 4,096-label ceiling and final cache callbacks after controller revocation or a complete admission close/reopen cycle.
+- Reproduce upgrades from the checksum-pinned published 0.2.2 executable and its packaged lockfile.
+- Verify quota-rejected restoration preserves tombstones across reopen, and paginate removed labels across mixed names and versions without omissions or duplicates.
+- Qualify upgrades while admission is closed: deletion, cancellation, replay and restoration remain fenced, and activation retains its exact maintenance owner.
+- Exercise installed removal endpoint authorization, frame budgets, method/direction separation and conflicting-manifest refusal.
+
+### 🔧 Tooling
+
+- Add Linux/macOS hosted qualification and one full-history secret scan per CI run.
+- Require successful hosted CI for the exact pushed source and verified Wasm archive provenance before Make publication, with explicit archive paths and failure-path admission tests.
+
 ## [0.2.2] - 2026-11-15
 
 ### 📚 Documentation

@@ -1,6 +1,6 @@
 [workspace]
 members = ["crates/ic-wasm-store", "crates/ic-wasm-store-protocol"]
-exclude = ["qualification"]
+exclude = ["qualification", "target"]
 resolver = "3"
 
 [workspace.package]

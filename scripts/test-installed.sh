@@ -10,4 +10,4 @@ for variant in original candidate; do
     wasm=$(jq -sr '[.[] | select(.reason == "compiler-artifact" and .target.name == "ic_wasm_store") | .filenames[] | select(endswith(".wasm"))] | unique | if length == 1 then .[0] else error("expected Store Wasm") end' "target/qualification/$variant.jsonl")
     cp "$wasm" "target/qualification/$variant.wasm"
 done
-IC_WASM_STORE_WASM="$root/target/qualification/original.wasm" IC_WASM_STORE_CANDIDATE="$root/target/qualification/candidate.wasm" cargo test --locked --manifest-path qualification/Cargo.toml --test store -- --nocapture
+IC_WASM_STORE_WASM="${IC_WASM_STORE_WASM:-$root/target/qualification/original.wasm}" IC_WASM_STORE_CANDIDATE="$root/target/qualification/candidate.wasm" cargo test --locked --manifest-path qualification/Cargo.toml --test store -- "$@" --nocapture

@@ -30,8 +30,11 @@ reservation. Removing the last active alias releases its reservation and removes
 only chunks not referenced by another active artifact, including incomplete
 uploads. This scans bounded metadata, not payload bytes. Storage can reuse freed
 collection space; the operation does not shrink IC stable memory or remove
-management-cache copies. Maximum-catalog removal instruction cost still needs
-installed qualification; the installed witness covers an 8 MiB artifact.
+management-cache copies. Installed qualification covers cancellation at 4,096
+labels with 31 maximum-size reservations, including an 8 MiB cancellation and
+retention of shared pinned bytes. This proves simulator completion for the tested
+catalog shape, not a production instruction-cost bound; see the
+[qualification boundaries](../../qualification/README.md#qualification-boundaries).
 
 The full digest and chunk geometry remain retained. `prepare` restores only the
 same manifest, re-admitting payload quota when necessary; `put` and `publish`

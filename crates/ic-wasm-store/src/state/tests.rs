@@ -638,3 +638,103 @@ fn preservation_enumerates_tombstones_and_active_aliases_once() {
             .is_none()
     );
 }
+
+#[test]
+fn restoration_capacity_refusal_preserves_tombstone_across_reopen() {
+    let backing = VectorMemory::default();
+    let mut state = State::open(backing.clone(), true);
+    let (removed, bytes) = fixture("removed", 10);
+    let (occupant, other) = fixture("occupant", 11);
+    state
+        .configure(&Quota {
+            releases: 2,
+            reserved_bytes: 11,
+        })
+        .unwrap();
+    state.prepare(&removed).unwrap();
+    upload(&mut state, &removed, &bytes);
+    state.publish(&removed.release).unwrap();
+    state.remove_release(&removed, true).unwrap();
+    state.prepare(&occupant).unwrap();
+    upload(&mut state, &occupant, &other);
+    state.publish(&occupant.release).unwrap();
+    let before = state.info();
+    for _ in 0..2 {
+        assert_eq!(state.prepare(&removed), Err(Error::Capacity));
+        assert_eq!(state.info(), before);
+        assert_eq!(state.tombstones(None).unwrap(), vec![removed.clone()]);
+        assert_eq!(state.status(&removed.release), Err(Error::NotFound));
+        assert_eq!(
+            state.put(&Put {
+                release: removed.release.clone(),
+                index: 0,
+                bytes: bytes.clone()
+            }),
+            Err(Error::NotFound)
+        );
+        assert_eq!(state.publish(&removed.release), Err(Error::NotFound));
+        assert!(state.status(&occupant.release).unwrap().published);
+        drop(state);
+        state = State::open(backing.clone(), false);
+    }
+    state.remove_release(&occupant, true).unwrap();
+    let restored = state.prepare(&removed).unwrap();
+    assert_eq!(restored.missing, vec![0]);
+    assert!(!restored.published);
+    assert_eq!(state.info().reserved_bytes, removed.bytes);
+    upload(&mut state, &removed, &bytes);
+    state.publish(&removed.release).unwrap();
+    drop(state);
+    let state = State::open(backing, false);
+    assert!(state.status(&removed.release).unwrap().published);
+    assert_eq!(state.tombstones(None).unwrap(), vec![occupant]);
+}
+
+#[test]
+fn tombstone_pages_preserve_mixed_names_and_versions_across_reopen() {
+    let backing = VectorMemory::default();
+    let mut state = State::open(backing.clone(), true);
+    let mut expected = std::collections::BTreeSet::new();
+    // Prefix-related names and interleaved active/removed versions exercise
+    // pagination across both catalog key separators without assuming their order.
+    for name in ["app", "app-a", "app.z"] {
+        for version in 0..6 {
+            let (mut manifest, _) = fixture(&format!("{version}"), 8);
+            manifest.release.name = name.into();
+            state.prepare(&manifest).unwrap();
+            if version % 3 != 1 {
+                state.remove_release(&manifest, false).unwrap();
+                expected.insert((name.to_string(), manifest.release.version.clone()));
+            }
+        }
+    }
+    drop(state);
+    let state = State::open(backing, false);
+    let mut after = None;
+    let mut seen = std::collections::BTreeSet::new();
+    let mut finished = false;
+    for _ in 0..=expected.len() {
+        let page = state.tombstones(after.as_ref()).unwrap();
+        assert!(page.len() <= PAGE_SIZE);
+        if page.is_empty() {
+            finished = true;
+            break;
+        }
+        after = Some(page.last().unwrap().release.clone());
+        for manifest in page {
+            assert_eq!(state.status(&manifest.release), Err(Error::NotFound));
+            assert!(seen.insert((manifest.release.name, manifest.release.version)));
+        }
+    }
+    assert!(finished, "pagination must terminate");
+    assert_eq!(seen, expected);
+    assert_eq!(state.info().releases, 18);
+    assert_eq!(state.info().reserved_bytes, 8);
+    assert_eq!(
+        state.tombstones(Some(&Release {
+            name: String::new(),
+            version: "0".into()
+        })),
+        Err(Error::Invalid)
+    );
+}

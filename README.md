@@ -73,8 +73,9 @@ The main checks are:
 | `make clippy` | Product native/Wasm and qualification lint checks |
 | `make doc` | Both workspaces' documentation, with warnings denied |
 | `make build` | Standalone Store Wasm, without qualification features |
-| `make qualification-setup` | Explicit PocketIC server preparation |
+| `make qualification-setup` | Explicit PocketIC server and released-archive preparation |
 | `make qualification-test` | Builds both test executables and runs installed qualification |
+| `make qualification-predecessor-test` | Builds published 0.2.2 and tests its upgrade to the current candidate |
 | `make ci` | Aggregate formatting, tooling admission, tests, lints, docs and installed qualification |
 
 For focused work, use `make test-protocol` or `make test-store`, and select
@@ -102,9 +103,13 @@ Both product crates share a coordinated version. `make publish-check` verifies t
 package archives without uploading; `make publish` publishes the declared product
 roster in dependency order. Qualification packages are excluded. Publication
 requires explicit authorization, a clean committed source, a passing `make ci`,
-and archive provenance verification against the pushed source commit. The Make
-publication adapter runs tooling admission and Cargo's packaging/verification;
-it does not run `make ci` or the provenance helper automatically. Complete those
-separately before uploading. Verify canister archives for
-`wasm32-unknown-unknown` as well as Cargo's native check. Publishing a crate does
-not deploy a canister.
+and archive provenance verification against the pushed source commit. Both Make
+publication targets enforce the latest successful main-branch push CI run for
+the exact commit, using authenticated GitHub CLI access (`gh`). CI runs the full
+gate on Linux and macOS and scans repository history once for secrets.
+Publication admission packages and verifies both crates for
+`wasm32-unknown-unknown`, checks their source identity with the shared provenance
+helper, and retrieves that commit from the declared GitHub repository. Cargo's
+native package verification follows in the shared publication adapter.
+Missing, pending or failed CI blocks publication; local test results alone do not
+satisfy this gate. Publishing a crate does not deploy a canister.

@@ -5,6 +5,7 @@ Run these commands from the repository root after the [development setup](../REA
 ```sh
 make qualification-setup
 make qualification-test
+make qualification-predecessor-test
 ```
 
 IC Testkit owns server preparation and admission. `IC_TESTKIT_SERVER_DIRECTORY`
@@ -19,33 +20,67 @@ workspace. It writes build records and Wasm artifacts under `target/qualificatio
 A separate `make build` is unnecessary for this test. The candidate feature is
 for qualification only and must not be selected for live deployment.
 
+For a focused run, use `make qualification-test QUALIFICATION_TEST=final_cache_callback`
+or `QUALIFICATION_TEST=removal_at_catalog_capacity`. The server has a 30-minute
+hard lifetime to accommodate slower hosts; the harness closes it after each test.
+
+Setup also downloads the published `ic-wasm-store` 0.2.2 archive. The predecessor
+script pins its SHA-256 (`5ac8eeefd0b49bc36a1e946bc984dcabae974cb6510150296d90ae205d5e1cd0`)
+and builds its unchanged manifest and packaged lockfile with Rust 1.100.0.
+Its recorded source is `ed89b13cd63d6f4bdf1205f90a83798f3c022d6c`.
+The separate predecessor target runs the upload/upgrade witness from that
+executable to the current candidate; `make ci` includes it. Generated historical
+sources stay under ignored `target/` and are excluded from the product workspace.
+
 ## Coverage
+
+The `store` integration target uses ordinary Cargo directory discovery from
+`tests/store/main.rs`. Its upload, capacity, callback and maintenance modules
+share one client and simulator setup; test-name filters remain available through
+`QUALIFICATION_TEST`.
 
 The installed witness exercises:
 
 - Unauthorized requests and oversized upload frames.
+- Removal endpoint controller guards and metadata frame limits, plus deletion
+  and cancellation rejection of swapped method IDs, response-direction frames
+  and conflicting manifests without changing retained counters.
 - An 8 MiB upload interrupted by upgrade, persistent reopen and upload resume.
 - Immutable version conflicts, shared bytes, quota changes and exact chunk reconstruction.
 - Deletion of aliases and last-reference payload reclamation, upgrade with tombstones,
   cancellation, exact restoration, conflicting-identity refusal and pin protection.
 - Retained pins, management-cache population and reuse.
 - Refusal of cache work while admission is closed, reopening and delayed-close replay.
+- Upgrade while admission is closed, retaining published and incomplete releases,
+  tombstones and the exact activation owner. Deletion, cancellation, tombstone
+  replay and restoration remain blocked until that owner activates the attempt;
+  another authorized controller cannot activate it.
 - Admission closure and controller revocation interleaved with outstanding cache calls,
   producing typed `Closed` and `Authority` failures respectively.
+- Final upload callbacks after controller revocation and after a complete close/reopen
+  cycle. A bounded round/ingress-order sweep must find each witness: a single
+  initially absent chunk is present in management storage, yet readiness returns
+  `Authority` or epoch `Conflict`. Earlier refusals without an uploaded chunk do
+  not count. Reversed close/activate ingress ordering does not count either.
+- Deletion and cancellation at 4,096 retained labels, including 31 maximum-size reservations
+  with distinct chunk hashes, shared payload retention, 32 pins on a published
+  artifact, deletion replay without double reclamation, retained label-quota
+  refusal after deletion, exact restoration and an 8 MiB cancellation.
 
 Native package tests cover record migration, persistent state, pin limits and
-maintenance continuation epochs. The installed upload payload has a Wasm header
+maintenance continuation epochs. They also cover quota-rejected restoration
+across reopen and multi-page tombstone enumeration with mixed active and removed
+labels. The installed upload payload has a Wasm header
 but is not a validated application module: this proves custody and integrity,
 not application installation.
 
 ## Qualification boundaries
 
-The interleaving cases assert that the cache call is still outstanding before
-changing admission or controllers. They do not isolate the final upload callback,
-or a complete close/reopen cycle before that callback; those schedules still need
-installed coverage.
-The ordinary test builds both executables from the current checkout; it does not
-reproduce the historical pre-extraction upgrade witness.
+The capacity fixture proves completion under simulator instruction limits for
+that catalog shape. Its elapsed time is a local diagnostic, not an instruction
+count or production latency guarantee; it does not saturate pins on every
+artifact. The released-predecessor test reproduces a 0.2.2 upgrade, not the
+historical Canic pre-extraction witness.
 
 Canic owns consumer-specific chunked installation, Root control and fleet upgrade
 qualification. Local Linux results do not qualify mainnet deployment or native
