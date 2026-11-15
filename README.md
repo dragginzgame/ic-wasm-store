@@ -8,6 +8,17 @@ Canic is its first consumer. This repository has no Canic runtime, Host or CLI
 dependency. Deployment approvals, controller management and fleet orchestration
 belong to the consuming application.
 
+## Packages
+
+| Package | Intended use |
+| --- | --- |
+| [ic-wasm-store](https://crates.io/crates/ic-wasm-store) | Standalone canister implementation; build for `wasm32-unknown-unknown` |
+| [ic-wasm-store-protocol](https://crates.io/crates/ic-wasm-store-protocol) | Passive request/response types, method identifiers and frame limits for clients and canisters |
+
+The canister crate exposes no native service API. The protocol crate supplies
+message types, not a transport client. See the [protocol API](https://docs.rs/ic-wasm-store-protocol)
+for constructing requests.
+
 ## Behavior and limits
 
 A controller prepares an exact release manifest, uploads missing chunks, and
@@ -24,11 +35,16 @@ exclude metadata. All endpoints, including reads, require a controller.
 Pins retain exact caller-owned operations, with at most 32 pins per artifact.
 Controllers can `delete` a published release or `cancel` an unpublished upload
 by supplying its exact manifest. Both refuse artifacts with retained pins.
-Removal leaves a permanent tombstone: `prepare` can restore the same manifest,
-but cannot assign different bytes to that name/version. Payload reservations
+Removal retains the identity as a tombstone: `prepare` replaces it with an active
+release only for the same manifest, and cannot assign different bytes to that
+name/version. Restoration rechecks payload quota; when no active alias retains
+the published artifact, missing bytes must be uploaded and publication repeated.
+Payload reservations
 and unshared chunks are reclaimed when the last active alias is removed.
 Tombstones still occupy release-label quota; there is no unpin operation.
 The replicated `tombstones` endpoint lists removed manifests in bounded pages.
+Ordinary `status` and `list` expose active releases; `Info.releases` counts active
+labels plus tombstones, and `Info.artifacts` includes retained tombstone metadata.
 See [removal semantics](docs/design/extraction.md#removal-and-restoration) for
 replay, storage and upgrade constraints. Cache readiness is an
 observation, not a guarantee that the management cache will remain available.
@@ -40,10 +56,11 @@ application-state rollback.
 
 ## Development
 
-Use Rust 1.100.0. From the repository root, prepare tools and the Wasm target:
+Install Git, rustup and GNU Make first. From the repository root, install the
+pinned compiler, its components and the Wasm target, then prepare repository tools:
 
 ```sh
-rustup target add --toolchain 1.100.0 wasm32-unknown-unknown
+rustup toolchain install 1.100.0 --profile minimal --component rustfmt,clippy --target wasm32-unknown-unknown
 make install-tools
 make tools-check
 ```
@@ -75,7 +92,8 @@ the recorded execution evidence is Linux only.
 The product workspace contains `ic-wasm-store` and the passive
 `ic-wasm-store-protocol`. The independent `qualification/` workspace owns the
 installed tests and its own lockfile. Both lockfiles are committed, and all
-product packages are publishable to crates.io; qualification remains unpublished. See the [extraction contract](docs/design/extraction.md)
+product packages are published to crates.io; qualification remains unpublished.
+See the [extraction contract](docs/design/extraction.md)
 for provenance and retained compatibility obligations.
 
 ## Publication
@@ -84,5 +102,9 @@ Both product crates share a coordinated version. `make publish-check` verifies t
 package archives without uploading; `make publish` publishes the declared product
 roster in dependency order. Qualification packages are excluded. Publication
 requires explicit authorization, a clean committed source, a passing `make ci`,
-and archive provenance verification against the pushed source commit. Verify
-canister archives for `wasm32-unknown-unknown` as well as Cargo's native check.
+and archive provenance verification against the pushed source commit. The Make
+publication adapter runs tooling admission and Cargo's packaging/verification;
+it does not run `make ci` or the provenance helper automatically. Complete those
+separately before uploading. Verify canister archives for
+`wasm32-unknown-unknown` as well as Cargo's native check. Publishing a crate does
+not deploy a canister.

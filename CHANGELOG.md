@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.2.2] - 2026-11-15
+
+### 📚 Documentation
+
+- Clarify fresh compiler setup, exact restoration and retained counters, simulator startup, and the checks maintainers must perform separately before publication.
+
 ## [0.2.1] - 2026-11-15
 
 ### 📚 Documentation

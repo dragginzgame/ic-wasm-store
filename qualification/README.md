@@ -10,7 +10,8 @@ make qualification-test
 IC Testkit owns server preparation and admission. `IC_TESTKIT_SERVER_DIRECTORY`
 selects a different bundle directory for both commands; the default is
 `target/qualification/server`. Setup provisions the bundle explicitly. Tests
-require an already prepared bundle and a local server listening on loopback.
+require an already prepared bundle and permission to start a local server
+listening on loopback; the harness starts and closes that server.
 
 The test script builds the ordinary Store and a distinct executable with
 `maintenance-candidate`, then passes their paths to the independent qualification

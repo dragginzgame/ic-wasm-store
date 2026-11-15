@@ -7,7 +7,7 @@ it does not make network calls, manage stable memory or deploy code.
 
 ```toml
 [dependencies]
-ic-wasm-store-protocol = "0.2.1"
+ic-wasm-store-protocol = "0.2.2"
 ```
 
 A release is an application-defined name and version, bound to a SHA-256 digest,
@@ -39,4 +39,4 @@ removal. The protocol is experimental and requires Rust 1.100.0.
 
 - [API documentation](https://docs.rs/ic-wasm-store-protocol)
 - [Source and development instructions](https://github.com/dragginzgame/ic-wasm-store)
-- [Compatibility and removal semantics](https://github.com/dragginzgame/ic-wasm-store/blob/v0.2.1/docs/design/extraction.md)
+- [Compatibility and removal semantics](https://github.com/dragginzgame/ic-wasm-store/blob/v0.2.2/docs/design/extraction.md)

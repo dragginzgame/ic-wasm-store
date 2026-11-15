@@ -14,13 +14,13 @@ only for `wasm32-unknown-unknown`.
 
 ## Build
 
-Use the tagged source and its committed lockfile for a reproducible dependency
-selection:
+With Git, rustup and GNU Make installed, use the tagged source and its committed
+lockfile for a reproducible dependency selection:
 
 ```sh
-git clone --branch v0.2.1 https://github.com/dragginzgame/ic-wasm-store.git
+git clone --branch v0.2.2 https://github.com/dragginzgame/ic-wasm-store.git
 cd ic-wasm-store
-rustup target add --toolchain 1.100.0 wasm32-unknown-unknown
+rustup toolchain install 1.100.0 --profile minimal --component rustfmt,clippy --target wasm32-unknown-unknown
 make build
 ```
 
@@ -37,6 +37,11 @@ removed. Unshared payloads are reclaimed, while tombstones continue consuming
 release-label quota. Removal does not shrink stable memory or clear management
 cache copies.
 
+Restoration replaces the tombstone with an active release and rechecks payload
+quota. Missing bytes must be uploaded and publication repeated unless an active
+alias already retains the published artifact. Ordinary status/list calls expose
+active releases; the tombstone endpoint lists removed identities separately.
+
 Artifacts are limited to 8 MiB in 256 KiB chunks. Publication verifies hashes and
 the raw Wasm header, not full module validity. All endpoints require a controller.
 Closing maintenance admission does not drain outstanding calls. Consumers must
@@ -49,5 +54,5 @@ unqualified.
 
 - [Protocol API](https://docs.rs/ic-wasm-store-protocol)
 - [Source and development instructions](https://github.com/dragginzgame/ic-wasm-store)
-- [Compatibility and removal semantics](https://github.com/dragginzgame/ic-wasm-store/blob/v0.2.1/docs/design/extraction.md)
-- [Qualification coverage](https://github.com/dragginzgame/ic-wasm-store/blob/v0.2.1/qualification/README.md)
+- [Compatibility and removal semantics](https://github.com/dragginzgame/ic-wasm-store/blob/v0.2.2/docs/design/extraction.md)
+- [Qualification coverage](https://github.com/dragginzgame/ic-wasm-store/blob/v0.2.2/qualification/README.md)
