@@ -75,5 +75,14 @@ the recorded execution evidence is Linux only.
 The product workspace contains `ic-wasm-store` and the passive
 `ic-wasm-store-protocol`. The independent `qualification/` workspace owns the
 installed tests and its own lockfile. Both lockfiles are committed, and all
-packages are unpublished. See the [extraction contract](docs/design/extraction.md)
+product packages are publishable to crates.io; qualification remains unpublished. See the [extraction contract](docs/design/extraction.md)
 for provenance and retained compatibility obligations.
+
+## Publication
+
+Both product crates share version 0.2.0. `make publish-check` verifies their
+package archives without uploading; `make publish` publishes the declared product
+roster in dependency order. Qualification packages are excluded. Publication
+requires explicit authorization, a clean committed source, a passing `make ci`,
+and archive provenance verification against the pushed source commit. Verify
+canister archives for `wasm32-unknown-unknown` as well as Cargo's native check.

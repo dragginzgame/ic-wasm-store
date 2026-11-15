@@ -59,4 +59,4 @@ and version, within the original key size bound; the artifact record retains
 its original geometry. Existing stores reopen without resetting collections.
 Older executables reject tombstone keys, so rollback after removal requires an
 explicit compatible executable and qualification. This feature changes consumer
-semantics and belongs to the pending 0.2 minor line; no deployment is implied.
+semantics and belongs to the 0.2 minor line; registry publication does not imply deployment.

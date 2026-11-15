@@ -1,5 +1,8 @@
 .DEFAULT_GOAL := help
 FORMAT_RUST_ARGS := --extra-workspace qualification
+CARGO_PUBLISH_PACKAGES := ic-wasm-store-protocol ic-wasm-store
+CARGO_PUBLISH_REGISTRY := crates-io
+CARGO_PUBLISH_VERIFY_TARGETS := toko-tooling-check
 include vendor/toko-tooling/make/consumer.mk
 include vendor/toko-tooling/make/cargo-dependencies.mk
 

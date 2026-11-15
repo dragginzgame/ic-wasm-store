@@ -4,16 +4,19 @@ exclude = ["qualification"]
 resolver = "3"
 
 [workspace.package]
-version = "0.1.0"
+version = "0.2.0"
 edition = "2024"
 rust-version = "1.100.0"
-publish = false
+publish = ["crates-io"]
+license-file = "LICENSE.md"
+repository = "https://github.com/dragginzgame/ic-wasm-store"
+readme = "README.md"
 
 [workspace.dependencies]
 ic-platform = { version = "0.33.0", default-features = false }
 ic-platform-runtime = { version = "0.22.1", default-features = false }
 ic-storage = "0.74.1"
-ic-wasm-store-protocol = { path = "crates/ic-wasm-store-protocol" }
+ic-wasm-store-protocol = { version = "0.2.0", path = "crates/ic-wasm-store-protocol" }
 ic-wire = { version = "0.24.1", default-features = false }
 serde = "1.0.229"
 serde_bytes = "0.11.19"

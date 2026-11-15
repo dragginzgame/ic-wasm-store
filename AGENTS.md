@@ -8,7 +8,7 @@ Read it before edits; update managed files only through the authenticated instal
 - Preserve endpoint identities, encoded records, allocation names and retained maintenance fences. Reopen existing state; never initialize after a load failure.
 - Canic owns Root orchestration and end-to-end fleet qualification in its separate repository. Do not copy it here.
 - Native tests stay with their packages; installed tests live in the independent qualification workspace.
-- Use Rust 1.100.0 and inherited workspace lints. Product packages remain unpublished until explicit authorization.
+- Use Rust 1.100.0 and inherited workspace lints. Product packages are authorized for crates.io publication; qualification packages remain unpublished.
 - Use make test, make clippy, make doc and make qualification-test for affected checks. Simulator preparation is explicit via make qualification-setup. make ci is the complete delivery gate.
 - maintenance-candidate marks qualification only; do not select it for live deployment.
 - No automatic browser or desktop launches.

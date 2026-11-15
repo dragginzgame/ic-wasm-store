@@ -4,7 +4,10 @@ version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 publish.workspace = true
-description = "Persistent versioned Wasm custody separate from Root"
+license-file.workspace = true
+repository.workspace = true
+readme.workspace = true
+description = "Persistent immutable Wasm custody with resumable uploads and exact restoration"
 
 [target.'cfg(any())'.dev-dependencies]
 toko-tooling.workspace = true
