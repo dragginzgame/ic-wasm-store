@@ -6,8 +6,11 @@ rust-version.workspace = true
 publish.workspace = true
 license-file.workspace = true
 repository.workspace = true
-readme.workspace = true
-description = "Bounded versioned Wasm artifact publication contract"
+readme = "README.md"
+description = "Passive Rust types and bounded IC Wire messages for the Internet Computer Wasm Store"
+documentation = "https://docs.rs/ic-wasm-store-protocol"
+keywords = ["internet-computer", "wasm", "canister", "protocol", "ic-wire"]
+categories = ["wasm", "encoding"]
 
 [target.'cfg(any())'.dev-dependencies]
 toko-tooling.workspace = true

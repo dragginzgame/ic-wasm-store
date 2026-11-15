@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.2.1] - 2026-11-15
+
+### 📚 Documentation
+
+- Package-specific READMEs distinguish the deployable canister from its passive protocol, with usage, build instructions and registry-safe links. Registry descriptions, documentation links, keywords and categories improve discovery.
+
 ## [0.2.0] - 2026-11-15
 
 ### ✨ Added

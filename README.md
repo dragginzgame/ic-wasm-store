@@ -80,7 +80,7 @@ for provenance and retained compatibility obligations.
 
 ## Publication
 
-Both product crates share version 0.2.0. `make publish-check` verifies their
+Both product crates share a coordinated version. `make publish-check` verifies their
 package archives without uploading; `make publish` publishes the declared product
 roster in dependency order. Qualification packages are excluded. Publication
 requires explicit authorization, a clean committed source, a passing `make ci`,

@@ -6,8 +6,11 @@ rust-version.workspace = true
 publish.workspace = true
 license-file.workspace = true
 repository.workspace = true
-readme.workspace = true
-description = "Persistent immutable Wasm custody with resumable uploads and exact restoration"
+readme = "README.md"
+description = "Internet Computer canister for immutable Wasm storage, resumable uploads and exact restoration"
+documentation = "https://docs.rs/ic-wasm-store"
+keywords = ["internet-computer", "wasm", "canister", "storage", "uploads"]
+categories = ["wasm"]
 
 [target.'cfg(any())'.dev-dependencies]
 toko-tooling.workspace = true
