@@ -139,6 +139,9 @@ async fn prepare_cache(input: PrepareCache) -> Result<CacheReady, CacheError> {
         uploaded += 1;
     }
     // A close/reopen cycle fences even the final callback; it cannot report fresh readiness.
+    if !cdk::api::is_controller(&caller) {
+        return Err(CacheError::Authority);
+    }
     STATE
         .with_borrow(|state| state.as_ref().expect("Store state").cache_fence(epoch))
         .map_err(CacheError::Pin)?;

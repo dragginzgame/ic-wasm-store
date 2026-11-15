@@ -29,6 +29,8 @@ pub struct Catalog {
 pub struct Page {
     /// Must remain identical for every page under the selected closure.
     pub catalog: Catalog,
-    /// At most one release, including its incomplete-upload progress and former-owner pins.
+    /// At most one release, including incomplete uploads and tombstones.
+    /// Tombstones appear unpublished with every chunk missing and no pins;
+    /// the TOMBSTONES endpoint distinguishes them from active uploads.
     pub entry: Option<Custody>,
 }

@@ -123,3 +123,15 @@ endpoint!(
 endpoint!(configure, update, CONFIGURE, protocol::Quota, Result<protocol::Info, protocol::Error>, LIMITS, LIMITS, |state, input| state.configure(input));
 endpoint!(pin, update, PIN, protocol::Pin, Result<protocol::PinReceipt, protocol::Error>, LIMITS, LIMITS, |state, input| state.pin(cdk::api::msg_caller().as_slice(), input));
 endpoint!(observe_pin, update, OBSERVE_PIN, protocol::Pin, Result<protocol::PinReceipt, protocol::Error>, LIMITS, LIMITS, |state, input| state.observe_pin(cdk::api::msg_caller().as_slice(), input));
+endpoint!(delete, update, DELETE, protocol::Manifest, Result<protocol::Manifest, protocol::Error>, LIMITS, LIMITS, |state, input| state.remove_release(input, true));
+endpoint!(cancel, update, CANCEL, protocol::Manifest, Result<protocol::Manifest, protocol::Error>, LIMITS, LIMITS, |state, input| state.remove_release(input, false));
+endpoint!(
+    tombstones,
+    update,
+    TOMBSTONES,
+    Option<protocol::Release>,
+    Result<Vec<protocol::Manifest>, protocol::Error>,
+    LIMITS,
+    LIMITS,
+    |state, input| state.tombstones(input.as_ref())
+);

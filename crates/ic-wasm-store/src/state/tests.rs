@@ -434,3 +434,207 @@ fn pin_capacity_never_evicts_and_old_artifact_schema_gains_no_authority() {
     assert_eq!(restored.pins.len(), MAX_PINS);
     assert_eq!(restored.chunks, maximum.chunks);
 }
+
+#[test]
+fn deletion_and_cancellation_preserve_identity_and_reclaim_only_unshared_payloads() {
+    let backing = VectorMemory::default();
+    let mut state = State::open(backing.clone(), true);
+    let (manifest, bytes) = fixture("delete", CHUNK_BYTES + 8);
+    state.prepare(&manifest).unwrap();
+    upload(&mut state, &manifest, &bytes);
+    state.publish(&manifest.release).unwrap();
+    let alias = Manifest {
+        release: Release {
+            version: "alias".into(),
+            ..manifest.release.clone()
+        },
+        ..manifest.clone()
+    };
+    state.prepare(&alias).unwrap();
+    assert_eq!(state.remove_release(&manifest, false), Err(Error::Conflict));
+    state.remove_release(&manifest, true).unwrap();
+    assert_eq!(state.status(&manifest.release), Err(Error::NotFound));
+    assert!(state.status(&alias.release).unwrap().published);
+    assert_eq!(state.info().reserved_bytes, manifest.bytes);
+    state.remove_release(&alias, true).unwrap();
+    assert_eq!(state.info().reserved_bytes, 0);
+    assert_eq!(state.info().chunks, 0);
+    assert_eq!(state.tombstones(None).unwrap().len(), 2);
+    assert_eq!(state.remove_release(&manifest, true).unwrap(), manifest);
+    drop(state);
+    let mut state = State::open(backing, false);
+    let mut conflicting = manifest.clone();
+    conflicting.hash[0] ^= 1;
+    assert_eq!(state.prepare(&conflicting), Err(Error::Conflict));
+    let restored = state.prepare(&manifest).unwrap();
+    assert!(!restored.published);
+    assert_eq!(restored.missing, vec![0, 1]);
+    upload(&mut state, &manifest, &bytes);
+    state.remove_release(&manifest, false).unwrap();
+    assert_eq!(state.info().chunks, 0);
+    assert_eq!(state.info().reserved_bytes, 0);
+    state.prepare(&manifest).unwrap();
+    upload(&mut state, &manifest, &bytes);
+    state.publish(&manifest.release).unwrap();
+    let pin = Pin {
+        operation: [1; 32],
+        manifest: manifest.clone(),
+    };
+    state.pin(&[1], &pin).unwrap();
+    assert_eq!(state.remove_release(&manifest, true), Err(Error::Conflict));
+    state.observe_pin(&[1], &pin).unwrap();
+}
+
+#[test]
+fn cancellation_retains_cross_artifact_chunks_and_respects_admission_and_label_quota() {
+    let mut state = State::open(VectorMemory::default(), true);
+    let (first, bytes) = fixture("first", CHUNK_BYTES + 8);
+    let (second, other) = fixture("second", CHUNK_BYTES + 9);
+    state.prepare(&first).unwrap();
+    state.prepare(&second).unwrap();
+    upload(&mut state, &first, &bytes);
+    upload(&mut state, &second, &other);
+    assert_eq!(state.info().chunks, 3);
+    state.remove_release(&first, false).unwrap();
+    assert_eq!(state.info().chunks, 2);
+    state.publish(&second.release).unwrap();
+    state
+        .configure(&Quota {
+            releases: 2,
+            reserved_bytes: 32 * 1024 * 1024,
+        })
+        .unwrap();
+    let (third, _) = fixture("third", 8);
+    assert_eq!(state.prepare(&third), Err(Error::Capacity));
+    assert!(state.prepare(&first).is_ok());
+    let attempt = ic_wasm_store_protocol::MaintenanceAttempt {
+        sequence: 1,
+        operation: [2; 32],
+    };
+    state
+        .admission(
+            &[1],
+            &ic_wasm_store_protocol::AdmissionCommand::Close(attempt),
+        )
+        .unwrap();
+    assert_eq!(state.remove_release(&first, false), Err(Error::Closed));
+    assert_eq!(state.remove_release(&second, true), Err(Error::Closed));
+}
+
+#[test]
+fn four_allocation_store_reopens_without_reinitializing_existing_records() {
+    let backing = VectorMemory::default();
+    let mut runtime = MemoryRuntime::new_with_config(
+        backing.clone(),
+        StorageConfig {
+            allocations: 4,
+            extents: 4096,
+            pages: 16_384,
+        },
+    )
+    .unwrap();
+    let names = [
+        "store.releases.v1",
+        "store.artifacts.v1",
+        "store.chunks.v1",
+        "store.settings.v1",
+    ];
+    let declarations = SealedDeclarationSnapshot::new(
+        names
+            .iter()
+            .map(|name| MemoryRequest::new("store", name).unwrap())
+            .collect(),
+    )
+    .unwrap();
+    let grants =
+        AllocationGrants::new(vec![MemoryAuthority::new("store", "store.").unwrap()]).unwrap();
+    runtime
+        .bootstrap(&declarations, &grants, &GenericAllocationPolicy)
+        .unwrap();
+    let mut memories = names
+        .map(|name| {
+            runtime
+                .open_memory(&StableKey::parse(name).unwrap())
+                .unwrap()
+        })
+        .into_iter();
+    let mut releases =
+        StableBTreeMap::<Key, [u8; 32], _>::create(memories.next().unwrap()).unwrap();
+    let mut artifacts =
+        StableBTreeMap::<[u8; 32], Artifact, _>::create(memories.next().unwrap()).unwrap();
+    let mut chunks =
+        StableBTreeMap::<[u8; 32], Payload, _>::create(memories.next().unwrap()).unwrap();
+    let (manifest, bytes) = fixture("pre-removal", 8);
+    releases.insert(Key::new(&manifest.release), manifest.hash);
+    artifacts.insert(
+        manifest.hash,
+        Artifact {
+            bytes: 8,
+            chunks: manifest.chunks.clone(),
+            published: true,
+            pins: vec![],
+        },
+    );
+    chunks.insert(manifest.chunks[0], Payload(bytes));
+    let settings = StableCell::create(
+        memories.next().unwrap(),
+        Settings {
+            quota: Quota::default(),
+            reserved_bytes: 8,
+            admission: None,
+        },
+    )
+    .unwrap();
+    drop((releases, artifacts, chunks, settings, runtime));
+    let mut state = State::open(backing.clone(), false);
+    assert!(state.status(&manifest.release).unwrap().published);
+    assert!(state.tombstones(None).unwrap().is_empty());
+    state.remove_release(&manifest, true).unwrap();
+    drop(state);
+    let state = State::open(backing, false);
+    assert_eq!(state.tombstones(None).unwrap(), vec![manifest]);
+}
+
+#[test]
+fn preservation_enumerates_tombstones_and_active_aliases_once() {
+    use ic_wasm_store_protocol::{AdmissionCommand, MaintenanceAttempt, preservation::Request};
+    let mut state = State::open(VectorMemory::default(), true);
+    for version in ["a", "b", "c"] {
+        let (manifest, _) = fixture(version, 8);
+        state.prepare(&manifest).unwrap();
+        if version != "b" {
+            state.remove_release(&manifest, false).unwrap();
+        }
+    }
+    let attempt = MaintenanceAttempt {
+        sequence: 1,
+        operation: [1; 32],
+    };
+    state
+        .admission(&[1], &AdmissionCommand::Close(attempt.clone()))
+        .unwrap();
+    let mut after = None;
+    let mut seen = std::collections::BTreeSet::new();
+    for _ in 0..3 {
+        let page = state
+            .preservation(
+                &[1],
+                &Request {
+                    attempt: attempt.clone(),
+                    after,
+                },
+            )
+            .unwrap();
+        assert_eq!(page.catalog.releases, 3);
+        let release = page.entry.unwrap().status.manifest.release;
+        assert!(seen.insert(release.version.clone()));
+        after = Some(release);
+    }
+    assert!(
+        state
+            .preservation(&[1], &Request { attempt, after })
+            .unwrap()
+            .entry
+            .is_none()
+    );
+}

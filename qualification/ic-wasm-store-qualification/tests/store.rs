@@ -294,6 +294,218 @@ async fn versioned_upload_resumes_across_two_executables_and_reuses_bytes() {
     )
     .unwrap();
     assert_eq!(listed.unwrap().len(), 2);
+    // Remove aliases independently, reclaim the last active payload, and reopen tombstones.
+    for release in [&second, &manifest] {
+        let removed: Result<store::Manifest, store::Error> = client
+            .update("delete", store::DELETE, release, store::LIMITS)
+            .await;
+        assert_eq!(removed.unwrap(), *release);
+    }
+    assert_eq!(client.info().await.reserved_bytes, 0);
+    assert_eq!(client.info().await.chunks, 0);
+    let candidate = std::fs::read(std::env::var_os("IC_WASM_STORE_CANDIDATE").unwrap()).unwrap();
+    pic.upgrade_canister(id, candidate, vec![], Some(operator))
+        .await
+        .unwrap();
+    let removed: Result<Vec<store::Manifest>, store::Error> = client
+        .update(
+            "tombstones",
+            store::TOMBSTONES,
+            &Option::<store::Release>::None,
+            store::LIMITS,
+        )
+        .await;
+    assert_eq!(removed.unwrap(), vec![manifest.clone(), second.clone()]);
+    let conflict: Result<store::Status, store::Error> = client
+        .update("prepare", store::PREPARE, &conflict, store::LIMITS)
+        .await;
+    assert_eq!(conflict, Err(store::Error::Conflict));
+    let restored: Result<store::Status, store::Error> = client
+        .update("prepare", store::PREPARE, &manifest, store::LIMITS)
+        .await;
+    assert_eq!(restored.unwrap().missing.len(), store::MAX_CHUNKS);
+    let cancelled: Result<store::Manifest, store::Error> = client
+        .update("cancel", store::CANCEL, &manifest, store::LIMITS)
+        .await;
+    assert_eq!(cancelled.unwrap(), manifest);
+    assert_eq!(client.info().await.reserved_bytes, 0);
+    let restored: Result<store::Status, store::Error> = client
+        .update("prepare", store::PREPARE, &manifest, store::LIMITS)
+        .await;
+    for index in restored.unwrap().missing {
+        let start = index as usize * store::CHUNK_BYTES;
+        let input = store::Put {
+            release: manifest.release.clone(),
+            index,
+            bytes: bytes[start..start + store::CHUNK_BYTES].to_vec(),
+        };
+        let result: Result<store::Status, store::Error> = client
+            .update("put", store::PUT, &input, store::CHUNK_LIMITS)
+            .await;
+        result.unwrap();
+    }
+    let result: Result<store::Status, store::Error> = client
+        .update("publish", store::PUBLISH, &manifest.release, store::LIMITS)
+        .await;
+    assert!(result.unwrap().published);
+    let pin = store::Pin {
+        operation: [1; 32],
+        manifest: manifest.clone(),
+    };
+    let receipt: Result<store::PinReceipt, store::Error> =
+        client.update("pin", store::PIN, &pin, store::LIMITS).await;
+    assert_eq!(receipt.unwrap().pin, pin);
+    let protected: Result<store::Manifest, store::Error> = client
+        .update("delete", store::DELETE, &manifest, store::LIMITS)
+        .await;
+    assert_eq!(protected, Err(store::Error::Conflict));
+    let request = store::PrepareCache {
+        pin: pin.clone(),
+        expires_at_ns: pic.get_time().await.as_nanos_since_unix_epoch() + 300_000_000_000,
+    };
+    let ready: Result<store::CacheReady, store::CacheError> = client
+        .update(
+            "prepare_cache",
+            store::PREPARE_CACHE,
+            &request,
+            store::LIMITS,
+        )
+        .await;
+    assert_eq!(ready.unwrap().uploaded, store::MAX_CHUNKS as u32);
+    let ready: Result<store::CacheReady, store::CacheError> = client
+        .update(
+            "prepare_cache",
+            store::PREPARE_CACHE,
+            &request,
+            store::LIMITS,
+        )
+        .await;
+    assert_eq!(ready.unwrap().uploaded, 0);
+    let attempt = store::MaintenanceAttempt {
+        sequence: 1,
+        operation: [2; 32],
+    };
+    let closed: Result<Option<store::Admission>, store::Error> = client
+        .update(
+            "admission",
+            store::ADMISSION,
+            &store::AdmissionCommand::Close(attempt.clone()),
+            store::LIMITS,
+        )
+        .await;
+    assert!(closed.unwrap().unwrap().closed);
+    let blocked: Result<store::CacheReady, store::CacheError> = client
+        .update(
+            "prepare_cache",
+            store::PREPARE_CACHE,
+            &request,
+            store::LIMITS,
+        )
+        .await;
+    assert_eq!(blocked, Err(store::CacheError::Pin(store::Error::Closed)));
+    let reopened: Result<Option<store::Admission>, store::Error> = client
+        .update(
+            "admission",
+            store::ADMISSION,
+            &store::AdmissionCommand::Activate(attempt.clone()),
+            store::LIMITS,
+        )
+        .await;
+    assert!(!reopened.unwrap().unwrap().closed);
+    let replay: Result<Option<store::Admission>, store::Error> = client
+        .update(
+            "admission",
+            store::ADMISSION,
+            &store::AdmissionCommand::Close(attempt),
+            store::LIMITS,
+        )
+        .await;
+    assert!(!replay.unwrap().unwrap().closed);
+    let ready: Result<store::CacheReady, store::CacheError> = client
+        .update(
+            "prepare_cache",
+            store::PREPARE_CACHE,
+            &request,
+            store::LIMITS,
+        )
+        .await;
+    assert_eq!(ready.unwrap().pin, pin);
+    // Submit without driving the call to completion, then interleave closure.
+    pic.clear_chunk_store(id, Some(operator)).await.unwrap();
+    let submit = || {
+        ic_wire::encode(
+            &request,
+            ic_wire::Encoding::Frame {
+                method: store::PREPARE_CACHE,
+                direction: ic_wire::Direction::Request,
+            },
+            store::LIMITS,
+        )
+        .unwrap()
+    };
+    let pending = pic
+        .submit_call(id, operator, "prepare_cache", submit())
+        .await
+        .unwrap();
+    pic.tick().await;
+    assert!(pic.ingress_status(pending.clone()).await.is_none());
+    let attempt = store::MaintenanceAttempt {
+        sequence: 2,
+        operation: [3; 32],
+    };
+    let closed: Result<Option<store::Admission>, store::Error> = client
+        .update(
+            "admission",
+            store::ADMISSION,
+            &store::AdmissionCommand::Close(attempt.clone()),
+            store::LIMITS,
+        )
+        .await;
+    assert!(closed.unwrap().unwrap().closed);
+    let reply = pic.await_call(pending).await.unwrap();
+    let result: Result<store::CacheReady, store::CacheError> = ic_wire::decode(
+        &reply,
+        ic_wire::Encoding::Frame {
+            method: store::PREPARE_CACHE,
+            direction: ic_wire::Direction::Response,
+        },
+        store::LIMITS,
+    )
+    .unwrap();
+    assert_eq!(result, Err(store::CacheError::Pin(store::Error::Closed)));
+    let reopened: Result<Option<store::Admission>, store::Error> = client
+        .update(
+            "admission",
+            store::ADMISSION,
+            &store::AdmissionCommand::Activate(attempt),
+            store::LIMITS,
+        )
+        .await;
+    assert!(!reopened.unwrap().unwrap().closed);
+
+    // Revoking the original caller must prevent readiness on an outstanding call.
+    pic.clear_chunk_store(id, Some(operator)).await.unwrap();
+    let pending = pic
+        .submit_call(id, operator, "prepare_cache", submit())
+        .await
+        .unwrap();
+    pic.tick().await;
+    assert!(pic.ingress_status(pending.clone()).await.is_none());
+    let replacement = CanisterId::self_authenticating(b"replacement controller");
+    pic.set_controllers(id, Some(operator), vec![replacement])
+        .await
+        .unwrap();
+    let reply = pic.await_call(pending).await.unwrap();
+    let result: Result<store::CacheReady, store::CacheError> = ic_wire::decode(
+        &reply,
+        ic_wire::Encoding::Frame {
+            method: store::PREPARE_CACHE,
+            direction: ic_wire::Direction::Response,
+        },
+        store::LIMITS,
+    )
+    .unwrap();
+    assert_eq!(result, Err(store::CacheError::Authority));
     println!(
         "Store: {} payload bytes, {} unique chunks, two retained versions; upload resumed after changed executable",
         bytes.len(),

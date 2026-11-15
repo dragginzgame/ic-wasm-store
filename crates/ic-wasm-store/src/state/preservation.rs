@@ -20,15 +20,32 @@ impl<M: MemoryBacking> State<M> {
         {
             return Err(Error::Invalid);
         }
-        let after = request
-            .after
-            .as_ref()
-            .map_or(Unbounded, |r| Excluded(Key::new(r)));
+        let after = request.after.as_ref().map_or(Unbounded, |r| {
+            Excluded(if self.releases.contains_key(&Key::tombstone(r)) {
+                Key::tombstone(r)
+            } else {
+                Key::new(r)
+            })
+        });
         let entry = self
             .releases
             .keys_range((after, Unbounded))
             .next()
-            .map(|key| self.custody(&key.release()))
+            .map(|key| {
+                if key.is_tombstone() {
+                    let manifest = self.removed_manifest(&key);
+                    Ok(ic_wasm_store_protocol::Custody {
+                        status: ic_wasm_store_protocol::Status {
+                            published: false,
+                            missing: (0..manifest.chunks.len() as u32).collect(),
+                            manifest,
+                        },
+                        pins: vec![],
+                    })
+                } else {
+                    self.custody(&key.release())
+                }
+            })
             .transpose()?;
         Ok(Page {
             catalog: Catalog {

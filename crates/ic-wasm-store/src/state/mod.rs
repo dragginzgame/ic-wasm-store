@@ -16,6 +16,7 @@ mod admission;
 mod admission_tests;
 mod preservation;
 mod records;
+mod removal;
 #[cfg(test)]
 mod tests;
 
@@ -114,10 +115,10 @@ impl<M: MemoryBacking> State<M> {
             state.releases.len() <= state.settings.get().quota.releases,
             "release quota"
         );
-        let reserved: u64 = state
-            .artifacts
-            .values()
-            .map(|artifact| artifact.bytes)
+        let active = state.active_hashes();
+        let reserved: u64 = active
+            .iter()
+            .map(|hash| state.artifacts.get(hash).expect("active artifact").bytes)
             .sum();
         assert_eq!(
             reserved,
@@ -188,6 +189,14 @@ impl<M: MemoryBacking> State<M> {
             return Err(Error::Invalid);
         }
         let key = Key::new(&manifest.release);
+        let tombstone = Key::tombstone(&manifest.release);
+        if self
+            .releases
+            .get(&tombstone)
+            .is_some_and(|hash| hash != manifest.hash)
+        {
+            return Err(Error::Conflict);
+        }
         if self
             .releases
             .get(&key)
@@ -205,12 +214,13 @@ impl<M: MemoryBacking> State<M> {
             return self.status(&manifest.release);
         }
         let mut settings = self.settings.get().clone();
-        let extra = if retained.is_none() {
+        let extra = if !self.active_hashes().contains(&manifest.hash) {
             manifest.bytes
         } else {
             0
         };
-        if self.releases.len() >= settings.quota.releases
+        if (!self.releases.contains_key(&tombstone)
+            && self.releases.len() >= settings.quota.releases)
             || settings.reserved_bytes + extra > settings.quota.reserved_bytes
         {
             return Err(Error::Capacity);
@@ -225,9 +235,10 @@ impl<M: MemoryBacking> State<M> {
                     pins: vec![],
                 },
             );
-            settings.reserved_bytes += extra;
-            self.settings.set(settings);
         }
+        settings.reserved_bytes += extra;
+        self.settings.set(settings);
+        self.releases.remove(&tombstone);
         self.releases.insert(key, manifest.hash);
         self.status(&manifest.release)
     }
@@ -295,6 +306,7 @@ impl<M: MemoryBacking> State<M> {
         let lower = after.map_or(Unbounded, |release| Excluded(Key::new(release)));
         self.releases
             .keys_range((lower, Unbounded))
+            .filter(|key| !key.is_tombstone())
             .take(PAGE_SIZE)
             .map(|key| self.status(&key.release()))
             .collect()

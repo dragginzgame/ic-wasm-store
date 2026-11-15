@@ -31,6 +31,12 @@ pub const CUSTODY: u64 = 111;
 pub const ADMISSION: u64 = 112;
 /// Enumerate one catalog entry under an exact closed maintenance attempt.
 pub const PRESERVATION: u64 = 113;
+/// Delete an exact published release unless its artifact has retained pins.
+pub const DELETE: u64 = 114;
+/// Cancel an exact unpublished release, reclaiming unshared payloads.
+pub const CANCEL: u64 = 115;
+/// Page through removed manifests; exact prepare restores these identities.
+pub const TOMBSTONES: u64 = 116;
 
 /// Monotonic maintenance identity; a new attempt uses the previous sequence plus one.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
@@ -244,7 +250,7 @@ pub struct Chunk(#[serde(with = "serde_bytes")] pub Vec<u8>);
 pub struct Quota {
     /// Sum of unique artifact lengths, including incomplete uploads; excludes metadata.
     pub reserved_bytes: u64,
-    /// Count includes incomplete releases and every retained version.
+    /// Count includes active releases and permanent tombstones; removal does not free labels.
     pub releases: u64,
 }
 impl Default for Quota {
@@ -272,9 +278,9 @@ pub struct Info {
     pub quota: Quota,
     /// Conservatively reserved payload bytes; chunk deduplication does not release reservations.
     pub reserved_bytes: u64,
-    /// All retained release labels.
+    /// All retained release labels, including tombstones.
     pub releases: u64,
-    /// Unique module identities.
+    /// Unique module identities, including metadata retained only for tombstones.
     pub artifacts: u64,
     /// Committed distinct chunk payloads.
     pub chunks: u64,
@@ -306,229 +312,4 @@ pub fn digest(bytes: &[u8]) -> [u8; 32] {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn maximum_metadata_page_and_chunk_fit_independent_wire_budgets() {
-        let manifest = Manifest {
-            release: Release {
-                name: "a".repeat(64),
-                version: "v".repeat(64),
-            },
-            hash: [255; 32],
-            bytes: (CHUNK_BYTES * MAX_CHUNKS) as u64,
-            chunks: vec![[255; 32]; MAX_CHUNKS],
-        };
-        assert!(manifest.valid());
-        let pin = Pin {
-            operation: [255; 32],
-            manifest: manifest.clone(),
-        };
-        let receipt = Ok::<_, Error>(PinReceipt {
-            owner: vec![255; 29],
-            pin: pin.clone(),
-        });
-        let encoded = ic_wire::encode(
-            &receipt,
-            ic_wire::Encoding::Frame {
-                method: PIN,
-                direction: ic_wire::Direction::Response,
-            },
-            LIMITS,
-        )
-        .unwrap();
-        assert_eq!(
-            ic_wire::decode::<Result<PinReceipt, Error>>(
-                &encoded,
-                ic_wire::Encoding::Frame {
-                    method: PIN,
-                    direction: ic_wire::Direction::Response
-                },
-                LIMITS
-            )
-            .unwrap(),
-            receipt
-        );
-        let request = PrepareCache {
-            pin,
-            expires_at_ns: u64::MAX,
-        };
-        let encoded = ic_wire::encode(
-            &request,
-            ic_wire::Encoding::Frame {
-                method: PREPARE_CACHE,
-                direction: ic_wire::Direction::Request,
-            },
-            LIMITS,
-        )
-        .unwrap();
-        assert_eq!(
-            ic_wire::decode::<PrepareCache>(
-                &encoded,
-                ic_wire::Encoding::Frame {
-                    method: PREPARE_CACHE,
-                    direction: ic_wire::Direction::Request
-                },
-                LIMITS
-            )
-            .unwrap(),
-            request
-        );
-        let status = Status {
-            manifest: manifest.clone(),
-            published: false,
-            missing: (0..MAX_CHUNKS as u32).collect(),
-        };
-        let custody = Ok::<_, Error>(Custody {
-            status: Status {
-                published: true,
-                missing: vec![],
-                ..status.clone()
-            },
-            pins: (0..MAX_PINS)
-                .map(|i| Retention {
-                    owner: vec![255; 29],
-                    operation: [i as u8 + 1; 32],
-                    release: manifest.release.clone(),
-                })
-                .collect(),
-        });
-        let encoded = ic_wire::encode(
-            &custody,
-            ic_wire::Encoding::Frame {
-                method: CUSTODY,
-                direction: ic_wire::Direction::Response,
-            },
-            LIMITS,
-        )
-        .unwrap();
-        let decoded = ic_wire::decode::<Result<Custody, Error>>(
-            &encoded,
-            ic_wire::Encoding::Frame {
-                method: CUSTODY,
-                direction: ic_wire::Direction::Response,
-            },
-            LIMITS,
-        )
-        .unwrap();
-        assert_eq!(decoded, custody);
-        let preservation = Ok::<_, Error>(preservation::Page {
-            catalog: preservation::Catalog {
-                quota: Quota {
-                    reserved_bytes: u64::MAX,
-                    releases: u64::MAX,
-                },
-                reserved_bytes: u64::MAX,
-                releases: u64::MAX,
-                artifacts: u64::MAX,
-                chunks: u64::MAX,
-            },
-            entry: Some(decoded.unwrap()),
-        });
-        let encoded = ic_wire::encode(
-            &preservation,
-            ic_wire::Encoding::Frame {
-                method: PRESERVATION,
-                direction: ic_wire::Direction::Response,
-            },
-            LIMITS,
-        )
-        .unwrap();
-        assert_eq!(
-            ic_wire::decode::<Result<preservation::Page, Error>>(
-                &encoded,
-                ic_wire::Encoding::Frame {
-                    method: PRESERVATION,
-                    direction: ic_wire::Direction::Response
-                },
-                LIMITS
-            )
-            .unwrap(),
-            preservation
-        );
-        let page = Ok::<_, Error>(vec![status; PAGE_SIZE]);
-        let encoded = ic_wire::encode(
-            &page,
-            ic_wire::Encoding::Frame {
-                method: LIST,
-                direction: ic_wire::Direction::Response,
-            },
-            LIMITS,
-        )
-        .unwrap();
-        assert_eq!(
-            ic_wire::decode::<Result<Vec<Status>, Error>>(
-                &encoded,
-                ic_wire::Encoding::Frame {
-                    method: LIST,
-                    direction: ic_wire::Direction::Response
-                },
-                LIMITS
-            )
-            .unwrap(),
-            page
-        );
-        let input = Put {
-            release: manifest.release,
-            index: 0,
-            bytes: vec![255; CHUNK_BYTES],
-        };
-        let encoded = ic_wire::encode(
-            &input,
-            ic_wire::Encoding::Frame {
-                method: PUT,
-                direction: ic_wire::Direction::Request,
-            },
-            CHUNK_LIMITS,
-        )
-        .unwrap();
-        assert_eq!(
-            ic_wire::decode::<Put>(
-                &encoded,
-                ic_wire::Encoding::Frame {
-                    method: PUT,
-                    direction: ic_wire::Direction::Request
-                },
-                CHUNK_LIMITS
-            )
-            .unwrap()
-            .bytes
-            .len(),
-            CHUNK_BYTES
-        );
-        assert!(
-            ic_wire::decode::<Put>(
-                &encoded,
-                ic_wire::Encoding::Frame {
-                    method: PUT,
-                    direction: ic_wire::Direction::Request
-                },
-                LIMITS
-            )
-            .is_err()
-        );
-        let response = Ok::<_, Error>(Chunk(input.bytes));
-        let encoded = ic_wire::encode(
-            &response,
-            ic_wire::Encoding::Frame {
-                method: READ,
-                direction: ic_wire::Direction::Response,
-            },
-            CHUNK_LIMITS,
-        )
-        .unwrap();
-        assert_eq!(
-            ic_wire::decode::<Result<Chunk, Error>>(
-                &encoded,
-                ic_wire::Encoding::Frame {
-                    method: READ,
-                    direction: ic_wire::Direction::Response
-                },
-                CHUNK_LIMITS
-            )
-            .unwrap(),
-            response
-        );
-    }
-}
+mod tests;

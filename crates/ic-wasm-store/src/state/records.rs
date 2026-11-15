@@ -10,8 +10,17 @@ impl Key {
     pub fn new(release: &Release) -> Self {
         Self(format!("{}\0{}", release.name, release.version))
     }
+    pub fn tombstone(release: &Release) -> Self {
+        Self(format!("{}\x01{}", release.name, release.version))
+    }
+    pub fn is_tombstone(&self) -> bool {
+        self.0.contains('\x01')
+    }
     pub fn release(&self) -> Release {
-        let (name, version) = self.0.split_once('\0').expect("validated release key");
+        let (name, version) = self
+            .0
+            .split_once(['\0', '\x01'])
+            .expect("validated release key");
         Release {
             name: name.into(),
             version: version.into(),
@@ -30,7 +39,7 @@ impl Storable for Key {
         let key = String::from_utf8(bytes.into_owned())
             .map_err(|_| CodecError::Invalid("release key"))?;
         let (name, version) = key
-            .split_once('\0')
+            .split_once(['\0', '\x01'])
             .ok_or(CodecError::Invalid("release key"))?;
         if !(Release {
             name: name.into(),
