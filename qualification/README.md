@@ -8,11 +8,39 @@ make qualification-test
 make qualification-predecessor-test
 ```
 
-IC Testkit owns server preparation and admission. `IC_TESTKIT_SERVER_DIRECTORY`
-selects a different bundle directory for both commands; the default is
-`target/qualification/server`. Setup provisions the bundle explicitly. Tests
-require an already prepared bundle and permission to start a local server
-listening on loopback; the harness starts and closes that server.
+Testkit 0.107.1 supplies the upstream PocketIC client types. Tests require
+`IC_TESTKIT_POCKET_IC_URL` and never discover, download or start a server.
+They create instances on that server and explicitly attempt instance deletion
+on normal completion; upstream deletion does not confirm remote cleanup.
+
+The runner owns the external server through the reviewed `ic-testkit-server`
+0.106.0 launcher, installed by `make qualification-setup` under
+`.tools/testkit-bootstrap`. This is a deliberately frozen development bootstrap,
+as specified by the supplier's [simulator ownership contract](https://github.com/dragginzgame/ic-tooling/blob/main/docs/simulator-ownership.md),
+not an old Testkit dependency in the qualification graph. Set
+`TESTKIT_RELEASE_LAUNCHER` to use a separately prepared 0.106.0 executable.
+`IC_TESTKIT_SERVER_DIRECTORY` selects the bundle directory, defaulting to
+`target/qualification/server`. Setup provisions it explicitly; ordinary tests
+only admit prepared assets offline. The launcher outlives the test command and
+owns server shutdown on completion or failure. Local spawning requires loopback
+permission. Supplying `IC_TESTKIT_POCKET_IC_URL` instead borrows that server;
+the caller retains its lifetime and cleanup responsibility, including failures.
+
+If simulator setup fails, `make qualification-setup` prints the evidence paths
+and first 4 KiB of each retained download/error diagnostic. Control and non-ASCII
+bytes are escaped, every diagnostic line is indented, and truncation is marked.
+Only the failed attempt named by that setup invocation is displayed; stale
+attempts cannot masquerade as the current cause. The original setup/check status
+is preserved even if reporting fails. The `simulator-setup-<host>-<attempt>` artifact
+retains setup/check stdout and stderr plus the complete `download.stderr` and
+`failure.txt` files for seven days, including
+those in hidden setup attempt directories. Archives, server binaries and unrelated
+runner files are excluded. Setup failure still fails the job and blocks publication.
+
+`make test-server-diagnostics` exercises the real frozen launcher's setup with a failed
+substitute downloader, without network access. It checks useful error text,
+bounded escaped rendering, retained files, stale/missing evidence and exact setup
+status preservation. This is also part of `make ci`.
 
 The test script builds the ordinary Store and a distinct executable with
 `maintenance-candidate`, then passes their paths to the independent qualification
@@ -21,8 +49,8 @@ A separate `make build` is unnecessary for this test. The candidate feature is
 for qualification only and must not be selected for live deployment.
 
 For a focused run, use `make qualification-test QUALIFICATION_TEST=final_cache_callback`
-or `QUALIFICATION_TEST=removal_at_catalog_capacity`. The server has a 30-minute
-hard lifetime to accommodate slower hosts; the harness closes it after each test.
+or `QUALIFICATION_TEST=removal_at_catalog_capacity`. The owned server has a
+30-minute hard lifetime to accommodate slower hosts and closes after the command.
 
 Setup also downloads the published `ic-wasm-store` 0.2.2 archive. The predecessor
 script pins its SHA-256 (`5ac8eeefd0b49bc36a1e946bc984dcabae974cb6510150296d90ae205d5e1cd0`)
@@ -42,6 +70,9 @@ share one client and simulator setup; test-name filters remain available through
 The installed witness exercises:
 
 - Unauthorized requests and oversized upload frames.
+- Replacement Runtime guard traps (reject code 5) with the original refusal
+  diagnostic, before decoding or state mutation. Upgrade scenarios stop and
+  await completion of the stop operation before upgrade, then restart.
 - Removal endpoint controller guards and metadata frame limits, plus deletion
   and cancellation rejection of swapped method IDs, response-direction frames
   and conflicting manifests without changing retained counters.
@@ -113,3 +144,18 @@ lockfiles. This historical evidence does not establish publication, mainnet
 upgrade or native macOS qualification. Consumer adoption
 and end-to-end removal/maintenance are
 [Canic #4](https://github.com/dragginzgame/canic/issues/4).
+
+## Replacement Runtime and management codecs (2026-11-16)
+
+The local candidate uses Runtime 0.23.13, Protocol 0.2.5 management-chunks and
+Types 0.21.2. All four installed scenarios passed on Linux, including exact
+final-callback witnesses and the 4,096-label capacity case. The updated stopped
+maintenance upgrade and explicit guard-refusal checks passed; the published
+0.2.2 predecessor-to-candidate upload/upgrade witness also passed. Wasm and
+qualification Clippy, Rustdoc, and all 23 lifecycle/query/update export identities
+were checked. These are local candidate results, not publication or deployment.
+
+Storage 0.74.1 retains Runtime 0.22.5 with only its ic0 feature. The selected Wasm
+graph has a single executor/runtime guard at 0.23.13. Complete removal of that
+old raw-memory supplier edge remains with Storage; see the
+[adoption boundary](../docs/design/extraction.md#platform-replacement-adoption-2026-11-16).

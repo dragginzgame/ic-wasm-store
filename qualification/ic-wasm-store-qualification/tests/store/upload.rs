@@ -2,14 +2,14 @@ use super::{CanisterId, Client, store, support};
 
 #[tokio::test(flavor = "current_thread")]
 async fn versioned_upload_resumes_across_two_executables_and_reuses_bytes() {
-    let (original, binary) = support::inputs();
+    let original = support::wasm();
     let candidate = std::fs::read(
         std::env::var_os("IC_WASM_STORE_CANDIDATE").expect("run make qualification-test"),
     )
     .unwrap();
     assert_ne!(original, candidate);
-    let owner = support::instance(&binary).await;
-    let pic = owner.instance();
+    let owner = support::instance().await;
+    let pic = &owner;
     let operator = CanisterId::self_authenticating(b"store qualification controller");
     let id = pic
         .create_canister_with_settings(Some(operator), None)
@@ -218,9 +218,11 @@ async fn versioned_upload_resumes_across_two_executables_and_reuses_bytes() {
     assert_eq!(client.info().await.reserved_bytes, 0);
     assert_eq!(client.info().await.chunks, 0);
     let candidate = std::fs::read(std::env::var_os("IC_WASM_STORE_CANDIDATE").unwrap()).unwrap();
+    pic.stop_canister(id, Some(operator)).await.unwrap();
     pic.upgrade_canister(id, candidate, vec![], Some(operator))
         .await
         .unwrap();
+    pic.start_canister(id, Some(operator)).await.unwrap();
     let removed: Result<Vec<store::Manifest>, store::Error> = client
         .update(
             "tombstones",
@@ -425,5 +427,5 @@ async fn versioned_upload_resumes_across_two_executables_and_reuses_bytes() {
         bytes.len(),
         usage.chunks
     );
-    owner.close().await;
+    owner.drop().await;
 }

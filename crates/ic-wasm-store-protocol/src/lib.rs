@@ -1,4 +1,5 @@
 //! Immutable raw-Wasm releases and resumable publication. No deployment authority.
+#![forbid(unsafe_code)]
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 pub mod preservation;

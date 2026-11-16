@@ -3,12 +3,6 @@
 version = 4
 
 [[package]]
-name = "autocfg"
-version = "1.5.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f2032f911046de80f0a198e0901378627c33f59ea0ac00e363d481118bd70a53"
-
-[[package]]
 name = "block-buffer"
 version = "0.12.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -110,26 +104,24 @@ dependencies = [
 ]
 
 [[package]]
-name = "ic-platform"
-version = "0.33.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3e07e0565c70df9222016e93d6f488312176ef5e7036ded60db8b4bc3f61c05f"
-dependencies = [
- "ic-platform-types",
- "num-bigint",
- "serde",
- "serde_bytes",
-]
-
-[[package]]
 name = "ic-platform-macros"
-version = "0.22.5"
+version = "0.23.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9de8495d8ca3ff74e9d458b89674cc7a916460fdd1b5c6764bcc03760cd8c65c"
+checksum = "d5afcfb99f22c7153355b387ff56b4d19e78ae1ea0023cf713e25124b2db613e"
 dependencies = [
  "proc-macro2",
  "quote",
  "syn",
+]
+
+[[package]]
+name = "ic-platform-protocol"
+version = "0.2.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "93ed6052f78c99bf45bcf1ffdd11bd6eb4de4463dbe425a7b63e093b8f7a0ed2"
+dependencies = [
+ "ic-platform-types",
+ "serde",
 ]
 
 [[package]]
@@ -138,27 +130,31 @@ version = "0.22.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "92a494623fc12ba0673eb18518612e95e9a103d88ba71d4bd8fa902a227fde80"
 dependencies = [
+ "ic0",
+]
+
+[[package]]
+name = "ic-platform-runtime"
+version = "0.23.13"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9f5f46eebbf414e38b7ad6db694ce05bebeae40ff8df28eba6c1e48a6c308df4"
+dependencies = [
  "ic-platform-macros",
  "ic-platform-runtime-guard",
  "ic-platform-types",
- "ic0",
- "pin-project-lite",
- "serde",
- "slotmap",
- "thiserror",
 ]
 
 [[package]]
 name = "ic-platform-runtime-guard"
-version = "0.22.5"
+version = "0.23.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "93880ece1df84dd6462c4b42e7b454c603d216e3f8f2265f258f1153a82cd842"
+checksum = "86a97003ee80dc942a11a313430685929df56c6dc5eeff506239904355ef7aa5"
 
 [[package]]
 name = "ic-platform-types"
-version = "0.20.4"
+version = "0.21.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a8df2753db752bd0c29fa87353b98613465a5f0c5269b6fb8dd0e45ea5c12a22"
+checksum = "3b08201b2ebbb9a9f0e1c8ee2854f48ff3f68a777c441147273c600bf6723d7d"
 dependencies = [
  "crc32fast",
  "data-encoding",
@@ -173,7 +169,7 @@ version = "0.74.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "26d2520d368ccea2560cd496efce6408652ad681296111f9fe45561796c92ed0"
 dependencies = [
- "ic-platform-runtime",
+ "ic-platform-runtime 0.22.5",
  "serde",
  "thiserror",
 ]
@@ -182,8 +178,9 @@ dependencies = [
 name = "ic-wasm-store"
 version = "0.2.4"
 dependencies = [
- "ic-platform",
- "ic-platform-runtime",
+ "ic-platform-protocol",
+ "ic-platform-runtime 0.23.13",
+ "ic-platform-types",
  "ic-storage",
  "ic-wasm-store-protocol",
  "ic-wire",
@@ -205,9 +202,9 @@ dependencies = [
 
 [[package]]
 name = "ic-wire"
-version = "0.24.1"
+version = "0.24.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6811e5270a9c430cf0b1cf86ba4c8f6a3c15b597cd8f2f99fa2af7a4f82e1297"
+checksum = "852a98f3b818bf1e6841c63845d88ded595b659181377e749cf8cf50b12b48c6"
 dependencies = [
  "bytemuck",
  "postcard",
@@ -226,41 +223,6 @@ name = "libc"
 version = "0.2.191"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "65cd87c9a6d60536580b316ad985726104730a5151c99845f2490428ef91240a"
-
-[[package]]
-name = "num-bigint"
-version = "0.5.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "93e7820bc0a80a0238e650327316f929ba18d5be054b647490a3a6a339f3e7c0"
-dependencies = [
- "num-integer",
- "num-traits",
- "serde",
-]
-
-[[package]]
-name = "num-integer"
-version = "0.1.47"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7ce2d95d4b3734dc35aa2f45e1aa22cd416814592a4f9d9205e11affd5b8e10b"
-dependencies = [
- "num-traits",
-]
-
-[[package]]
-name = "num-traits"
-version = "0.2.19"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "071dfc062690e90b734c0b2273ce72ad0ffa95f0c74596bc250dcfd960262841"
-dependencies = [
- "autocfg",
-]
-
-[[package]]
-name = "pin-project-lite"
-version = "0.2.17"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a89322df9ebe1c1578d689c92318e070967d1042b512afbe49518723f4e6d5cd"
 
 [[package]]
 name = "postcard"
@@ -344,15 +306,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "slotmap"
-version = "1.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bdd58c3c93c3d278ca835519292445cb4b0d4dc59ccfdf7ceadaab3f8aeb4038"
-dependencies = [
- "version_check",
-]
-
-[[package]]
 name = "syn"
 version = "3.0.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -385,9 +338,9 @@ dependencies = [
 
 [[package]]
 name = "toko-tooling"
-version = "0.44.5"
+version = "0.44.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "aef8ac5d84866cf4ceb5b9d91ce9d458708069fc0c585345f07054186d267199"
+checksum = "bdfd5bc761f55ede02e82f8af36ca82415696209b3ff45e8f080e82cab85c418"
 
 [[package]]
 name = "typenum"
@@ -400,9 +353,3 @@ name = "unicode-ident"
 version = "1.0.27"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a2c754d6c33795a1c324727428e5a7dedb5b06195f9890bdbcba760d3e246563"
-
-[[package]]
-name = "version_check"
-version = "0.9.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0b928f33d975fc6ad9f86c8f283853ad26bdd5b10b7f1542aa2fa15e2289105a"

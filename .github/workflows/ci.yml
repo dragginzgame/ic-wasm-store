@@ -50,10 +50,24 @@ jobs:
       - name: Prepare compiler
         run: rustup toolchain install 1.100.0 --profile minimal --component rustfmt,clippy --target wasm32-unknown-unknown
       - name: Prepare repository tools and fixtures
+        id: setup
         run: |
           make install-tools
           make tools-check
           make qualification-setup
+      - name: Retain simulator setup failure evidence
+        if: ${{ failure() && steps.setup.outcome == 'failure' }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: simulator-setup-${{ matrix.os }}-${{ github.run_attempt }}
+          path: |
+            target/qualification/setup-evidence/*/*.stdout
+            target/qualification/setup-evidence/*/*.stderr
+            target/qualification/server/.setup-v1-*/download.stderr
+            target/qualification/server/.setup-v1-*/failure.txt
+          include-hidden-files: true
+          if-no-files-found: ignore
+          retention-days: 7
       - uses: ./vendor/toko-tooling/.github/actions/cache-tool-downloads
         with:
           mode: save

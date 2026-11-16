@@ -1,4 +1,5 @@
 //! Single-message transitions. Storage failure traps; no partial typed-error mutation.
+#![forbid(unsafe_code)]
 use ic_storage::{
     AllocationGrants, GenericAllocationPolicy, MemoryAuthority, MemoryBacking, MemoryRequest,
     MemoryRuntime, SealedDeclarationSnapshot, StableKey, StorageConfig,

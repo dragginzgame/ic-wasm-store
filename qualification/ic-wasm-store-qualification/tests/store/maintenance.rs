@@ -2,9 +2,9 @@ use super::{CanisterId, Client, frame, store, support};
 
 #[tokio::test(flavor = "current_thread")]
 async fn closed_upgrade_preserves_removal_fences_and_exact_activation_owner() {
-    let (wasm, binary) = support::inputs();
-    let owner = support::instance(&binary).await;
-    let pic = owner.instance();
+    let wasm = support::wasm();
+    let owner = support::instance().await;
+    let pic = &owner;
     let operator = CanisterId::self_authenticating(b"closed upgrade owner");
     let other = CanisterId::self_authenticating(b"other authorized controller");
     let id = pic
@@ -14,6 +14,22 @@ async fn closed_upgrade_preserves_removal_fences_and_exact_activation_owner() {
     pic.set_controllers(id, Some(operator), vec![operator, other])
         .await
         .unwrap();
+    // Runtime's explicit refusal handler traps before decoding or state access.
+    for (caller, bytes, diagnostic) in [
+        (CanisterId::anonymous(), vec![], "Store controller required"),
+        (
+            operator,
+            vec![0; store::LIMITS.bytes + 1],
+            "Store frame too large",
+        ),
+    ] {
+        let refusal = pic
+            .update_call(id, caller, "observe_info", bytes)
+            .await
+            .unwrap_err();
+        assert_eq!(refusal.reject_code as u64, 5);
+        assert!(refusal.reject_message.contains(diagnostic));
+    }
     let client = Client { pic, id, operator };
     let mut manifests = Vec::new();
     for index in 0..3 {
@@ -169,9 +185,11 @@ async fn closed_upgrade_preserves_removal_fences_and_exact_activation_owner() {
         );
     }
     let candidate = std::fs::read(std::env::var_os("IC_WASM_STORE_CANDIDATE").unwrap()).unwrap();
+    pic.stop_canister(id, Some(operator)).await.unwrap();
     pic.upgrade_canister(id, candidate, vec![], Some(operator))
         .await
         .unwrap();
+    pic.start_canister(id, Some(operator)).await.unwrap();
     let observed: Result<Option<store::Admission>, store::Error> = client
         .update(
             "admission",
@@ -260,7 +278,7 @@ async fn closed_upgrade_preserves_removal_fences_and_exact_activation_owner() {
         .await;
     assert_eq!(restored.unwrap().missing, vec![0]);
     assert_eq!(client.info().await.reserved_bytes, manifests[2].bytes);
-    owner.close().await;
+    owner.drop().await;
 }
 
 async fn preservation_pages(

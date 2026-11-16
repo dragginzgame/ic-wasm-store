@@ -1,36 +1,20 @@
-use ic_testkit::{
-    pic::{PocketIcInstance, PocketIcStartupConfig, server_assets},
-    pocket_ic::PocketIcBuilder,
-};
-use std::{
-    path::{Path, PathBuf},
-    time::Duration,
-};
+use ic_testkit::pocket_ic::{PocketIcBuilder, nonblocking::PocketIc};
 
-pub fn inputs() -> (Vec<u8>, PathBuf) {
-    let wasm = std::fs::read(
+pub fn wasm() -> Vec<u8> {
+    std::fs::read(
         std::env::var_os("IC_WASM_STORE_WASM")
             .expect("run make qualification-test to select the Cargo-built Wasm"),
     )
-    .expect("read probe Wasm");
-    let directory = ic_wasm_store_qualification::server_directory();
-    let binary = server_assets::check(&directory).expect("run make qualification-setup first");
-    (wasm, binary)
+    .expect("read probe Wasm")
 }
 
-pub async fn instance(binary: &Path) -> PocketIcInstance {
-    PocketIcStartupConfig::Spawn {
-        server_binary: binary.to_path_buf(),
-        timeout: Duration::from_secs(30),
-        server_hard_ttl: Some(Duration::from_secs(1800)),
-        server_idle_ttl: None,
-        server_output_files: None,
-    }
-    .build_instance(
-        PocketIcBuilder::new()
-            .with_max_request_time_ms(Some(30_000))
-            .with_application_subnet(),
-    )
-    .await
-    .unwrap()
+pub async fn instance() -> PocketIc {
+    let url = std::env::var("IC_TESTKIT_POCKET_IC_URL")
+        .expect("run make qualification-test or supply an externally owned server URL");
+    PocketIcBuilder::new()
+        .with_server_url(url.parse().expect("valid PocketIC server URL"))
+        .with_max_request_time_ms(Some(30_000))
+        .with_application_subnet()
+        .build_async()
+        .await
 }

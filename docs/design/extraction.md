@@ -81,3 +81,42 @@ engine. Its response cannot independently prove tombstone preservation; existing
 consumers must explicitly adopt method 117. No storage migration or implicit
 activation is introduced. This does not add restoration generations: outstanding
 removals still must settle before restoring an identical label.
+
+## Platform replacement adoption (2026-11-16)
+
+Store now uses published Runtime 0.23.13, Protocol 0.2.5 and Types 0.21.2.
+Protocol's management-chunks capability supplies the bounded stored_chunks and
+upload_chunk codecs requested in
+[Platform #16 — Bounded management chunk-cache codecs](https://github.com/dragginzgame/ic-platform/issues/16).
+The old Platform facade is absent from the product graph. Store owns its Wire
+frames, controller admission, pins, hash comparison, deadlines and callback fences;
+Platform owns the external management formats and execution boundary.
+
+The reply decoder preserves the 65,536-byte, 4,096-header-byte, 256-type,
+131,072-work and 262,144-allocation budgets. New vector and skipped-value budgets
+are explicit. The canister uses the new Runtime's single executor and explicit
+entrypoint guards, fallible codecs and non-returning error handler. Guard refusals
+now trap (IC reject code 5 instead of the old explicit rejection code 4), and
+lifecycle arguments are bounded to 16 KiB. These observable changes select the
+pending 0.3 minor line. Method names/numbers, encoded records, allocation names
+and retained maintenance fences remain unchanged.
+
+Stop and wait for IC status Stopped before upgrade, then restart: suspended
+Runtime callbacks are heap-local and must drain first. The generated export
+attributes use the supplier's narrowly scoped unsafe-lint expectations under
+workspace deny; state and passive protocol modules retain unsafe forbid.
+
+Storage 0.74.1 still owns the Runtime 0.22.5 ic0-only stable-memory adapter. The
+selected Wasm feature graph has no old executor, macros or runtime guard. This is
+an explicit retained supplier edge, not complete elimination of the old Runtime.
+The new Runtime supplies the stable-memory primitives requested in
+[Platform #14 — Stable-memory boundary](https://github.com/dragginzgame/ic-platform/issues/14),
+but Storage has not published its consumer transition.
+[Storage #3 — Wasm Store retained-state migration](https://github.com/dragginzgame/ic-storage/issues/3)
+continues to own that remaining work. Store neither bypasses Storage nor silently
+moves existing images to the fresh persistence rewrite.
+
+The installed qualification covers management-cache preparation/reuse, controller
+revocation and close/reopen callback fences, removal at capacity, and retained
+state across upgrade. See the qualification workspace for the actual scenarios;
+local evidence does not establish mainnet deployment or native macOS acceptance.

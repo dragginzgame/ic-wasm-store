@@ -28,10 +28,9 @@ esac
 STUB
 cat > "$fixture/bin/gh" <<'STUB'
 #!/usr/bin/env bash
-set -eu
-[[ "$*" == "api --method GET repos/dragginzgame/ic-wasm-store/actions/workflows/ci.yml/runs -f head_sha=0000000000000000000000000000000000000001 -f event=push -f per_page=100" ]]
-[[ "$CASE" != api_failed ]] || exit 1
-cat "$FIXTURE/runs.json"
+# Hosted status must not be queried or required by archive admission.
+touch "$FIXTURE/hosted-query"
+exit 97
 STUB
 cat > "$fixture/bin/cargo" <<'STUB'
 #!/usr/bin/env bash
@@ -55,21 +54,12 @@ shift 4
 touch "$FIXTURE/provenance"
 STUB
 chmod +x "$fixture/bin/"*
-for CASE in success dirty status_failed absent pending failed wrong_commit wrong_branch latest_failed api_failed package_failed provenance_failed changed dirty_after; do
+for CASE in success dirty status_failed package_failed provenance_failed changed dirty_after; do
     export CASE
     rm -f "$fixture/packaged" "$fixture/provenance"
-    jq -n --arg case "$CASE" '
-        {head_sha:"0000000000000000000000000000000000000001", event:"push", head_branch:"main", run_number:1, run_attempt:1, status:"completed", conclusion:"success"} |
-        (if $case == "pending" then .status = "in_progress"
-         elif $case == "failed" then .conclusion = "failure"
-         elif $case == "wrong_commit" then .head_sha = "other"
-         elif $case == "wrong_branch" then .head_branch = "other"
-         else . end) |
-        {workflow_runs: (if $case == "absent" then []
-         elif $case == "latest_failed" then [., (. + {run_attempt:2, conclusion:"failure"})]
-         else [.] end)}' > "$fixture/runs.json"
     status=0
     CARGO_TARGET_DIR="$fixture/other-target" bash "$fixture/scripts/check-publication.sh" > "$fixture/output" 2>&1 || status=$?
+    [[ ! -e "$fixture/hosted-query" ]] || { echo 'archive admission queried hosted CI'; exit 1; }
     if [[ "$CASE" == success ]]; then
         [[ "$status" == 0 && -f "$fixture/provenance" ]] || { cat "$fixture/output"; exit 1; }
     else

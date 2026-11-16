@@ -51,6 +51,12 @@ observation, not a guarantee that the management cache will remain available.
 Closing maintenance admission blocks new mutation work but does not drain
 outstanding calls; the consuming application owns quiescence and upgrades.
 
+With the replacement Platform Runtime, stop the canister and wait for `Stopped`
+before upgrading, then restart it. Controller and oversized-frame guard failures
+trap (IC reject code 5); clients must not rely on the former rejection code 4.
+Init and post-upgrade arguments are limited to 16 KiB. Store endpoint names,
+Wire encodings and retained allocation/record identities are unchanged.
+
 This remains experimental. Availability of older code does not imply safe
 application-state rollback.
 
@@ -91,7 +97,11 @@ For focused work, use `make test-protocol` or `make test-store`, and select
 Wasm-only and are checked by `make clippy-wasm`. `make help` lists these targets.
 
 Run `make qualification-setup` before the installed test or `make ci` on a fresh
-checkout. Setup may download the server; the test checks the prepared bundle.
+checkout. Setup installs the reviewed 0.106.0 server-launcher bootstrap and may
+download the server; tests use Testkit 0.107.1 clients and the prepared bundle.
+The launcher owns one server for the test command. Alternatively, supply
+`IC_TESTKIT_POCKET_IC_URL` for an externally owned server; see the
+[qualification ownership contract](qualification/README.md).
 The `maintenance-candidate` feature identifies a qualification executable and
 must not be selected for live deployment. See [qualification](qualification/README.md)
 for coverage and limitations. Linux and macOS are intended development hosts;
@@ -111,12 +121,14 @@ package archives without uploading; `make publish` publishes the declared produc
 roster in dependency order. Qualification packages are excluded. Publication
 requires explicit authorization, a clean committed source, a passing `make ci`,
 and archive provenance verification against the pushed source commit. Both Make
-publication targets enforce the latest successful main-branch push CI run for
-the exact commit, using authenticated GitHub CLI access (`gh`). CI runs the full
-gate on Linux and macOS and scans repository history once for secrets.
+publication targets run the existing local `make ci` gate before archive admission.
+Hosted Linux/macOS CI and the single history secret scan run asynchronously;
+pending, queued or absent hosted results alone do not block a routine patch.
 Publication admission packages and verifies both crates for
 `wasm32-unknown-unknown`, checks their source identity with the shared provenance
 helper, and retrieves that commit from the declared GitHub repository. Cargo's
 native package verification follows in the shared publication adapter.
-Missing, pending or failed CI blocks publication; local test results alone do not
-satisfy this gate. Publishing a crate does not deploy a canister.
+Known relevant failures still require resolution or explicit disposition. Enforced
+protections and maintainer-selected qualification for a named release or changed
+contract remain binding; report their source before waiting. Publication and CI
+status are reported separately. Publishing a crate does not deploy a canister.

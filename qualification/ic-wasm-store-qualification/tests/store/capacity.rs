@@ -2,9 +2,9 @@ use super::{CanisterId, Client, store, support};
 
 #[tokio::test(flavor = "current_thread")]
 async fn removal_at_catalog_capacity_preserves_shared_bytes_and_pins() {
-    let (wasm, binary) = support::inputs();
-    let owner = support::instance(&binary).await;
-    let pic = owner.instance();
+    let wasm = support::wasm();
+    let owner = support::instance().await;
+    let pic = &owner;
     let operator = CanisterId::self_authenticating(b"capacity controller");
     let id = pic
         .create_canister_with_settings(Some(operator), None)
@@ -194,5 +194,5 @@ async fn removal_at_catalog_capacity_preserves_shared_bytes_and_pins() {
     assert_eq!(after.reserved_bytes, before.reserved_bytes - largest.bytes);
     assert_eq!(after.releases, 4096);
     assert_eq!(after.chunks, 1);
-    owner.close().await;
+    owner.drop().await;
 }

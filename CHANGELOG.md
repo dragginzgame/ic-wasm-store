@@ -1,5 +1,27 @@
 # Changelog
 
+## [0.3.0] - Unreleased
+
+### ⚠️ Breaking
+
+- Adopt Platform Runtime 0.23.13 and Protocol 0.2.5 for explicit entrypoints and bounded management-cache messages. Controller and oversized-frame refusals now trap (IC reject code 5), replacing the old guard rejection (code 4); callers must treat both as refused requests. Lifecycle arguments are bounded to 16 KiB. Stop and await Stopped before upgrading, then restart. Endpoint names, Wire records and retained Store state are unchanged.
+
+### 🔧 Changed
+
+- Remove the legacy Platform facade from the product graph. Storage 0.74.1 still owns the old Runtime's raw stable-memory adapter; only the new Runtime supplies the executor. Complete removal remains tracked in [Storage #3 — Wasm Store retained-state migration](https://github.com/dragginzgame/ic-storage/issues/3).
+
+### 🔧 Tooling
+
+- Adopt Toko Tooling 0.44.9 through the authenticated installer. Select compatible `thiserror` versions independently in the product and PocketIC qualification workspaces, without a fleet-wide hold.
+- Adopt Testkit 0.107.1 for qualification clients, removing its legacy Platform/Host library graph. Server provisioning and command lifetime use the explicitly frozen 0.106.0 launcher outside the qualification graph; callers can also supply an externally owned server URL.
+
+### 🩹 Fixed
+
+- Keep hosted CI asynchronous during publication while enforcing the existing local
+  validation gate and clean, unchanged source/archive provenance checks.
+
+- Expose bounded, escaped simulator setup diagnostics locally and in CI, retain the original evidence for seven days, and preserve failure status. Qualify the real failed-download path without network access. Fixes [#3 — Move PocketIC preparation diagnostics out of the legacy Testkit library setup call](https://github.com/dragginzgame/ic-wasm-store/issues/3).
+
 ## [0.2.4] - 2026-11-16
 
 ### 🔧 Tooling

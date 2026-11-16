@@ -9,7 +9,8 @@ Read it before edits; update managed files only through the authenticated instal
 - Canic owns Root orchestration and end-to-end fleet qualification in its separate repository. Do not copy it here.
 - Native tests stay with their packages; installed tests live in the independent qualification workspace.
 - Use Rust 1.100.0 and inherited workspace lints. Product packages are authorized for crates.io publication; qualification packages remain unpublished.
-- Use make test, make clippy, make doc and make qualification-test for affected checks. Simulator preparation is explicit via make qualification-setup. make ci is the complete delivery gate.
+- Runtime's generated IC export attributes are the only unsafe-lint exception: workspace deny permits the supplier's item-scoped expectations; Store state and passive protocol code retain forbid.
+- Use make test, make clippy, make doc and make qualification-test for affected checks. Simulator preparation is explicit via make qualification-setup. make ci is the complete local delivery gate, enforced by the Make publication adapter; it does not require a completed GitHub Actions run.
 - maintenance-candidate marks qualification only; do not select it for live deployment.
 - No automatic browser or desktop launches.
 

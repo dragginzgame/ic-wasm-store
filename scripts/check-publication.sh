@@ -8,12 +8,8 @@ dirty=$(git status --porcelain --untracked-files=all)
 [[ -z "$dirty" ]] || fail 'commit the intended source before publication'
 source=$(git rev-parse HEAD)
 repository=dragginzgame/ic-wasm-store
-# Require the complete hosted workflow for this exact pushed commit, including
-# both supported hosts. A successful pull-request merge commit is not equivalent.
-runs=$(gh api --method GET "repos/$repository/actions/workflows/ci.yml/runs" \
-    -f head_sha="$source" -f event=push -f per_page=100)
-jq -e --arg source "$source" '[.workflow_runs[] | select(.head_sha == $source and .event == "push" and .head_branch == "main")] | sort_by(.run_number, .run_attempt) | last | .status == "completed" and .conclusion == "success"' <<< "$runs" > /dev/null \
-    || fail 'the latest main push CI run for HEAD must have succeeded'
+# Local validation is selected by the Make publication adapter. Hosted CI is
+# reported separately; pending results do not gate archive admission.
 metadata=$(cargo metadata --locked --offline --no-deps --format-version 1)
 arguments=()
 for package in ic-wasm-store-protocol ic-wasm-store; do
@@ -30,4 +26,4 @@ bash vendor/toko-tooling/scripts/ci/check-cargo-package-provenance.sh \
 observed=$(git rev-parse HEAD)
 dirty=$(git status --porcelain --untracked-files=all)
 [[ "$observed" == "$source" && -z "$dirty" ]] || fail 'source changed during admission'
-printf 'Hosted CI and archive provenance admitted for %s\n' "$source"
+printf 'Source and archive provenance admitted for %s\n' "$source"

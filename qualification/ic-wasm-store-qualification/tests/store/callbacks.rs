@@ -5,9 +5,9 @@ use super::{CanisterId, Client, frame, response, store, support};
 // can only be the final upload continuation, not the initial observation reply.
 #[tokio::test(flavor = "current_thread")]
 async fn final_cache_callback_rechecks_authority_and_reopened_epoch() {
-    let (wasm, binary) = support::inputs();
-    let owner = support::instance(&binary).await;
-    let pic = owner.instance();
+    let wasm = support::wasm();
+    let owner = support::instance().await;
+    let pic = &owner;
     let operator = CanisterId::self_authenticating(b"callback controller");
     let replacement = CanisterId::self_authenticating(b"callback replacement");
     for revoke in [true, false] {
@@ -150,5 +150,5 @@ async fn final_cache_callback_rechecks_authority_and_reopened_epoch() {
         }
         assert!(witnessed, "no final callback witness for revoke={revoke}");
     }
-    owner.close().await;
+    owner.drop().await;
 }

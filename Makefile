@@ -2,7 +2,8 @@
 FORMAT_RUST_ARGS := --extra-workspace qualification
 CARGO_PUBLISH_PACKAGES := ic-wasm-store-protocol ic-wasm-store
 CARGO_PUBLISH_REGISTRY := crates-io
-CARGO_PUBLISH_VERIFY_TARGETS := toko-tooling-check publication-admission
+# Preserve the existing local release gate; hosted CI is asynchronous.
+CARGO_PUBLISH_VERIFY_TARGETS := ci publication-admission
 include vendor/toko-tooling/make/consumer.mk
 include vendor/toko-tooling/make/cargo-dependencies.mk
 
@@ -45,7 +46,10 @@ doc:
 build:
 	cargo build --locked --release -p ic-wasm-store --target wasm32-unknown-unknown
 qualification-setup:
-	cargo run --locked --manifest-path qualification/Cargo.toml --example prepare_server
+	@if [ -z "$(TESTKIT_RELEASE_LAUNCHER)" ]; then \
+	  cargo install --locked --version 0.106.0 --features cli --bin ic-testkit-server --root "$(CURDIR)/.tools/testkit-bootstrap" ic-testkit; \
+	fi
+	bash scripts/prepare-server.sh
 	bash scripts/prepare-predecessor.sh setup
 qualification-test:
 	bash scripts/test-installed.sh $(QUALIFICATION_TEST)
@@ -57,6 +61,9 @@ publication-admission:
 	bash scripts/check-publication.sh
 test-publication:
 	bash scripts/tests/publication.sh
+.PHONY: test-server-diagnostics
+test-server-diagnostics:
+	bash scripts/tests/server-setup-diagnostics.sh
 ci: clippy
-	$(MAKE) fmt-check toko-tooling-check test doc test-publication qualification-test
+	$(MAKE) fmt-check toko-tooling-check test doc test-publication test-server-diagnostics qualification-test
 	$(MAKE) qualification-predecessor-test

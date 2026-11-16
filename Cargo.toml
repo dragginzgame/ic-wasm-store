@@ -12,15 +12,16 @@ license-file = "LICENSE.md"
 repository = "https://github.com/dragginzgame/ic-wasm-store"
 
 [workspace.dependencies]
-ic-platform = { version = "0.33.0", default-features = false }
-ic-platform-runtime = { version = "0.22.1", default-features = false }
+ic-platform-protocol = { version = "0.2.5", default-features = false }
+ic-platform-runtime = { version = "0.23.13", default-features = false }
+ic-platform-types = { version = "0.21.2", default-features = false }
 ic-storage = "0.74.1"
 ic-wasm-store-protocol = { version = "0.2.4", path = "crates/ic-wasm-store-protocol" }
 ic-wire = { version = "0.24.1", default-features = false }
 serde = "1.0.229"
 serde_bytes = "0.11.19"
 sha2 = "0.11.1"
-toko-tooling = "=0.44.5"
+toko-tooling = "=0.44.9"
 
 [workspace.lints.cargo]
 unused_dependencies = "deny"
@@ -33,7 +34,7 @@ unknown_lints = "deny"
 dead_code = "deny"
 unused_must_use = "deny"
 unfulfilled_lint_expectations = "deny"
-unsafe_code = "forbid"
+unsafe_code = "deny"
 unsafe_op_in_unsafe_fn = "deny"
 missing_docs = "warn"
 
