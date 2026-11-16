@@ -7,7 +7,7 @@ it does not make network calls, manage stable memory or deploy code.
 
 ```toml
 [dependencies]
-ic-wasm-store-protocol = "0.2.2"
+ic-wasm-store-protocol = "0.2.3"
 ```
 
 A release is an application-defined name and version, bound to a SHA-256 digest,
@@ -37,6 +37,12 @@ Artifacts are limited to 8 MiB in 256 KiB chunks. Deleted identities remain
 reserved: only the exact original manifest can be restored. Retained pins block
 removal. The protocol is experimental and requires Rust 1.100.0.
 
+For closed maintenance scans, `PRESERVATION_V2` (117) returns `preservation::PageV2`
+with explicit `Entry::Active` and `Entry::Removed` values. Compare `Entry::order_key`
+and use the returned release as the next cursor under the same closed attempt.
+Preservation commitments must include the discriminator, not just the manifest.
+The historical method 113 remains unchanged.
+
 - [API documentation](https://docs.rs/ic-wasm-store-protocol)
 - [Source and development instructions](https://github.com/dragginzgame/ic-wasm-store)
-- [Compatibility and removal semantics](https://github.com/dragginzgame/ic-wasm-store/blob/v0.2.2/docs/design/extraction.md)
+- [Compatibility and removal semantics](https://github.com/dragginzgame/ic-wasm-store/blob/v0.2.3/docs/design/extraction.md)

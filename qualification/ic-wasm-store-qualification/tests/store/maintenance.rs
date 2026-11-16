@@ -124,6 +124,50 @@ async fn closed_upgrade_preserves_removal_fences_and_exact_activation_owner() {
         )
         .await;
     let closed = closed.unwrap();
+    let preserved = preservation_pages(&client, &attempt).await;
+    assert_eq!(preserved.len(), 4); // Three labels and explicit end, not active count.
+    assert_eq!(
+        preserved[2].entry,
+        Some(store::preservation::Entry::Removed(manifests[2].clone()))
+    );
+    let request = store::preservation::Request {
+        attempt: attempt.clone(),
+        after: None,
+    };
+    for caller in [CanisterId::anonymous(), other] {
+        let reply = pic
+            .update_call(
+                id,
+                caller,
+                "observe_preservation_v2",
+                frame(store::PRESERVATION_V2, &request),
+            )
+            .await;
+        if caller == other {
+            let decoded: Result<store::preservation::PageV2, store::Error> = ic_wire::decode(
+                &reply.unwrap(),
+                ic_wire::Encoding::Frame {
+                    method: store::PRESERVATION_V2,
+                    direction: ic_wire::Direction::Response,
+                },
+                store::LIMITS,
+            )
+            .unwrap();
+            assert_eq!(decoded, Err(store::Error::Conflict));
+        } else {
+            assert!(reply.is_err());
+        }
+    }
+    for malformed in [
+        frame(store::PRESERVATION, &request),
+        vec![0; store::LIMITS.bytes + 1],
+    ] {
+        assert!(
+            pic.update_call(id, operator, "observe_preservation_v2", malformed)
+                .await
+                .is_err()
+        );
+    }
     let candidate = std::fs::read(std::env::var_os("IC_WASM_STORE_CANDIDATE").unwrap()).unwrap();
     pic.upgrade_canister(id, candidate, vec![], Some(operator))
         .await
@@ -137,6 +181,7 @@ async fn closed_upgrade_preserves_removal_fences_and_exact_activation_owner() {
         )
         .await;
     assert_eq!(observed.unwrap(), closed);
+    assert_eq!(preservation_pages(&client, &attempt).await, preserved);
     for (method, number, manifest) in [
         ("delete", store::DELETE, &manifests[0]),
         ("cancel", store::CANCEL, &manifests[1]),
@@ -216,4 +261,41 @@ async fn closed_upgrade_preserves_removal_fences_and_exact_activation_owner() {
     assert_eq!(restored.unwrap().missing, vec![0]);
     assert_eq!(client.info().await.reserved_bytes, manifests[2].bytes);
     owner.close().await;
+}
+
+async fn preservation_pages(
+    client: &Client<'_>,
+    attempt: &store::MaintenanceAttempt,
+) -> Vec<store::preservation::PageV2> {
+    let mut request = store::preservation::Request {
+        attempt: attempt.clone(),
+        after: None,
+    };
+    let mut pages: Vec<store::preservation::PageV2> = Vec::new();
+    for _ in 0..4 {
+        let page = client
+            .update::<_, Result<store::preservation::PageV2, store::Error>>(
+                "observe_preservation_v2",
+                store::PRESERVATION_V2,
+                &request,
+                store::LIMITS,
+            )
+            .await
+            .unwrap();
+        if let Some(previous) = pages.last() {
+            assert_eq!(page.catalog, previous.catalog);
+            if let Some(entry) = &page.entry {
+                assert!(previous.entry.as_ref().unwrap().order_key() < entry.order_key());
+            }
+        }
+        request.after = page
+            .entry
+            .as_ref()
+            .map(|entry| entry.manifest().release.clone());
+        pages.push(page);
+        if request.after.is_none() {
+            return pages;
+        }
+    }
+    panic!("missing preservation end page");
 }

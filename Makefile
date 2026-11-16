@@ -57,5 +57,6 @@ publication-admission:
 	bash scripts/check-publication.sh
 test-publication:
 	bash scripts/tests/publication.sh
-ci: fmt-check toko-tooling-check test clippy doc test-publication qualification-test
+ci: clippy
+	$(MAKE) fmt-check toko-tooling-check test doc test-publication qualification-test
 	$(MAKE) qualification-predecessor-test

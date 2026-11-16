@@ -34,3 +34,43 @@ pub struct Page {
     /// the TOMBSTONES endpoint distinguishes them from active uploads.
     pub entry: Option<Custody>,
 }
+
+/// Exact retained label state; removal is distinct from an empty upload.
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+pub enum Entry {
+    /// Active upload or published release, including all shared artifact pins.
+    Active(Custody),
+    /// Permanently retained removed identity, still charged against label quota.
+    Removed(crate::Manifest),
+}
+impl Entry {
+    /// Immutable manifest, whether active or removed.
+    #[must_use]
+    pub fn manifest(&self) -> &crate::Manifest {
+        match self {
+            Self::Active(value) => &value.status.manifest,
+            Self::Removed(value) => value,
+        }
+    }
+    /// Strict scan order: name, active before removed, then version (bytewise).
+    /// Use the returned manifest's release as the next request's exclusive cursor.
+    /// The exact closed attempt keeps cursor identity stable across pages.
+    #[must_use]
+    pub fn order_key(&self) -> (&str, bool, &str) {
+        let release = &self.manifest().release;
+        (
+            &release.name,
+            matches!(self, Self::Removed(_)),
+            &release.version,
+        )
+    }
+}
+
+/// Versioned preservation page; unlike the historical Page, retains label state.
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+pub struct PageV2 {
+    /// Unchanged quota/counters across the closed scan, including removed labels.
+    pub catalog: Catalog,
+    /// One entry in Entry::order_key order, or an explicit end page.
+    pub entry: Option<Entry>,
+}

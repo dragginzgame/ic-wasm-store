@@ -1,6 +1,13 @@
 # Changelog
 
-## [0.2.3] - Unreleased
+## [0.2.3] - 2026-11-16
+
+### ➕ Added
+
+- Add `observe_preservation_v2` (Wire 117): closed-attempt pages explicitly
+  distinguish active uploads/releases from removed labels and expose the exact
+  comparable order. Historical method 113 and stable encodings are unchanged.
+  Fixes [#2](https://github.com/dragginzgame/ic-wasm-store/issues/2).
 
 ### 🧪 Tests
 

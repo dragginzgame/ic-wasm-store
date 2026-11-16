@@ -104,7 +104,7 @@ fn maximum_metadata_page_and_chunk_fit_independent_wire_budgets() {
     )
     .unwrap();
     assert_eq!(decoded, custody);
-    let preservation = Ok::<_, Error>(preservation::Page {
+    let old = preservation::Page {
         catalog: preservation::Catalog {
             quota: Quota {
                 reserved_bytes: u64::MAX,
@@ -116,7 +116,8 @@ fn maximum_metadata_page_and_chunk_fit_independent_wire_budgets() {
             chunks: u64::MAX,
         },
         entry: Some(decoded.unwrap()),
-    });
+    };
+    let preservation = Ok::<_, Error>(old.clone());
     let encoded = ic_wire::encode(
         &preservation,
         ic_wire::Encoding::Frame {
@@ -138,6 +139,47 @@ fn maximum_metadata_page_and_chunk_fit_independent_wire_budgets() {
         .unwrap(),
         preservation
     );
+    for entry in [
+        preservation::Entry::Active(old.entry.unwrap()),
+        preservation::Entry::Removed(manifest.clone()),
+    ] {
+        let page = Ok::<_, Error>(preservation::PageV2 {
+            catalog: old.catalog.clone(),
+            entry: Some(entry),
+        });
+        let encoded = ic_wire::encode(
+            &page,
+            ic_wire::Encoding::Frame {
+                method: PRESERVATION_V2,
+                direction: ic_wire::Direction::Response,
+            },
+            LIMITS,
+        )
+        .unwrap();
+        assert_eq!(
+            ic_wire::decode::<Result<preservation::PageV2, Error>>(
+                &encoded,
+                ic_wire::Encoding::Frame {
+                    method: PRESERVATION_V2,
+                    direction: ic_wire::Direction::Response
+                },
+                LIMITS
+            )
+            .unwrap(),
+            page
+        );
+        assert!(
+            ic_wire::decode::<Result<preservation::PageV2, Error>>(
+                &encoded,
+                ic_wire::Encoding::Frame {
+                    method: PRESERVATION,
+                    direction: ic_wire::Direction::Response
+                },
+                LIMITS
+            )
+            .is_err()
+        );
+    }
     let page = Ok::<_, Error>(vec![status; PAGE_SIZE]);
     let encoded = ic_wire::encode(
         &page,

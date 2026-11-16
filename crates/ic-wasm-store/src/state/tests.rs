@@ -738,3 +738,82 @@ fn tombstone_pages_preserve_mixed_names_and_versions_across_reopen() {
         Err(Error::Invalid)
     );
 }
+
+#[test]
+fn preservation_v2_distinguishes_restoration_and_retains_order_across_reopen() {
+    use ic_wasm_store_protocol::{
+        AdmissionCommand, MaintenanceAttempt,
+        preservation::{Entry, Request},
+    };
+    let backing = VectorMemory::default();
+    let mut state = State::open(backing.clone(), true);
+    let (removed, _) = fixture("a", 33);
+    let alias = Manifest {
+        release: Release {
+            version: "z".into(),
+            ..removed.release.clone()
+        },
+        ..removed.clone()
+    };
+    state.prepare(&removed).unwrap();
+    state.prepare(&alias).unwrap();
+    state.remove_release(&removed, false).unwrap();
+    let attempt = MaintenanceAttempt {
+        sequence: 1,
+        operation: [11; 32],
+    };
+    let request = Request {
+        attempt: attempt.clone(),
+        after: None,
+    };
+    assert_eq!(state.preservation_v2(&[1], &request), Err(Error::Conflict));
+    state
+        .admission(&[1], &AdmissionCommand::Close(attempt.clone()))
+        .unwrap();
+    assert_eq!(state.preservation_v2(&[2], &request), Err(Error::Conflict));
+    let first = state.preservation_v2(&[1], &request).unwrap();
+    let next = Request {
+        after: Some(alias.release.clone()),
+        ..request.clone()
+    };
+    let second = state.preservation_v2(&[1], &next).unwrap();
+    assert!(matches!(first.entry, Some(Entry::Active(_))));
+    assert_eq!(second.entry, Some(Entry::Removed(removed.clone())));
+    assert!(first.entry.as_ref().unwrap().order_key() < second.entry.as_ref().unwrap().order_key());
+    assert_eq!(first.catalog, second.catalog);
+    let end = Request {
+        after: Some(removed.release.clone()),
+        ..request.clone()
+    };
+    assert!(state.preservation_v2(&[1], &end).unwrap().entry.is_none());
+    drop(state);
+    let mut state = State::open(backing, false);
+    assert_eq!(state.preservation_v2(&[1], &request).unwrap(), first);
+    assert_eq!(state.preservation_v2(&[1], &next).unwrap(), second);
+    state
+        .admission(&[1], &AdmissionCommand::Activate(attempt))
+        .unwrap();
+    // All previous removals have returned before explicit restoration.
+    state.prepare(&removed).unwrap();
+    let attempt = MaintenanceAttempt {
+        sequence: 2,
+        operation: [12; 32],
+    };
+    state
+        .admission(&[1], &AdmissionCommand::Close(attempt.clone()))
+        .unwrap();
+    assert_eq!(state.preservation_v2(&[1], &request), Err(Error::Conflict));
+    let restored = state
+        .preservation_v2(
+            &[1],
+            &Request {
+                attempt,
+                after: None,
+            },
+        )
+        .unwrap();
+    assert_eq!(restored.catalog, second.catalog);
+    assert_eq!(restored.entry.as_ref().unwrap().manifest(), &removed);
+    assert!(matches!(restored.entry, Some(Entry::Active(_))));
+    assert_ne!(restored.entry, second.entry);
+}

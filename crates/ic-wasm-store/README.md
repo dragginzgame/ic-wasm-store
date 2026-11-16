@@ -18,7 +18,7 @@ With Git, rustup and GNU Make installed, use the tagged source and its committed
 lockfile for a reproducible dependency selection:
 
 ```sh
-git clone --branch v0.2.2 https://github.com/dragginzgame/ic-wasm-store.git
+git clone --branch v0.2.3 https://github.com/dragginzgame/ic-wasm-store.git
 cd ic-wasm-store
 rustup toolchain install 1.100.0 --profile minimal --component rustfmt,clippy --target wasm32-unknown-unknown
 make build
@@ -48,11 +48,16 @@ Closing maintenance admission does not drain outstanding calls. Consumers must
 settle outstanding removal requests before restoring a label, and executables
 predating tombstones cannot reopen state after tombstones are written.
 
-This is experimental software requiring Rust 1.100.0. Registry publication is
-not deployment qualification; native macOS and some callback schedules remain
-unqualified.
+Closed maintenance scans can use `observe_preservation_v2` (Wire 117) to retain
+explicit active/removed identities and compare the protocol's exact entry order.
+Historical method 113 remains available; consumers must adopt the new contract
+explicitly without reinterpreting existing preservation commitments.
+
+This is experimental software requiring Rust 1.100.0. Hosted qualification covers
+Linux and macOS, including final cache-callback fencing. Registry publication
+does not qualify consumer orchestration or live deployment.
 
 - [Protocol API](https://docs.rs/ic-wasm-store-protocol)
 - [Source and development instructions](https://github.com/dragginzgame/ic-wasm-store)
-- [Compatibility and removal semantics](https://github.com/dragginzgame/ic-wasm-store/blob/v0.2.2/docs/design/extraction.md)
-- [Qualification coverage](https://github.com/dragginzgame/ic-wasm-store/blob/v0.2.2/qualification/README.md)
+- [Compatibility and removal semantics](https://github.com/dragginzgame/ic-wasm-store/blob/v0.2.3/docs/design/extraction.md)
+- [Qualification coverage](https://github.com/dragginzgame/ic-wasm-store/blob/v0.2.3/qualification/README.md)

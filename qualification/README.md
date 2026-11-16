@@ -86,3 +86,30 @@ Canic owns consumer-specific chunked installation, Root control and fleet upgrad
 qualification. Local Linux results do not qualify mainnet deployment or native
 macOS execution. See the [extraction evidence](../docs/design/extraction.md#initial-extraction-evidence-2026-11-15)
 for the historical predecessor test and its provenance.
+
+## Explicit preservation endpoint: pre-release 2026-11-16 evidence
+
+Before 0.2.3 release preparation, local changes over
+`231594c009602a62864ea78049a1d2f9b8e57f9d` added method 117
+and explicit active/removed entries for
+[#2](https://github.com/dragginzgame/ic-wasm-store/issues/2). Package manifests
+still said 0.2.2; these historical candidate bytes are neither the published
+0.2.2 executable nor the final 0.2.3 release artifacts.
+Focused native preservation tests, protocol frame-budget tests, native/Wasm/
+qualification Clippy and both workspaces' Rustdoc passed on Linux. The installed
+`closed_upgrade_preserves_removal_fences_and_exact_activation_owner` witness
+passed: every discriminated page and counter survives the closed upgrade;
+wrong callers, wrong method and oversized frames are refused; explicit activation
+still requires the captured owner. Historical method 113 and stable layouts are
+unchanged. The native regression also distinguishes restoration when counters
+are identical and verifies mixed active/removed order across reopen.
+
+Built original SHA-256:
+`29b456be6ff4dfbc1fd6fea583133cc2043cf538d7d02c7aa2811a4adebecee9`.
+Maintenance candidate SHA-256:
+`1af806957827590290c0ecf2b35f8c02e5d6f8281013a74e10ed1b1e3fb10688`.
+The installed runner used both pre-release local artifacts and their existing
+lockfiles. This historical evidence does not establish publication, mainnet
+upgrade or native macOS qualification. Consumer adoption
+and end-to-end removal/maintenance are
+[Canic #4](https://github.com/dragginzgame/canic/issues/4).

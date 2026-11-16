@@ -37,6 +37,8 @@ pub const DELETE: u64 = 114;
 pub const CANCEL: u64 = 115;
 /// Page through removed manifests; exact prepare restores these identities.
 pub const TOMBSTONES: u64 = 116;
+/// Enumerate explicit active/removed metadata under one exact closed attempt.
+pub const PRESERVATION_V2: u64 = 117;
 
 /// Monotonic maintenance identity; a new attempt uses the previous sequence plus one.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]

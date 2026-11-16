@@ -63,3 +63,21 @@ its original geometry. Existing stores reopen without resetting collections.
 Older executables reject tombstone keys, so rollback after removal requires an
 explicit compatible executable and qualification. This feature changes consumer
 semantics and belongs to the 0.2 minor line; registry publication does not imply deployment.
+
+## Explicit preservation entries
+
+`observe_preservation_v2` (117) accepts the existing closed-attempt Request and
+returns PageV2. Entry::Active retains Custody; Entry::Removed retains the exact
+Manifest. Entry::order_key defines name, active-before-removed, then version;
+use the returned manifest's release as the exclusive cursor. The method performs
+one ordered-map range step per page, without a catalog copy or payload scan.
+The exact closed attempt and captured controller are checked on every page.
+Consumers hash the complete discriminated entry, include removed labels in quota
+and counts, and require an explicit end page. They must not compare only release
+name/version or infer removal from empty upload progress.
+
+Historical method 113 remains byte-compatible through a projection of this same
+engine. Its response cannot independently prove tombstone preservation; existing
+consumers must explicitly adopt method 117. No storage migration or implicit
+activation is introduced. This does not add restoration generations: outstanding
+removals still must settle before restoring an identical label.
