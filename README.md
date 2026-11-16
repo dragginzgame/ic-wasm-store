@@ -63,7 +63,14 @@ pinned compiler, its components and the Wasm target, then prepare repository too
 rustup toolchain install 1.100.0 --profile minimal --component rustfmt,clippy --target wasm32-unknown-unknown
 make install-tools
 make tools-check
+make install-hooks
 ```
+
+Run `make install-hooks` once in each fresh checkout. It configures this
+repository's `core.hooksPath` to the shared formatting hook; Git configuration
+is local and is not carried by a clone. The hook formats staged files using the
+same product and qualification workspace coverage as `make fmt`/`make fmt-check`.
+It refuses partially staged files and never installs tools during a commit.
 
 The main checks are:
 

@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.4] - 2026-11-16
+
+### 🔧 Tooling
+
+- Adopt Toko Tooling 0.44.5 in the product and qualification workspaces through the authenticated snapshot installer.
+- Document and qualify the repository-local shared formatting hook setup for fresh checkouts. Fixes [#1](https://github.com/dragginzgame/ic-wasm-store/issues/1).
+
 ## [0.2.3] - 2026-11-16
 
 ### ➕ Added
