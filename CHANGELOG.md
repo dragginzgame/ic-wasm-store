@@ -1,10 +1,10 @@
 # Changelog
 
-## [0.3.0] - Unreleased
+## [0.3.0] - 2026-11-16
 
 ### ⚠️ Breaking
 
-- Adopt Platform Runtime 0.23.13 and Protocol 0.2.5 for explicit entrypoints and bounded management-cache messages. Controller and oversized-frame refusals now trap (IC reject code 5), replacing the old guard rejection (code 4); callers must treat both as refused requests. Lifecycle arguments are bounded to 16 KiB. Stop and await Stopped before upgrading, then restart. Endpoint names, Wire records and retained Store state are unchanged.
+- Adopt Platform Runtime 0.23.14 and Protocol 0.2.6 for explicit entrypoints and bounded management-cache messages. Controller and oversized-frame refusals now trap (IC reject code 5), replacing the old guard rejection (code 4); callers must treat both as refused requests. Lifecycle arguments are bounded to 16 KiB. Stop and await Stopped before upgrading, then restart. Endpoint names, Wire records and retained Store state are unchanged.
 
 ### 🔧 Changed
 
@@ -12,15 +12,15 @@
 
 ### 🔧 Tooling
 
-- Adopt Toko Tooling 0.44.9 through the authenticated installer. Select compatible `thiserror` versions independently in the product and PocketIC qualification workspaces, without a fleet-wide hold.
-- Adopt Testkit 0.107.1 for qualification clients, removing its legacy Platform/Host library graph. Server provisioning and command lifetime use the explicitly frozen 0.106.0 launcher outside the qualification graph; callers can also supply an externally owned server URL.
+- Adopt Toko Tooling 0.44.11 through the authenticated installer. Select compatible `thiserror` versions independently in the product and PocketIC qualification workspaces, without a fleet-wide hold.
+- Adopt Testkit 0.107.3 for qualification clients, removing its legacy Platform/Host library graph. Server provisioning and command lifetime use the explicitly frozen 0.106.0 launcher outside the qualification graph; callers can also supply an externally owned server URL.
 
 ### 🩹 Fixed
 
 - Keep hosted CI asynchronous during publication while enforcing the existing local
   validation gate and clean, unchanged source/archive provenance checks.
 
-- Expose bounded, escaped simulator setup diagnostics locally and in CI, retain the original evidence for seven days, and preserve failure status. Qualify the real failed-download path without network access. Fixes [#3 — Move PocketIC preparation diagnostics out of the legacy Testkit library setup call](https://github.com/dragginzgame/ic-wasm-store/issues/3).
+- Expose bounded, escaped simulator setup diagnostics locally and in CI, retain the original evidence for seven days, and preserve failure phase/status. CI reports the retained artifact link or missing-upload outcome. Qualify the real failed-download path without network access. Fixes [WasmStore #3 — Move PocketIC preparation diagnostics out of the legacy Testkit library setup call](https://github.com/dragginzgame/ic-wasm-store/issues/3).
 
 ## [0.2.4] - 2026-11-16
 

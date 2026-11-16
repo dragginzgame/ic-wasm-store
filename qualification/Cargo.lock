@@ -772,9 +772,9 @@ dependencies = [
 
 [[package]]
 name = "ic-testkit"
-version = "0.107.1"
+version = "0.107.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a4fe4ea7882118e731ef1ebe8c668fc5dfa5252c1c972b1de68bc444868fae42"
+checksum = "f1abdecdc13e767e8f5f7f83f2c19e48a414d6a7eea2e2ffdbfe95222c56d6c2"
 dependencies = [
  "pocket-ic",
 ]
@@ -799,7 +799,7 @@ dependencies = [
 
 [[package]]
 name = "ic-wasm-store-protocol"
-version = "0.2.4"
+version = "0.3.0"
 dependencies = [
  "ic-wire",
  "serde",
@@ -2160,9 +2160,9 @@ dependencies = [
 
 [[package]]
 name = "toko-tooling"
-version = "0.44.9"
+version = "0.44.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bdfd5bc761f55ede02e82f8af36ca82415696209b3ff45e8f080e82cab85c418"
+checksum = "7d16b815ae322ae3f88580ee6af1611bdafde08b77592cd886bfa0eece0f1be8"
 
 [[package]]
 name = "tower"

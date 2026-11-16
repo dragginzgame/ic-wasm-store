@@ -98,7 +98,7 @@ Wasm-only and are checked by `make clippy-wasm`. `make help` lists these targets
 
 Run `make qualification-setup` before the installed test or `make ci` on a fresh
 checkout. Setup installs the reviewed 0.106.0 server-launcher bootstrap and may
-download the server; tests use Testkit 0.107.1 clients and the prepared bundle.
+download the server; tests use Testkit 0.107.3 clients and the prepared bundle.
 The launcher owns one server for the test command. Alternatively, supply
 `IC_TESTKIT_POCKET_IC_URL` for an externally owned server; see the
 [qualification ownership contract](qualification/README.md).

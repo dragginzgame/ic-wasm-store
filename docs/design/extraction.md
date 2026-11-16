@@ -84,7 +84,7 @@ removals still must settle before restoring an identical label.
 
 ## Platform replacement adoption (2026-11-16)
 
-Store now uses published Runtime 0.23.13, Protocol 0.2.5 and Types 0.21.2.
+Store now uses published Runtime 0.23.14, Protocol 0.2.6 and Types 0.21.2.
 Protocol's management-chunks capability supplies the bounded stored_chunks and
 upload_chunk codecs requested in
 [Platform #16 — Bounded management chunk-cache codecs](https://github.com/dragginzgame/ic-platform/issues/16).

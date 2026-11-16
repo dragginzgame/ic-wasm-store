@@ -8,7 +8,7 @@ make qualification-test
 make qualification-predecessor-test
 ```
 
-Testkit 0.107.1 supplies the upstream PocketIC client types. Tests require
+Testkit 0.107.3 supplies the upstream PocketIC client types. Tests require
 `IC_TESTKIT_POCKET_IC_URL` and never discover, download or start a server.
 They create instances on that server and explicitly attempt instance deletion
 on normal completion; upstream deletion does not confirm remote cleanup.
@@ -41,6 +41,10 @@ runner files are excluded. Setup failure still fails the job and blocks publicat
 substitute downloader, without network access. It checks useful error text,
 bounded escaped rendering, retained files, stale/missing evidence and exact setup
 status preservation. This is also part of `make ci`.
+
+Testkit 0.107.3's optional `managed-server` capability is not selected in this
+external-server workflow. The frozen launcher remains an explicit development
+bootstrap; migrating server ownership to that optional API is separate work.
 
 The test script builds the ordinary Store and a distinct executable with
 `maintenance-candidate`, then passes their paths to the independent qualification

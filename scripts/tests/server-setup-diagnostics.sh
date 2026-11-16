@@ -66,6 +66,7 @@ TESTKIT_RELEASE_LAUNCHER="$fixture/bin/launcher" SETUP_STATUS=0 CHECK_STATUS=39 
     IC_TESTKIT_SERVER_DIRECTORY="$fixture/missing" \
     bash scripts/prepare-server.sh > "$fixture/check-failed" 2>&1 || status=$?
 [[ "$status" == 39 ]]
+grep -q 'check failed (exit 39); evidence:' "$fixture/check-failed"
 cat > "$fixture/bin/perl" <<'STUB'
 #!/usr/bin/env bash
 exit 9

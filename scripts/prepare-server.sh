@@ -14,9 +14,11 @@ directory=${directory%/}
 }
 mkdir -p target/qualification/setup-evidence
 evidence=$(mktemp -d "$root/target/qualification/setup-evidence/attempt.XXXXXX")
+phase=setup
 "$launcher" setup --directory "$directory" > "$evidence/setup.stdout" 2> "$evidence/setup.stderr" || status=$?
 files=("$evidence/setup.stderr")
 if (( status == 0 )); then
+    phase=check
     "$launcher" check --directory "$directory" > "$evidence/check.stdout" 2> "$evidence/check.stderr" || status=$?
     files=("$evidence/check.stderr")
 else
@@ -31,6 +33,7 @@ else
     done < "$evidence/setup.stderr"
 fi
 if (( status != 0 )); then
+    printf 'ic-testkit-server %s failed (exit %d); evidence: %q\n' "$phase" "$status" "$evidence" >&2
     bash scripts/show-server-setup-failure.sh "${files[@]}" >&2 || echo 'Could not render setup evidence; original setup failure is retained.' >&2
 else
     cat "$evidence/check.stdout"

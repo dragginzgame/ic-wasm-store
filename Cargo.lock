@@ -105,9 +105,9 @@ dependencies = [
 
 [[package]]
 name = "ic-platform-macros"
-version = "0.23.13"
+version = "0.23.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d5afcfb99f22c7153355b387ff56b4d19e78ae1ea0023cf713e25124b2db613e"
+checksum = "0376721a68d30392d7005bfaeca422bb0674cfa3c1778ca69b6661183327792c"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -116,9 +116,9 @@ dependencies = [
 
 [[package]]
 name = "ic-platform-protocol"
-version = "0.2.5"
+version = "0.2.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "93ed6052f78c99bf45bcf1ffdd11bd6eb4de4463dbe425a7b63e093b8f7a0ed2"
+checksum = "db4ea27c2705897b24b1c7c239db916abbb4c15eb97c1adcda896d0ca3891ff4"
 dependencies = [
  "ic-platform-types",
  "serde",
@@ -135,9 +135,9 @@ dependencies = [
 
 [[package]]
 name = "ic-platform-runtime"
-version = "0.23.13"
+version = "0.23.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9f5f46eebbf414e38b7ad6db694ce05bebeae40ff8df28eba6c1e48a6c308df4"
+checksum = "6f91abeacf7b1602e67b49391ea1e66d1c8f7e45779de79a5835b9c8dac3afb8"
 dependencies = [
  "ic-platform-macros",
  "ic-platform-runtime-guard",
@@ -146,9 +146,9 @@ dependencies = [
 
 [[package]]
 name = "ic-platform-runtime-guard"
-version = "0.23.13"
+version = "0.23.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "86a97003ee80dc942a11a313430685929df56c6dc5eeff506239904355ef7aa5"
+checksum = "239aeacc00fa6015ea4656defdfe643cdd6116f180887ea27b8164105c58a2ce"
 
 [[package]]
 name = "ic-platform-types"
@@ -176,10 +176,10 @@ dependencies = [
 
 [[package]]
 name = "ic-wasm-store"
-version = "0.2.4"
+version = "0.3.0"
 dependencies = [
  "ic-platform-protocol",
- "ic-platform-runtime 0.23.13",
+ "ic-platform-runtime 0.23.14",
  "ic-platform-types",
  "ic-storage",
  "ic-wasm-store-protocol",
@@ -191,7 +191,7 @@ dependencies = [
 
 [[package]]
 name = "ic-wasm-store-protocol"
-version = "0.2.4"
+version = "0.3.0"
 dependencies = [
  "ic-wire",
  "serde",
@@ -338,9 +338,9 @@ dependencies = [
 
 [[package]]
 name = "toko-tooling"
-version = "0.44.9"
+version = "0.44.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bdfd5bc761f55ede02e82f8af36ca82415696209b3ff45e8f080e82cab85c418"
+checksum = "7d16b815ae322ae3f88580ee6af1611bdafde08b77592cd886bfa0eece0f1be8"
 
 [[package]]
 name = "typenum"

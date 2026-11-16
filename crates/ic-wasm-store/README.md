@@ -18,7 +18,7 @@ With Git, rustup and GNU Make installed, use the tagged source and its committed
 lockfile for a reproducible dependency selection:
 
 ```sh
-git clone --branch v0.2.4 https://github.com/dragginzgame/ic-wasm-store.git
+git clone --branch v0.3.0 https://github.com/dragginzgame/ic-wasm-store.git
 cd ic-wasm-store
 rustup toolchain install 1.100.0 --profile minimal --component rustfmt,clippy --target wasm32-unknown-unknown
 make build
@@ -53,11 +53,16 @@ explicit active/removed identities and compare the protocol's exact entry order.
 Historical method 113 remains available; consumers must adopt the new contract
 explicitly without reinterpreting existing preservation commitments.
 
-This is experimental software requiring Rust 1.100.0. Hosted qualification covers
-Linux and macOS, including final cache-callback fencing. Registry publication
+Before upgrading, stop the canister and wait for `Stopped`, then upgrade and
+restart it. Init and post-upgrade arguments are limited to 16 KiB. Controller
+and oversized-frame refusals trap with IC reject code 5; clients must accept
+that refusal instead of relying on the former explicit rejection code 4.
+
+This is experimental software requiring Rust 1.100.0. Hosted CI targets Linux
+and macOS, including final cache-callback fencing. Registry publication
 does not qualify consumer orchestration or live deployment.
 
 - [Protocol API](https://docs.rs/ic-wasm-store-protocol)
 - [Source and development instructions](https://github.com/dragginzgame/ic-wasm-store)
-- [Compatibility and removal semantics](https://github.com/dragginzgame/ic-wasm-store/blob/v0.2.4/docs/design/extraction.md)
-- [Qualification coverage](https://github.com/dragginzgame/ic-wasm-store/blob/v0.2.4/qualification/README.md)
+- [Compatibility and removal semantics](https://github.com/dragginzgame/ic-wasm-store/blob/v0.3.0/docs/design/extraction.md)
+- [Qualification coverage](https://github.com/dragginzgame/ic-wasm-store/blob/v0.3.0/qualification/README.md)

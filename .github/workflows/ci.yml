@@ -56,6 +56,7 @@ jobs:
           make tools-check
           make qualification-setup
       - name: Retain simulator setup failure evidence
+        id: setup_evidence
         if: ${{ failure() && steps.setup.outcome == 'failure' }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
@@ -66,8 +67,19 @@ jobs:
             target/qualification/server/.setup-v1-*/download.stderr
             target/qualification/server/.setup-v1-*/failure.txt
           include-hidden-files: true
-          if-no-files-found: ignore
+          if-no-files-found: warn
           retention-days: 7
+      - name: Report setup evidence retention
+        if: ${{ always() && steps.setup.outcome == 'failure' }}
+        env:
+          ARTIFACT_URL: ${{ steps.setup_evidence.outputs.artifact-url }}
+          UPLOAD_OUTCOME: ${{ steps.setup_evidence.outcome }}
+        run: |
+          if [[ -n "$ARTIFACT_URL" ]]; then
+            printf 'Setup failure evidence: %s\n' "$ARTIFACT_URL" >> "$GITHUB_STEP_SUMMARY"
+          else
+            printf 'Setup evidence unavailable; upload outcome: %s. Inspect setup logs for missing evidence.\n' "$UPLOAD_OUTCOME" | tee -a "$GITHUB_STEP_SUMMARY"
+          fi
       - uses: ./vendor/toko-tooling/.github/actions/cache-tool-downloads
         with:
           mode: save
