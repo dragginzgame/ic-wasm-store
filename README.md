@@ -94,7 +94,9 @@ The main checks are:
 | `make qualification-setup` | Explicit PocketIC server and released-archive preparation |
 | `make qualification-test` | Builds both test executables and runs installed qualification |
 | `make qualification-predecessor-test` | Builds published 0.2.2 and tests its upgrade to the current candidate |
-| `make ci` | Aggregate formatting, tooling admission, tests, lints, docs and installed qualification |
+| `make release-verify` | Formatting, tooling admission, product tests, lints, docs and both installed qualification suites |
+| `make test-tooling` | Publication, setup, diagnostics, path and delivery caller fixtures |
+| `make ci` | Release verification followed by tooling caller fixtures |
 
 For focused work, use `make test-protocol` or `make test-store`, and select
 `make clippy-native`, `make clippy-wasm` or `make clippy-qualification` as appropriate.
@@ -128,9 +130,30 @@ for provenance and retained compatibility obligations.
 Both product crates share a coordinated version. `make publish-check` verifies their
 package archives without uploading; `make publish` publishes the declared product
 roster in dependency order. Qualification packages are excluded. Publication
-requires explicit authorization, a clean committed source, a passing `make ci`,
+requires explicit authorization, a clean committed source, a passing `make release-verify`,
 and archive provenance verification against the pushed source commit. Both Make
-publication targets run the existing local `make ci` gate before archive admission.
+publication targets run `make release-verify` before archive admission. This runs
+Clippy first, then formatting/tooling admission, product tests and docs, then the
+complete installed suite and published-predecessor upgrade. Both installed suites
+share the current original/candidate Wasm builds within that invocation.
+
+Tooling caller regressions run through `make test-tooling` when affected and in
+repository CI, rather than every publication. Archive creation, pushed-source
+provenance and registry admission remain fresh for every upload. The coordinated
+product pair retains its full product gate even when publishing one package;
+protocol changes affect Store and its installed witnesses.
+
+For an authorized delivery, let `make publish` own qualification; do not precede
+it with `make ci` or `make publish-check` solely as another release gate.
+Independent invocations freshly build the installed artifacts and may reuse
+their two execution proofs on Linux x86_64 through Toko Tooling's exact-input
+runner. Changed artifacts, source, runtime libraries or bounded environment
+invalidate reuse; missing or damaged proofs execute again. Other hosts and
+custom runtime selections execute normally. Lint, native tests, documentation,
+source/archive and registry admission remain fresh. See the
+[delivery and recovery contract](docs/operations/delivery.md) for the stage roster,
+input scope, limitations and partial-upload recovery.
+
 Hosted Linux/macOS CI and the single history secret scan run asynchronously;
 pending, queued or absent hosted results alone do not block a routine patch.
 Publication admission packages and verifies both crates for

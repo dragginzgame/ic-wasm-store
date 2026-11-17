@@ -2,8 +2,8 @@
 FORMAT_RUST_ARGS := --extra-workspace qualification
 CARGO_PUBLISH_PACKAGES := ic-wasm-store-protocol ic-wasm-store
 CARGO_PUBLISH_REGISTRY := crates-io
-# Preserve the existing local release gate; hosted CI is asynchronous.
-CARGO_PUBLISH_VERIFY_TARGETS := ci publication-admission
+# Product qualification and fresh archive admission have separate owners.
+CARGO_PUBLISH_VERIFY_TARGETS := release-verify publication-admission
 LOCAL_TOOL_INSTALL_TARGETS := install-testkit-launcher
 LOCAL_TOOL_CHECK_TARGETS := testkit-launcher-check
 include vendor/toko-tooling/make/consumer.mk
@@ -29,6 +29,8 @@ help:
 	  'make test-publication      Test publication admission without uploads' \
 	  'make test-script-paths     Test setup/build paths with CDPATH enabled' \
 	  'make test-setup-evidence   Test CI setup failure collection and launcher selection' \
+	  'make test-tooling          Qualify repository tooling callers (also in CI)' \
+	  'make release-verify        Qualify product behavior for publication' \
 	  'make ci                    Run aggregate checks; requires prepared fixtures'
 check:
 	cargo check --locked --workspace --all-targets
@@ -75,6 +77,15 @@ test-server-diagnostics:
 	bash scripts/tests/server-setup-diagnostics.sh
 test-setup-evidence:
 	bash scripts/tests/setup-evidence.sh
-ci: clippy
-	$(MAKE) fmt-check toko-tooling-check test doc test-publication test-server-diagnostics test-script-paths test-setup-evidence qualification-test
-	$(MAKE) qualification-predecessor-test
+.PHONY: release-verify test-tooling test-delivery-flow test-installed-evidence
+# Sequential recursive calls preserve early lint refusal even with make -j.
+release-verify: clippy toko-tooling-check
+	$(MAKE) fmt-check test doc
+	bash scripts/release-installed.sh
+test-tooling: test-publication test-server-diagnostics test-script-paths test-setup-evidence test-delivery-flow test-installed-evidence
+test-delivery-flow:
+	bash scripts/tests/delivery-flow.sh
+test-installed-evidence:
+	bash scripts/tests/installed-evidence.sh
+ci: release-verify
+	$(MAKE) test-tooling

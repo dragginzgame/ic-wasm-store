@@ -105,9 +105,9 @@ dependencies = [
 
 [[package]]
 name = "ic-platform-macros"
-version = "0.23.15"
+version = "0.23.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b2d98162c6fbea8d9ea5893db8efad17fa4860c221ef4b3a3e66c5e94e6c53cd"
+checksum = "8b291d0610822352f1b69e21ec5669b2f2a56b5629c09fd719374b3b5ea9a74e"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -116,9 +116,9 @@ dependencies = [
 
 [[package]]
 name = "ic-platform-protocol"
-version = "0.3.3"
+version = "0.3.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4676f2fabfff6a9aab9d6cccdf2a5870059e88b21345bc1913818be621dc1f34"
+checksum = "a2ae9adc784809f210d491f301a9b4549bf619dbbeac835dc7c8d49d1eb152b0"
 dependencies = [
  "ic-platform-types",
  "serde",
@@ -135,9 +135,9 @@ dependencies = [
 
 [[package]]
 name = "ic-platform-runtime"
-version = "0.23.15"
+version = "0.23.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "654fbae9abca1d9f1ccf1aa7835ba1303b08bc828706f12c0e8a45446a206410"
+checksum = "dfc857c146215a6f2ae50e724c70b7afffaebeb407c54c283f6860357d5da439"
 dependencies = [
  "ic-platform-macros",
  "ic-platform-runtime-guard",
@@ -146,9 +146,9 @@ dependencies = [
 
 [[package]]
 name = "ic-platform-runtime-guard"
-version = "0.23.15"
+version = "0.23.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4fa857e5bba51d6b57286fa6b09f2bbe430da574bb187376c7c77adb896cfb99"
+checksum = "32124ec3fa34eb2a21a2818a8578757057d9fb2eb57f6355f73d925bc46e2258"
 
 [[package]]
 name = "ic-platform-types"
@@ -176,10 +176,10 @@ dependencies = [
 
 [[package]]
 name = "ic-wasm-store"
-version = "0.3.2"
+version = "0.3.3"
 dependencies = [
  "ic-platform-protocol",
- "ic-platform-runtime 0.23.15",
+ "ic-platform-runtime 0.23.17",
  "ic-platform-types",
  "ic-storage",
  "ic-wasm-store-protocol",
@@ -191,7 +191,7 @@ dependencies = [
 
 [[package]]
 name = "ic-wasm-store-protocol"
-version = "0.3.2"
+version = "0.3.3"
 dependencies = [
  "ic-wire",
  "serde",

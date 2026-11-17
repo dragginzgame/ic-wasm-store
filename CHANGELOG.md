@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.3.3] - 2026-11-17
+
+### 🔧 Tooling
+
+- Separate product release qualification from tooling caller regressions, retaining fresh archive admission and both installed suites. Build current qualification Wasm variants once per release verification. Reuse exact installed execution proofs on qualified Linux hosts, preserving successful stages across later failures and re-executing on changed or damaged evidence. Fixes [WasmStore #4 — publication flow](https://github.com/dragginzgame/ic-wasm-store/issues/4).
+
+### 🔧 Changed
+
+- Refresh the product lock selection to Platform Protocol 0.3.5 and Runtime 0.23.17, and the qualification lock to zeroize 1.9.2.
+- Retain Wire 0.24.3 and qualification Testkit 0.107.4; defer the optional Testkit 0.109.0 upgrade to dependency maintenance. Keep the frozen 0.106.0 launcher. Storage remains 0.74.1 pending the retained-state capabilities tracked in [Storage #3](https://github.com/dragginzgame/ic-storage/issues/3); the available 0.76.1 release is not adopted here.
+
+To verify a prepared checkout, run `make release-verify`. New checkouts first run
+`make install-tools` and `make qualification-setup`. Authorized publication uses
+`make publish`, which performs qualification and fresh archive admission.
+
 ## [0.3.2] - 2026-11-17
 
 ### 🩹 Fixed

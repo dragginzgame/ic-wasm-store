@@ -10,7 +10,7 @@ Read it before edits; update managed files only through the authenticated instal
 - Native tests stay with their packages; installed tests live in the independent qualification workspace.
 - Use Rust 1.100.0 and inherited workspace lints. Product packages are authorized for crates.io publication; qualification packages remain unpublished.
 - Runtime's generated IC export attributes are the only unsafe-lint exception: workspace deny permits the supplier's item-scoped expectations; Store state and passive protocol code retain forbid.
-- Use make test, make clippy, make doc and make qualification-test for affected checks. Simulator preparation is explicit via make qualification-setup. make ci is the complete local delivery gate, enforced by the Make publication adapter; it does not require a completed GitHub Actions run.
+- Use make test, make clippy, make doc and make qualification-test for affected checks. Simulator preparation is explicit via make qualification-setup. Publication enforces make release-verify and fresh archive admission; make ci additionally runs tooling caller fixtures. Installed execution alone may reuse exact-input evidence through the shared runner and scripts/observe-installed.pl; all other stages execute normally. Neither gate requires a completed GitHub Actions run. See docs/operations/delivery.md for evidence scope and recovery.
 - maintenance-candidate marks qualification only; do not select it for live deployment.
 - No automatic browser or desktop launches.
 
