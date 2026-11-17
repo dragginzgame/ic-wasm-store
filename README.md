@@ -72,6 +72,11 @@ make tools-check
 make install-hooks
 ```
 
+`make install-tools` also prepares the frozen Testkit 0.106.0 launcher through
+the shared Cargo installer. `make tools-check` admits that selection offline.
+Existing checkouts using the former `.tools/testkit-bootstrap` copy must rerun
+`make install-tools`; qualification no longer selects that copy automatically.
+
 Run `make install-hooks` once in each fresh checkout. It configures this
 repository's `core.hooksPath` to the shared formatting hook; Git configuration
 is local and is not carried by a clone. The hook formats staged files using the
@@ -96,12 +101,16 @@ For focused work, use `make test-protocol` or `make test-store`, and select
 `make check` checks only native product targets; the canister entrypoints are
 Wasm-only and are checked by `make clippy-wasm`. `make help` lists these targets.
 
-Run `make qualification-setup` before the installed test or `make ci` on a fresh
-checkout. Setup installs the reviewed 0.106.0 server-launcher bootstrap and may
-download the server; tests use Testkit 0.107.3 clients and the prepared bundle.
+Run `make qualification-setup` after tool installation and before the installed
+test or `make ci` on a fresh checkout. Setup admits the prepared 0.106.0 launcher
+and may download the server; tests use Testkit 0.107.3 clients and the prepared bundle.
 The launcher owns one server for the test command. Alternatively, supply
 `IC_TESTKIT_POCKET_IC_URL` for an externally owned server; see the
 [qualification ownership contract](qualification/README.md).
+CI retains bounded, sanitized scanner, compiler and fixture setup diagnostics
+for seven days on failure. `make test-setup-evidence` checks the collection and
+launcher-selection failure paths without network access.
+
 The `maintenance-candidate` feature identifies a qualification executable and
 must not be selected for live deployment. See [qualification](qualification/README.md)
 for coverage and limitations. Linux and macOS are intended development hosts;

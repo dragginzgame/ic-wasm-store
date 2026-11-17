@@ -16,10 +16,6 @@ command=(cargo test --locked --manifest-path qualification/Cargo.toml --test sto
 if [[ -n "${IC_TESTKIT_POCKET_IC_URL:-}" ]]; then
     exec "${command[@]}"
 fi
-launcher=${TESTKIT_RELEASE_LAUNCHER:-$root/.tools/testkit-bootstrap/bin/ic-testkit-server}
-[[ "$("$launcher" --version)" == 'ic-testkit-server 0.106.0' ]] || {
-    echo 'Run make qualification-setup to prepare the reviewed server launcher.' >&2
-    exit 2
-}
+launcher=$(bash scripts/testkit-launcher.sh check)
 exec "$launcher" run --directory "${IC_TESTKIT_SERVER_DIRECTORY:-$root/target/qualification/server}" \
     --ttl 1800 -- "${command[@]}"

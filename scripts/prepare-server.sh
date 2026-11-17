@@ -4,14 +4,10 @@ set -euo pipefail
 root=$(CDPATH='' cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
 cd "$root"
 status=0
-launcher=${TESTKIT_RELEASE_LAUNCHER:-$root/.tools/testkit-bootstrap/bin/ic-testkit-server}
+launcher=$(bash scripts/testkit-launcher.sh check)
 directory=${IC_TESTKIT_SERVER_DIRECTORY:-$root/target/qualification/server}
 [[ "$directory" == /* ]] || directory="$root/$directory"
 directory=${directory%/}
-[[ "$("$launcher" --version)" == 'ic-testkit-server 0.106.0' ]] || {
-    echo 'Prepare the reviewed ic-testkit-server 0.106.0 bootstrap with make qualification-setup.' >&2
-    exit 2
-}
 mkdir -p target/qualification/setup-evidence
 evidence=$(mktemp -d "$root/target/qualification/setup-evidence/attempt.XXXXXX")
 phase=setup
@@ -34,6 +30,10 @@ else
 fi
 if (( status != 0 )); then
     printf 'ic-testkit-server %s failed (exit %d); evidence: %q\n' "$phase" "$status" "$evidence" >&2
+    if [[ -n "${STORE_SETUP_EVIDENCE:-}" ]]; then
+        perl scripts/collect-setup-evidence.pl "$STORE_SETUP_EVIDENCE" "${files[@]}" || \
+            echo 'Could not collect simulator diagnostics; original setup failure is retained.' >&2
+    fi
     bash scripts/show-server-setup-failure.sh "${files[@]}" >&2 || echo 'Could not render setup evidence; original setup failure is retained.' >&2
 else
     cat "$evidence/check.stdout"

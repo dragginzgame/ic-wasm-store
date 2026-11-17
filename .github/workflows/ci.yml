@@ -21,10 +21,31 @@ jobs:
           persist-credentials: false
       - uses: ./vendor/toko-tooling/.github/actions/cache-tool-downloads
       - name: Prepare pinned CI tools
+        id: setup
         run: |
           for tool in gitleaks actionlint shellcheck; do
-            bash vendor/toko-tooling/scripts/ci/install-ci-tool.sh "$tool" --install-dir "$RUNNER_TEMP/ci-tools"
+            bash scripts/run-setup.sh "$tool" bash vendor/toko-tooling/scripts/ci/install-ci-tool.sh "$tool" --install-dir "$RUNNER_TEMP/ci-tools"
           done
+      - name: Retain scanner setup failure evidence
+        id: setup_evidence
+        if: ${{ failure() && steps.setup.outcome == 'failure' }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: scanner-setup-${{ github.run_attempt }}
+          path: target/setup-evidence/*/*
+          if-no-files-found: error
+          retention-days: 7
+      - name: Report scanner setup evidence retention
+        if: ${{ always() && steps.setup.outcome == 'failure' }}
+        env:
+          ARTIFACT_URL: ${{ steps.setup_evidence.outputs.artifact-url }}
+          UPLOAD_OUTCOME: ${{ steps.setup_evidence.outcome }}
+        run: |
+          if [[ -n "$ARTIFACT_URL" ]]; then
+            printf 'Setup failure evidence: %s\n' "$ARTIFACT_URL" >> "$GITHUB_STEP_SUMMARY"
+          else
+            printf 'Setup evidence unavailable; upload outcome: %s. Inspect setup logs for missing evidence.\n' "$UPLOAD_OUTCOME" | tee -a "$GITHUB_STEP_SUMMARY"
+          fi
       - uses: ./vendor/toko-tooling/.github/actions/cache-tool-downloads
         with:
           mode: save
@@ -48,29 +69,25 @@ jobs:
           persist-credentials: false
       - uses: ./vendor/toko-tooling/.github/actions/cache-tool-downloads
       - name: Prepare compiler
-        run: rustup toolchain install 1.100.0 --profile minimal --component rustfmt,clippy --target wasm32-unknown-unknown
+        id: compiler
+        run: bash scripts/run-setup.sh compiler rustup toolchain install 1.100.0 --profile minimal --component rustfmt,clippy --target wasm32-unknown-unknown
       - name: Prepare repository tools and fixtures
         id: setup
         run: |
-          make install-tools
-          make tools-check
-          make qualification-setup
-      - name: Retain simulator setup failure evidence
+          bash scripts/run-setup.sh repository-tools make install-tools
+          bash scripts/run-setup.sh tools-check make tools-check
+          bash scripts/run-setup.sh qualification make qualification-setup
+      - name: Retain setup failure evidence
         id: setup_evidence
-        if: ${{ failure() && steps.setup.outcome == 'failure' }}
+        if: ${{ failure() && (steps.compiler.outcome == 'failure' || steps.setup.outcome == 'failure') }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: simulator-setup-${{ matrix.os }}-${{ github.run_attempt }}
-          path: |
-            target/qualification/setup-evidence/*/*.stdout
-            target/qualification/setup-evidence/*/*.stderr
-            target/qualification/server/.setup-v1-*/download.stderr
-            target/qualification/server/.setup-v1-*/failure.txt
-          include-hidden-files: true
-          if-no-files-found: warn
+          name: setup-${{ matrix.os }}-${{ github.run_attempt }}
+          path: target/setup-evidence/*/*
+          if-no-files-found: error
           retention-days: 7
       - name: Report setup evidence retention
-        if: ${{ always() && steps.setup.outcome == 'failure' }}
+        if: ${{ always() && (steps.compiler.outcome == 'failure' || steps.setup.outcome == 'failure') }}
         env:
           ARTIFACT_URL: ${{ steps.setup_evidence.outputs.artifact-url }}
           UPLOAD_OUTCOME: ${{ steps.setup_evidence.outcome }}

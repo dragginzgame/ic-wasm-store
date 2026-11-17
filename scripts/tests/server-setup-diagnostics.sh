@@ -9,6 +9,7 @@ mkdir -p target
 fixture=$(mktemp -d "$root/target/server-diagnostics.XXXXXX")
 trap 'rm -rf "$fixture"' EXIT
 mkdir -p "$fixture/bin"
+mkdir -p "$fixture/retained"
 mkdir -p "$fixture/server/.setup-v1-1-0"
 printf 'stale failure must not be displayed\n' > "$fixture/server/.setup-v1-1-0/download.stderr"
 cat > "$fixture/bin/curl" <<'STUB'
@@ -20,6 +21,7 @@ STUB
 chmod +x "$fixture/bin/curl"
 status=0
 PATH="$fixture/bin:$PATH" CARGO_NET_OFFLINE=true IC_TESTKIT_SERVER_DIRECTORY="$fixture/server" \
+    STORE_SETUP_EVIDENCE="$fixture/retained" \
     bash scripts/prepare-server.sh > "$fixture/output" 2>&1 || status=$?
 [[ "$status" != 0 ]] || { echo 'failed download became success'; exit 1; }
 if grep -q 'stale failure must not be displayed' "$fixture/output"; then
@@ -31,6 +33,9 @@ shopt -s nullglob
 errors=("$fixture/server"/.setup-v1-*/download.stderr)
 failures=("$fixture/server"/.setup-v1-*/failure.txt)
 [[ ${#errors[@]} == 1 && ${#failures[@]} == 1 ]] || { cat "$fixture/output"; exit 1; }
+rg -q 'Source: .*\.setup-v1-.*download.stderr' "$fixture/retained"
+rg -q 'curl: \(56\) simulated receive failure' "$fixture/retained"
+if rg -q 'stale failure must not be displayed' "$fixture/retained"; then exit 1; fi
 [[ ! -e "$fixture/server/16.1.0-x86_64-linux/pocket-ic" && ! -e "$fixture/server/16.1.0-arm64-darwin/pocket-ic" && ! -e "$fixture/server/16.1.0-x86_64-darwin/pocket-ic" ]]
 perl -e '
     use strict; use warnings;

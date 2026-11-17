@@ -4,6 +4,8 @@ CARGO_PUBLISH_PACKAGES := ic-wasm-store-protocol ic-wasm-store
 CARGO_PUBLISH_REGISTRY := crates-io
 # Preserve the existing local release gate; hosted CI is asynchronous.
 CARGO_PUBLISH_VERIFY_TARGETS := ci publication-admission
+LOCAL_TOOL_INSTALL_TARGETS := install-testkit-launcher
+LOCAL_TOOL_CHECK_TARGETS := testkit-launcher-check
 include vendor/toko-tooling/make/consumer.mk
 include vendor/toko-tooling/make/cargo-dependencies.mk
 
@@ -21,11 +23,12 @@ help:
 	  'make clippy-wasm           Lint Store Wasm with all features' \
 	  'make clippy-qualification  Lint the qualification workspace' \
 	  'make doc                   Check documentation for both workspaces' \
-	  'make qualification-setup   Prepare PocketIC and the released archive' \
+	  'make qualification-setup   Admit the launcher; prepare PocketIC and the released archive' \
 	  'make qualification-test    Test installed custody, cache and maintenance' \
 	  'make qualification-predecessor-test  Test upgrade from published 0.2.2' \
 	  'make test-publication      Test publication admission without uploads' \
 	  'make test-script-paths     Test setup/build paths with CDPATH enabled' \
+	  'make test-setup-evidence   Test CI setup failure collection and launcher selection' \
 	  'make ci                    Run aggregate checks; requires prepared fixtures'
 check:
 	cargo check --locked --workspace --all-targets
@@ -46,10 +49,12 @@ doc:
 	RUSTDOCFLAGS="-D warnings" cargo doc --locked --manifest-path qualification/Cargo.toml --workspace --no-deps
 build:
 	cargo build --locked --release -p ic-wasm-store --target wasm32-unknown-unknown
+.PHONY: install-testkit-launcher testkit-launcher-check test-setup-evidence
+install-testkit-launcher:
+	bash scripts/testkit-launcher.sh setup > /dev/null
+testkit-launcher-check:
+	bash scripts/testkit-launcher.sh check > /dev/null
 qualification-setup:
-	@if [ -z "$(TESTKIT_RELEASE_LAUNCHER)" ]; then \
-	  cargo install --locked --version 0.106.0 --features cli --bin ic-testkit-server --root "$(CURDIR)/.tools/testkit-bootstrap" ic-testkit; \
-	fi
 	bash scripts/prepare-server.sh
 	bash scripts/prepare-predecessor.sh setup
 qualification-test:
@@ -68,6 +73,8 @@ test-script-paths:
 	bash scripts/tests/path-resolution.sh
 test-server-diagnostics:
 	bash scripts/tests/server-setup-diagnostics.sh
+test-setup-evidence:
+	bash scripts/tests/setup-evidence.sh
 ci: clippy
-	$(MAKE) fmt-check toko-tooling-check test doc test-publication test-server-diagnostics test-script-paths qualification-test
+	$(MAKE) fmt-check toko-tooling-check test doc test-publication test-server-diagnostics test-script-paths test-setup-evidence qualification-test
 	$(MAKE) qualification-predecessor-test

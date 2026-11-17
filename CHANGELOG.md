@@ -1,5 +1,33 @@
 # Changelog
 
+## [0.3.2] - 2026-11-17
+
+### 🩹 Fixed
+
+- Retain bounded, sanitized CI setup diagnostics for scanner, compiler, repository-tool and simulator failures, preserving the original failure status and reporting artifact availability.
+
+### 🔧 Tooling
+
+- Prepare and admit the frozen Testkit 0.106.0 launcher through the shared Cargo installer. Existing checkouts must rerun `make install-tools`; qualification uses offline admission of the selected launcher.
+
+### 🔧 Changed
+
+- Refresh the compatible product lock selection to Platform Protocol 0.3.3.
+- Defer optional upgrades from Protocol 0.3.3 to 0.3.5, Runtime 0.23.15 to 0.23.16 and qualification Testkit 0.107.4 to 0.108.1 to the next dependency-maintenance batch. Keep the explicitly frozen 0.106.0 server launcher.
+- Release-time registry review confirms Types 0.21.2, Storage 0.74.1, Wire 0.24.3 and Toko Tooling 0.44.11 match current stable releases.
+
+### ▶️ Try it
+
+From the repository root, prepare the selected tools and simulator, then run installed qualification:
+
+```sh
+make install-tools
+make qualification-setup
+make qualification-test
+```
+
+Setup may download tools and the simulator; qualification runs against a local server and should pass all four installed scenarios.
+
 ## [0.3.1] - 2026-11-17
 
 ### 🩹 Fixed

@@ -14,8 +14,12 @@ They create instances on that server and explicitly attempt instance deletion
 on normal completion; upstream deletion does not confirm remote cleanup.
 
 The runner owns the external server through the reviewed `ic-testkit-server`
-0.106.0 launcher, installed by `make qualification-setup` under
-`.tools/testkit-bootstrap`. This is a deliberately frozen development bootstrap,
+0.106.0 launcher, installed by `make install-tools` through Toko Tooling's shared
+Cargo installer with the `cli` feature. Setup and tests resolve its admitted path
+through the same installer's offline `--check`; they never install implicitly.
+Rerun `make install-tools` when migrating from `.tools/testkit-bootstrap`; the old
+copy is left untouched and is no longer selected automatically.
+This is a deliberately frozen development bootstrap,
 as specified by the supplier's [simulator ownership contract](https://github.com/dragginzgame/ic-tooling/blob/main/docs/simulator-ownership.md),
 not an old Testkit dependency in the qualification graph. Set
 `TESTKIT_RELEASE_LAUNCHER` to use a separately prepared 0.106.0 executable.
@@ -31,16 +35,26 @@ and first 4 KiB of each retained download/error diagnostic. Control and non-ASCI
 bytes are escaped, every diagnostic line is indented, and truncation is marked.
 Only the failed attempt named by that setup invocation is displayed; stale
 attempts cannot masquerade as the current cause. The original setup/check status
-is preserved even if reporting fails. The `simulator-setup-<host>-<attempt>` artifact
-retains setup/check stdout and stderr plus the complete `download.stderr` and
-`failure.txt` files for seven days, including
-those in hidden setup attempt directories. Archives, server binaries and unrelated
-runner files are excluded. Setup failure still fails the job and blocks publication.
+is preserved even if reporting fails. CI's `setup-<host>-<attempt>` artifact retains
+sanitized setup output and the selected `download.stderr` and `failure.txt` from
+that invocation's hidden attempt directory for seven days. Compiler and repository
+tool setup use the same collection; scanner installation has a separate
+`scanner-setup-<attempt>` artifact in the security job. Each diagnostic is capped
+at 64 KiB plus a truncation marker, with a 4 KiB console excerpt. Collection reads
+at most 1 MiB per source, escapes controls, redacts credential fields, known secret
+values, URL credentials/queries and private keys, and refuses symlink paths.
+Raw logs, archives, server binaries and unrelated runner files are excluded.
+CI links the artifact or reports upload failure/missing evidence. Collection and
+upload failures cannot hide the original setup status or make the job pass.
 
 `make test-server-diagnostics` exercises the real frozen launcher's setup with a failed
 substitute downloader, without network access. It checks useful error text,
 bounded escaped rendering, retained files, stale/missing evidence and exact setup
 status preservation. This is also part of `make ci`.
+`make test-setup-evidence` additionally checks early scanner/compiler failures,
+sanitized hidden-log collection, size limits, missing/linked evidence, collector
+failures and shared launcher selection. These offline checks do not prove hosted
+artifact upload or retrieval.
 
 Testkit 0.107.3's optional `managed-server` capability is not selected in this
 external-server workflow. The frozen launcher remains an explicit development
