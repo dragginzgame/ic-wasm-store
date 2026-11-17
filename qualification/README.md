@@ -8,13 +8,13 @@ make qualification-test
 make qualification-predecessor-test
 ```
 
-Testkit 0.107.3 supplies the upstream PocketIC client types. Tests require
+Testkit 0.110.0 supplies the upstream PocketIC client types. Tests require
 `IC_TESTKIT_POCKET_IC_URL` and never discover, download or start a server.
 They create instances on that server and explicitly attempt instance deletion
 on normal completion; upstream deletion does not confirm remote cleanup.
 
 The runner owns the external server through the reviewed `ic-testkit-server`
-0.106.0 launcher, installed by `make install-tools` through Toko Tooling's shared
+0.110.0 launcher, installed by `make install-tools` through Toko Tooling's shared
 Cargo installer with the `cli` feature. Setup and tests resolve its admitted path
 through the same installer's offline `--check`; they never install implicitly.
 Rerun `make install-tools` when migrating from `.tools/testkit-bootstrap`; the old
@@ -22,9 +22,9 @@ copy is left untouched and is no longer selected automatically.
 This is a deliberately frozen development bootstrap,
 as specified by the supplier's [simulator ownership contract](https://github.com/dragginzgame/ic-tooling/blob/main/docs/simulator-ownership.md),
 not an old Testkit dependency in the qualification graph. Set
-`TESTKIT_RELEASE_LAUNCHER` to use a separately prepared 0.106.0 executable.
+`TESTKIT_RELEASE_LAUNCHER` to use a separately prepared 0.110.0 executable.
 `IC_TESTKIT_SERVER_DIRECTORY` selects the bundle directory, defaulting to
-`target/qualification/server`. Setup provisions it explicitly; ordinary tests
+`target/qualification/server-0.110.0`. Setup provisions it explicitly; ordinary tests
 only admit prepared assets offline. The launcher outlives the test command and
 owns server shutdown on completion or failure. Local spawning requires loopback
 permission. Supplying `IC_TESTKIT_POCKET_IC_URL` instead borrows that server;
@@ -36,8 +36,8 @@ bytes are escaped, every diagnostic line is indented, and truncation is marked.
 Only the failed attempt named by that setup invocation is displayed; stale
 attempts cannot masquerade as the current cause. The original setup/check status
 is preserved even if reporting fails. CI's `setup-<host>-<attempt>` artifact retains
-sanitized setup output and the selected `download.stderr` and `failure.txt` from
-that invocation's hidden attempt directory for seven days. Compiler and repository
+sanitized setup output and available download, preparation and server diagnostics from
+that invocation’s evidence directory for seven days. Compiler and repository
 tool setup use the same collection; scanner installation has a separate
 `scanner-setup-<attempt>` artifact in the security job. Each diagnostic is capped
 at 64 KiB plus a truncation marker, with a 4 KiB console excerpt. Collection reads
@@ -56,7 +56,7 @@ sanitized hidden-log collection, size limits, missing/linked evidence, collector
 failures and shared launcher selection. These offline checks do not prove hosted
 artifact upload or retrieval.
 
-Testkit 0.107.3's optional `managed-server` capability is not selected in this
+Testkit 0.110.0's optional `managed-server` capability is not selected in this
 external-server workflow. The frozen launcher remains an explicit development
 bootstrap; migrating server ownership to that optional API is separate work.
 
@@ -74,8 +74,7 @@ Setup also downloads the published `ic-wasm-store` 0.2.2 archive. The predecesso
 script pins its SHA-256 (`5ac8eeefd0b49bc36a1e946bc984dcabae974cb6510150296d90ae205d5e1cd0`)
 and builds its unchanged manifest and packaged lockfile with Rust 1.100.0.
 Its recorded source is `ed89b13cd63d6f4bdf1205f90a83798f3c022d6c`.
-The separate predecessor target runs the upload/upgrade witness from that
-executable to the current candidate; `make ci` includes it. Generated historical
+The separate predecessor target verifies that the current candidate rejects that older directory and the old executable can still read the partial upload; `make ci` includes it. Generated historical
 sources stay under ignored `target/` and are excluded from the product workspace.
 
 ## Coverage
@@ -128,7 +127,7 @@ not application installation.
 The capacity fixture proves completion under simulator instruction limits for
 that catalog shape. Its elapsed time is a local diagnostic, not an instruction
 count or production latency guarantee; it does not saturate pins on every
-artifact. The released-predecessor test reproduces a 0.2.2 upgrade, not the
+artifact. The released-predecessor test exercises rollback after a refused 0.2.2 upgrade, not the
 historical Canic pre-extraction witness.
 
 Canic owns consumer-specific chunked installation, Root control and fleet upgrade

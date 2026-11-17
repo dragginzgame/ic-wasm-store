@@ -30,7 +30,7 @@ bash scripts/prepare-predecessor.sh build
 cargo test --locked --manifest-path qualification/Cargo.toml --test store --no-run --message-format=json-render-diagnostics > target/qualification/installed-test.jsonl
 binary=$(jq -ser '[.[] | select(.reason == "compiler-artifact" and .target.name == "store" and .executable != null) | .executable] | unique | if length == 1 then .[0] else error("expected installed test executable") end' target/qualification/installed-test.jsonl)
 launcher=$(bash scripts/testkit-launcher.sh check)
-server=$("$launcher" check --directory "$root/target/qualification/server")
+server=$("$launcher" check "$root/target/qualification/server-0.110.0")
 # Bind dirty development checks as well as committed delivery to actual source bytes.
 # Final Git/clean-source admission remains the publication adapter's obligation.
 check_source
@@ -43,7 +43,7 @@ for stage in current predecessor; do
     arguments=()
     if [[ "$stage" == predecessor ]]; then
         original="$root/target/qualification/predecessor.wasm"
-        arguments=(versioned_upload_resumes)
+        arguments=(predecessor_image_is_rejected --ignored)
     fi
     jq -cnS --arg binary "$binary" --arg launcher "$launcher" --arg server "$server" \
         --arg original "$original" --arg candidate "$root/target/qualification/candidate.wasm" \
@@ -53,7 +53,7 @@ for stage in current predecessor; do
         --source "$source_commit" --group store --observe scripts/observe-installed.pl \
         --environment "$attempt/$stage-environment.json" --max-bytes 536870912 \
         --admission-output "$attempt/$stage-admission.json" -- \
-        "$launcher" run --directory "$root/target/qualification/server" --ttl 1800 -- \
+        /bin/bash scripts/run-server.sh "$launcher" "$root/target/qualification/server-0.110.0" \
         "$binary" "${arguments[@]+"${arguments[@]}"}" --nocapture
     check_source
 done

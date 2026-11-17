@@ -1,5 +1,6 @@
+use super::records::CheckedRecord;
 use super::*;
-use ic_storage::{VectorMemory, adapter::Storable};
+use ic_storage::VectorMemory;
 use ic_wasm_store_protocol::{AdmissionCommand as Command, MaintenanceAttempt};
 use std::borrow::Cow;
 
@@ -149,7 +150,7 @@ fn admission_settings_migrate_only_the_recognized_previous_schema() {
         )
         .unwrap(),
     );
-    let mut migrated = Settings::from_bytes(Cow::Owned(bytes)).unwrap();
+    let mut migrated = Settings::decode_record(Cow::Owned(bytes)).unwrap();
     assert_eq!(migrated.reserved_bytes, 8);
     assert!(migrated.admission.is_none());
     migrated.admission = Some(ic_wasm_store_protocol::Admission {
@@ -160,13 +161,13 @@ fn admission_settings_migrate_only_the_recognized_previous_schema() {
         owner: vec![1],
         closed: true,
     });
-    let encoded = migrated.to_bytes().unwrap();
+    let encoded = migrated.encode_record().unwrap();
     assert!(encoded.starts_with(b"CWS2"));
-    let decoded = Settings::from_bytes(encoded).unwrap();
+    let decoded = Settings::decode_record(encoded).unwrap();
     assert_eq!(decoded.admission, migrated.admission);
     for corrupt in [b"CWS1bad".as_slice(), b"CWS2bad", b"CWS3bad"] {
-        assert!(Settings::from_bytes(Cow::Borrowed(corrupt)).is_err());
+        assert!(Settings::decode_record(Cow::Borrowed(corrupt)).is_err());
     }
     migrated.admission.as_mut().unwrap().attempt.sequence = 0;
-    assert!(migrated.to_bytes().is_err());
+    assert!(migrated.encode_record().is_err());
 }

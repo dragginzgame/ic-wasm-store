@@ -64,7 +64,7 @@ qualification-test:
 .PHONY: qualification-predecessor-test publication-admission test-publication
 qualification-predecessor-test:
 	bash scripts/prepare-predecessor.sh build
-	IC_WASM_STORE_WASM="$(CURDIR)/target/qualification/predecessor.wasm" bash scripts/test-installed.sh versioned_upload_resumes
+	IC_WASM_STORE_WASM="$(CURDIR)/target/qualification/predecessor.wasm" bash scripts/test-installed.sh predecessor_image_is_rejected --ignored
 publication-admission:
 	bash scripts/check-publication.sh
 test-publication:

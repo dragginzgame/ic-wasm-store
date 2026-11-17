@@ -65,14 +65,14 @@ for failure in 0 1 2; do
     if [[ "$failure" == 0 ]]; then
         [[ "$status" == 0 ]]
         [[ $(rg -c '^cargo test ' "$FLOW_LOG") == 2 ]]
-        rg -q 'versioned_upload_resumes.*original=.*/predecessor.wasm' "$FLOW_LOG"
+        rg -q 'predecessor_image_is_rejected.*original=.*/predecessor.wasm' "$FLOW_LOG"
     elif [[ "$failure" == 1 ]]; then
         [[ "$status" == 43 ]]
-        if rg -q '^predecessor$|versioned_upload_resumes' "$FLOW_LOG"; then exit 1; fi
+        if rg -q '^predecessor$|predecessor_image_is_rejected' "$FLOW_LOG"; then exit 1; fi
     else
         [[ "$status" == 47 ]]
         rg -q '^predecessor$' "$FLOW_LOG"
-        if rg -q 'versioned_upload_resumes' "$FLOW_LOG"; then exit 1; fi
+        if rg -q 'predecessor_image_is_rejected' "$FLOW_LOG"; then exit 1; fi
     fi
 done
 if [[ $(uname -s) == Linux && $(uname -m) == x86_64 ]]; then

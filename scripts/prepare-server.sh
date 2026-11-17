@@ -1,32 +1,27 @@
 #!/usr/bin/env bash
 # The frozen launcher owns provisioning; the current Testkit library owns no server.
 set -euo pipefail
+umask 077
 root=$(CDPATH='' cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
 cd "$root"
 status=0
 launcher=$(bash scripts/testkit-launcher.sh check)
-directory=${IC_TESTKIT_SERVER_DIRECTORY:-$root/target/qualification/server}
+directory=${IC_TESTKIT_SERVER_DIRECTORY:-$root/target/qualification/server-0.110.0}
 [[ "$directory" == /* ]] || directory="$root/$directory"
 directory=${directory%/}
 mkdir -p target/qualification/setup-evidence
 evidence=$(mktemp -d "$root/target/qualification/setup-evidence/attempt.XXXXXX")
 phase=setup
-"$launcher" setup --directory "$directory" > "$evidence/setup.stdout" 2> "$evidence/setup.stderr" || status=$?
+"$launcher" setup "$directory" "$evidence/launcher" "$(command -v curl)" "$(command -v gzip)" > "$evidence/setup.stdout" 2> "$evidence/setup.stderr" || status=$?
 files=("$evidence/setup.stderr")
 if (( status == 0 )); then
     phase=check
-    "$launcher" check --directory "$directory" > "$evidence/check.stdout" 2> "$evidence/check.stderr" || status=$?
+    "$launcher" check "$directory" > "$evidence/check.stdout" 2> "$evidence/check.stderr" || status=$?
     files=("$evidence/check.stderr")
 else
-    # Report only the attempt named by this invocation, never an older failure.
-    prefix="PocketIC setup evidence: $directory/.setup-v1-"
-    while IFS= read -r line; do
-        [[ "$line" == "$prefix"* ]] || continue
-        suffix=${line#"$prefix"}
-        [[ "$suffix" =~ ^[0-9]+-[0-9]+$ ]] || continue
-        files+=("$directory/.setup-v1-$suffix/download.stderr" "$directory/.setup-v1-$suffix/failure.txt")
-        break
-    done < "$evidence/setup.stderr"
+    for file in download.stderr prepare.txt server.stderr; do
+        if [[ -f "$evidence/launcher/$file" ]]; then files+=("$evidence/launcher/$file"); fi
+    done
 fi
 if (( status != 0 )); then
     printf 'ic-testkit-server %s failed (exit %d); evidence: %q\n' "$phase" "$status" "$evidence" >&2

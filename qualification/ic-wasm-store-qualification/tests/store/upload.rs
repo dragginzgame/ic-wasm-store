@@ -2,6 +2,16 @@ use super::{CanisterId, Client, store, support};
 
 #[tokio::test(flavor = "current_thread")]
 async fn versioned_upload_resumes_across_two_executables_and_reuses_bytes() {
+    exercise_upload(false).await;
+}
+
+#[tokio::test(flavor = "current_thread")]
+#[ignore = "requires the published predecessor as the original Wasm"]
+async fn predecessor_image_is_rejected_without_losing_upload() {
+    exercise_upload(true).await;
+}
+
+async fn exercise_upload(legacy_image: bool) {
     let original = support::wasm();
     let candidate = std::fs::read(
         std::env::var_os("IC_WASM_STORE_CANDIDATE").expect("run make qualification-test"),
@@ -79,9 +89,21 @@ async fn versioned_upload_resumes_across_two_executables_and_reuses_bytes() {
         .await;
     assert_eq!(blocked, Err(store::Error::Incomplete));
     pic.stop_canister(id, Some(operator)).await.unwrap();
-    pic.upgrade_canister(id, candidate, vec![], Some(operator))
-        .await
-        .unwrap();
+    let upgraded = pic
+        .upgrade_canister(id, candidate, vec![], Some(operator))
+        .await;
+    if legacy_image {
+        let error = upgraded.expect_err("legacy Storage image must be refused");
+        assert!(
+            error.reject_message.contains("canister_post_upgrade")
+                && error.reject_message.contains("ic_wasm_store::state::State"),
+            "{error:?}"
+        );
+        pic.start_canister(id, Some(operator)).await.unwrap();
+        assert_eq!(client.status(&manifest.release).await, partial);
+        return;
+    }
+    upgraded.unwrap();
     pic.start_canister(id, Some(operator)).await.unwrap();
     assert!(client.info().await.maintenance_candidate);
     assert_eq!(client.status(&manifest.release).await, partial);

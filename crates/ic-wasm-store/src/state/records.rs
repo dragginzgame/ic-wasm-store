@@ -1,8 +1,37 @@
 //! Versioned metadata and independently bounded chunk payloads.
-use ic_storage::adapter::{Bound, CodecError, Storable};
+use ic_storage::adapter::{Bound, Storable};
 use ic_wasm_store_protocol::{CHUNK_BYTES, LIMITS, MAX_CHUNKS, MAX_PINS, Quota, Release};
 use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
+
+pub(super) trait CheckedRecord: Sized {
+    const BOUND: Bound;
+    fn encode_record(&self) -> Result<Cow<'_, [u8]>, &'static str>;
+    fn decode_record(bytes: Cow<'_, [u8]>) -> Result<Self, &'static str>;
+}
+
+// The substrate traps on malformed persisted values. Keep Store's codec validation
+// explicit at that boundary so invalid records cannot be reopened as defaults.
+macro_rules! stable_record {
+    ($record:ty) => {
+        impl Storable for $record {
+            const BOUND: Bound = <Self as CheckedRecord>::BOUND;
+            fn to_bytes(&self) -> Cow<'_, [u8]> {
+                self.encode_record().expect("invalid Store record")
+            }
+            fn into_bytes(self) -> Vec<u8> {
+                self.to_bytes().into_owned()
+            }
+            fn from_bytes(bytes: Cow<'_, [u8]>) -> Self {
+                Self::decode_record(bytes).expect("invalid Store record")
+            }
+        }
+    };
+}
+stable_record!(Key);
+stable_record!(Artifact);
+stable_record!(Settings);
+stable_record!(Payload);
 
 #[derive(Clone, Eq, Ord, PartialEq, PartialOrd)]
 pub(super) struct Key(pub String);
@@ -27,27 +56,24 @@ impl Key {
         }
     }
 }
-impl Storable for Key {
+impl CheckedRecord for Key {
     const BOUND: Bound = Bound::Bounded {
         max_size: 129,
         is_fixed_size: false,
     };
-    fn to_bytes(&self) -> Result<Cow<'_, [u8]>, CodecError> {
+    fn encode_record(&self) -> Result<Cow<'_, [u8]>, &'static str> {
         Ok(Cow::Borrowed(self.0.as_bytes()))
     }
-    fn from_bytes(bytes: Cow<'_, [u8]>) -> Result<Self, CodecError> {
-        let key = String::from_utf8(bytes.into_owned())
-            .map_err(|_| CodecError::Invalid("release key"))?;
-        let (name, version) = key
-            .split_once(['\0', '\x01'])
-            .ok_or(CodecError::Invalid("release key"))?;
+    fn decode_record(bytes: Cow<'_, [u8]>) -> Result<Self, &'static str> {
+        let key = String::from_utf8(bytes.into_owned()).map_err(|_| "release key")?;
+        let (name, version) = key.split_once(['\0', '\x01']).ok_or("release key")?;
         if !(Release {
             name: name.into(),
             version: version.into(),
         })
         .valid()
         {
-            return Err(CodecError::Invalid("release labels"));
+            return Err("release labels");
         }
         Ok(Self(key))
     }
@@ -124,26 +150,26 @@ const METADATA_BOUND: Bound = Bound::Bounded {
     max_size: 16_384,
     is_fixed_size: false,
 };
-fn encode<T: Serialize>(value: &T, tag: &[u8]) -> Result<Cow<'static, [u8]>, CodecError> {
+fn encode<T: Serialize>(value: &T, tag: &[u8]) -> Result<Cow<'static, [u8]>, &'static str> {
     let mut bytes = tag.to_vec();
     bytes.extend(
         ic_wire::encode(value, ic_wire::Encoding::Payload, RECORD_LIMITS)
-            .map_err(|_| CodecError::Invalid("store record"))?,
+            .map_err(|_| "store record")?,
     );
     Ok(Cow::Owned(bytes))
 }
-impl Storable for Artifact {
+impl CheckedRecord for Artifact {
     const BOUND: Bound = METADATA_BOUND;
-    fn to_bytes(&self) -> Result<Cow<'_, [u8]>, CodecError> {
+    fn encode_record(&self) -> Result<Cow<'_, [u8]>, &'static str> {
         if !self.valid() {
-            return Err(CodecError::Invalid("artifact invariant"));
+            return Err("artifact invariant");
         }
         encode(self, b"CWA2")
     }
-    fn from_bytes(bytes: Cow<'_, [u8]>) -> Result<Self, CodecError> {
+    fn decode_record(bytes: Cow<'_, [u8]>) -> Result<Self, &'static str> {
         let value: Self = if let Some(payload) = bytes.strip_prefix(b"CWA2") {
             ic_wire::decode(payload, ic_wire::Encoding::Payload, RECORD_LIMITS)
-                .map_err(|_| CodecError::Invalid("artifact record"))?
+                .map_err(|_| "artifact record")?
         } else if let Some(payload) = bytes.strip_prefix(b"CWA1") {
             #[derive(Deserialize)]
             struct Legacy {
@@ -152,7 +178,7 @@ impl Storable for Artifact {
                 published: bool,
             }
             let old: Legacy = ic_wire::decode(payload, ic_wire::Encoding::Payload, LIMITS)
-                .map_err(|_| CodecError::Invalid("legacy artifact"))?;
+                .map_err(|_| "legacy artifact")?;
             Self {
                 bytes: old.bytes,
                 chunks: old.chunks,
@@ -160,26 +186,26 @@ impl Storable for Artifact {
                 pins: vec![],
             }
         } else {
-            return Err(CodecError::Invalid("artifact schema"));
+            return Err("artifact schema");
         };
         if !value.valid() {
-            return Err(CodecError::Invalid("artifact invariant"));
+            return Err("artifact invariant");
         }
         Ok(value)
     }
 }
-impl Storable for Settings {
+impl CheckedRecord for Settings {
     const BOUND: Bound = METADATA_BOUND;
-    fn to_bytes(&self) -> Result<Cow<'_, [u8]>, CodecError> {
+    fn encode_record(&self) -> Result<Cow<'_, [u8]>, &'static str> {
         if !self.valid() {
-            return Err(CodecError::Invalid("settings invariant"));
+            return Err("settings invariant");
         }
         encode(self, b"CWS2")
     }
-    fn from_bytes(bytes: Cow<'_, [u8]>) -> Result<Self, CodecError> {
+    fn decode_record(bytes: Cow<'_, [u8]>) -> Result<Self, &'static str> {
         let value: Self = if let Some(payload) = bytes.strip_prefix(b"CWS2") {
             ic_wire::decode(payload, ic_wire::Encoding::Payload, LIMITS)
-                .map_err(|_| CodecError::Invalid("settings record"))?
+                .map_err(|_| "settings record")?
         } else if let Some(payload) = bytes.strip_prefix(b"CWS1") {
             #[derive(Deserialize)]
             struct Previous {
@@ -187,34 +213,34 @@ impl Storable for Settings {
                 reserved_bytes: u64,
             }
             let old: Previous = ic_wire::decode(payload, ic_wire::Encoding::Payload, LIMITS)
-                .map_err(|_| CodecError::Invalid("previous settings record"))?;
+                .map_err(|_| "previous settings record")?;
             Self {
                 quota: old.quota,
                 reserved_bytes: old.reserved_bytes,
                 admission: None,
             }
         } else {
-            return Err(CodecError::Invalid("settings schema"));
+            return Err("settings schema");
         };
         if !value.valid() {
-            return Err(CodecError::Invalid("settings invariant"));
+            return Err("settings invariant");
         }
         Ok(value)
     }
 }
 
 pub(super) struct Payload(pub Vec<u8>);
-impl Storable for Payload {
+impl CheckedRecord for Payload {
     const BOUND: Bound = Bound::Bounded {
         max_size: CHUNK_BYTES as u32,
         is_fixed_size: false,
     };
-    fn to_bytes(&self) -> Result<Cow<'_, [u8]>, CodecError> {
+    fn encode_record(&self) -> Result<Cow<'_, [u8]>, &'static str> {
         Ok(Cow::Borrowed(&self.0))
     }
-    fn from_bytes(bytes: Cow<'_, [u8]>) -> Result<Self, CodecError> {
+    fn decode_record(bytes: Cow<'_, [u8]>) -> Result<Self, &'static str> {
         if bytes.is_empty() || bytes.len() > CHUNK_BYTES {
-            return Err(CodecError::Invalid("chunk size"));
+            return Err("chunk size");
         }
         Ok(Self(bytes.into_owned()))
     }

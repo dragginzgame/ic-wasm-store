@@ -369,7 +369,7 @@ fn pins_keep_exact_owner_operation_and_release_across_reopen() {
 
 #[test]
 fn pin_capacity_never_evicts_and_old_artifact_schema_gains_no_authority() {
-    use ic_storage::adapter::Storable;
+    use super::records::CheckedRecord;
     use std::borrow::Cow;
     #[derive(serde::Serialize)]
     struct Legacy {
@@ -391,10 +391,10 @@ fn pin_capacity_never_evicts_and_old_artifact_schema_gains_no_authority() {
         )
         .unwrap(),
     );
-    let decoded = Artifact::from_bytes(Cow::Owned(encoded)).unwrap();
+    let decoded = Artifact::decode_record(Cow::Owned(encoded)).unwrap();
     assert!(decoded.published);
     assert!(decoded.pins.is_empty());
-    let round_trip = Artifact::from_bytes(decoded.to_bytes().unwrap()).unwrap();
+    let round_trip = Artifact::decode_record(decoded.encode_record().unwrap()).unwrap();
     assert!(round_trip.pins.is_empty());
 
     let mut state = State::open(VectorMemory::default(), true);
@@ -429,8 +429,8 @@ fn pin_capacity_never_evicts_and_old_artifact_schema_gains_no_authority() {
     let mut maximum = state.artifacts.get(&first.manifest.hash).unwrap();
     maximum.bytes = (CHUNK_BYTES * ic_wasm_store_protocol::MAX_CHUNKS) as u64;
     maximum.chunks = vec![[255; 32]; ic_wasm_store_protocol::MAX_CHUNKS];
-    let encoded = maximum.to_bytes_checked().unwrap();
-    let restored = Artifact::from_bytes(encoded).unwrap();
+    let encoded = ic_storage::adapter::Storable::to_bytes_checked(&maximum);
+    let restored = Artifact::decode_record(encoded).unwrap();
     assert_eq!(restored.pins.len(), MAX_PINS);
     assert_eq!(restored.chunks, maximum.chunks);
 }
@@ -530,6 +530,7 @@ fn four_allocation_store_reopens_without_reinitializing_existing_records() {
             allocations: 4,
             extents: 4096,
             pages: 16_384,
+            ..StorageConfig::default()
         },
     )
     .unwrap();
@@ -558,12 +559,9 @@ fn four_allocation_store_reopens_without_reinitializing_existing_records() {
                 .unwrap()
         })
         .into_iter();
-    let mut releases =
-        StableBTreeMap::<Key, [u8; 32], _>::create(memories.next().unwrap()).unwrap();
-    let mut artifacts =
-        StableBTreeMap::<[u8; 32], Artifact, _>::create(memories.next().unwrap()).unwrap();
-    let mut chunks =
-        StableBTreeMap::<[u8; 32], Payload, _>::create(memories.next().unwrap()).unwrap();
+    let mut releases = StableBTreeMap::<Key, [u8; 32], _>::create(memories.next().unwrap());
+    let mut artifacts = StableBTreeMap::<[u8; 32], Artifact, _>::create(memories.next().unwrap());
+    let mut chunks = StableBTreeMap::<[u8; 32], Payload, _>::create(memories.next().unwrap());
     let (manifest, bytes) = fixture("pre-removal", 8);
     releases.insert(Key::new(&manifest.release), manifest.hash);
     artifacts.insert(
@@ -583,8 +581,7 @@ fn four_allocation_store_reopens_without_reinitializing_existing_records() {
             reserved_bytes: 8,
             admission: None,
         },
-    )
-    .unwrap();
+    );
     drop((releases, artifacts, chunks, settings, runtime));
     let mut state = State::open(backing.clone(), false);
     assert!(state.status(&manifest.release).unwrap().published);

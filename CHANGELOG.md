@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.4.0] - 2026-11-17
+
+### Breaking changes
+
+- Adopt Storage 0.78.0 for the four named allocations. Install on fresh backing. An upgrade over the 0.74.1 directory traps, preserving the old image through IC upgrade rollback. Store record encodings and endpoint identities are unchanged.
+- Use Testkit 0.110.0 for the qualification client and server launcher.
+
+### 🔧 Tooling
+
+- Update both workspaces and the installed release validation runner to Toko Tooling 0.45.0.
+
 ## [0.3.3] - 2026-11-17
 
 ### 🔧 Tooling

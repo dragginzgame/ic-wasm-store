@@ -32,14 +32,14 @@ run_tests() {
     else
         local launcher
         launcher=$(bash scripts/testkit-launcher.sh check)
-        "$launcher" run --directory "${IC_TESTKIT_SERVER_DIRECTORY:-$root/target/qualification/server}" \
-            --ttl 1800 -- "${command[@]}"
+        bash scripts/run-server.sh "$launcher" "${IC_TESTKIT_SERVER_DIRECTORY:-$root/target/qualification/server-0.110.0}" \
+            "${command[@]}"
     fi
 }
 run_tests
 if [[ "$with_predecessor" == true ]]; then
     bash scripts/prepare-predecessor.sh build
     export IC_WASM_STORE_WASM="$root/target/qualification/predecessor.wasm"
-    command=(cargo test --locked --manifest-path qualification/Cargo.toml --test store -- versioned_upload_resumes --nocapture)
+    command=(cargo test --locked --manifest-path qualification/Cargo.toml --test store -- predecessor_image_is_rejected --ignored --nocapture)
     run_tests
 fi

@@ -30,7 +30,8 @@ impl<M: MemoryBacking> State<M> {
         let lower = after.map_or(Unbounded, |release| Excluded(Key::tombstone(release)));
         Ok(self
             .releases
-            .keys_range((lower, Unbounded))
+            .range((lower, Unbounded))
+            .map(|entry| entry.key().clone())
             .filter(Key::is_tombstone)
             .take(PAGE_SIZE)
             .map(|key| self.removed_manifest(&key))

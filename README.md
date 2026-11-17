@@ -1,5 +1,7 @@
 # IC Wasm Store
 
+The development version uses Storage 0.78.0 and requires fresh backing. Existing Store installations on Storage 0.74.1 require explicit export and migration before adoption.
+
 A standalone, controller-authorized Internet Computer canister for immutable,
 versioned Wasm custody. It retains resumable uploads, shared chunks, quotas and
 operation pins, and prepares the management chunk cache without installing code.
@@ -72,7 +74,7 @@ make tools-check
 make install-hooks
 ```
 
-`make install-tools` also prepares the frozen Testkit 0.106.0 launcher through
+`make install-tools` also prepares the frozen Testkit 0.110.0 launcher through
 the shared Cargo installer. `make tools-check` admits that selection offline.
 Existing checkouts using the former `.tools/testkit-bootstrap` copy must rerun
 `make install-tools`; qualification no longer selects that copy automatically.
@@ -93,7 +95,7 @@ The main checks are:
 | `make build` | Standalone Store Wasm, without qualification features |
 | `make qualification-setup` | Explicit PocketIC server and released-archive preparation |
 | `make qualification-test` | Builds both test executables and runs installed qualification |
-| `make qualification-predecessor-test` | Builds published 0.2.2 and tests its upgrade to the current candidate |
+| `make qualification-predecessor-test` | Builds published 0.2.2 and verifies refusal and rollback when upgrading its old image |
 | `make release-verify` | Formatting, tooling admission, product tests, lints, docs and both installed qualification suites |
 | `make test-tooling` | Publication, setup, diagnostics, path and delivery caller fixtures |
 | `make ci` | Release verification followed by tooling caller fixtures |
@@ -104,8 +106,8 @@ For focused work, use `make test-protocol` or `make test-store`, and select
 Wasm-only and are checked by `make clippy-wasm`. `make help` lists these targets.
 
 Run `make qualification-setup` after tool installation and before the installed
-test or `make ci` on a fresh checkout. Setup admits the prepared 0.106.0 launcher
-and may download the server; tests use Testkit 0.107.3 clients and the prepared bundle.
+test or `make ci` on a fresh checkout. Setup admits the prepared 0.110.0 launcher
+and may download the server; tests use Testkit 0.110.0 clients and the prepared bundle.
 The launcher owns one server for the test command. Alternatively, supply
 `IC_TESTKIT_POCKET_IC_URL` for an externally owned server; see the
 [qualification ownership contract](qualification/README.md).
@@ -134,7 +136,7 @@ requires explicit authorization, a clean committed source, a passing `make relea
 and archive provenance verification against the pushed source commit. Both Make
 publication targets run `make release-verify` before archive admission. This runs
 Clippy first, then formatting/tooling admission, product tests and docs, then the
-complete installed suite and published-predecessor upgrade. Both installed suites
+complete installed suite and published-predecessor rollback. Both installed suites
 share the current original/candidate Wasm builds within that invocation.
 
 Tooling caller regressions run through `make test-tooling` when affected and in

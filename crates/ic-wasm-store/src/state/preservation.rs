@@ -47,7 +47,8 @@ impl<M: MemoryBacking> State<M> {
         });
         let entry = self
             .releases
-            .keys_range((after, Unbounded))
+            .range((after, Unbounded))
+            .map(|entry| entry.key().clone())
             .next()
             .map(|key| {
                 if key.is_tombstone() {

@@ -36,6 +36,7 @@ impl<M: MemoryBacking> State<M> {
                 allocations: 4,
                 extents: 4096,
                 pages: 16_384,
+                ..StorageConfig::default()
             },
         )
         .expect("Store backing");
@@ -58,7 +59,7 @@ impl<M: MemoryBacking> State<M> {
         .expect("Store grants");
         if !fresh {
             assert_eq!(
-                runtime.diagnostics().expect("Store integrity").allocations,
+                runtime.memory_allocations().expect("Store integrity").len(),
                 4,
                 "missing Store allocations"
             );
@@ -82,20 +83,17 @@ impl<M: MemoryBacking> State<M> {
                 StableBTreeMap::create(releases)
             } else {
                 StableBTreeMap::load(releases)
-            }
-            .expect("release catalog"),
+            },
             artifacts: if fresh {
                 StableBTreeMap::create(artifacts)
             } else {
                 StableBTreeMap::load(artifacts)
-            }
-            .expect("artifact catalog"),
+            },
             chunks: if fresh {
                 StableBTreeMap::create(chunks)
             } else {
                 StableBTreeMap::load(chunks)
-            }
-            .expect("chunk storage"),
+            },
             settings: if fresh {
                 StableCell::create(
                     settings,
@@ -106,9 +104,8 @@ impl<M: MemoryBacking> State<M> {
                     },
                 )
             } else {
-                StableCell::load(settings, 16_384)
-            }
-            .expect("Store settings"),
+                StableCell::load(settings).expect("Store settings")
+            },
             _runtime: runtime,
         };
         // Bounded metadata-only maintenance checks. Payloads are verified on publication/read.
@@ -306,7 +303,8 @@ impl<M: MemoryBacking> State<M> {
         }
         let lower = after.map_or(Unbounded, |release| Excluded(Key::new(release)));
         self.releases
-            .keys_range((lower, Unbounded))
+            .range((lower, Unbounded))
+            .map(|entry| entry.key().clone())
             .filter(|key| !key.is_tombstone())
             .take(PAGE_SIZE)
             .map(|key| self.status(&key.release()))

@@ -29,11 +29,10 @@ if grep -q 'stale failure must not be displayed' "$fixture/output"; then
     exit 1
 fi
 rm -rf "$fixture/server/.setup-v1-1-0"
-shopt -s nullglob
-errors=("$fixture/server"/.setup-v1-*/download.stderr)
-failures=("$fixture/server"/.setup-v1-*/failure.txt)
-[[ ${#errors[@]} == 1 && ${#failures[@]} == 1 ]] || { cat "$fixture/output"; exit 1; }
-rg -q 'Source: .*\.setup-v1-.*download.stderr' "$fixture/retained"
+evidence=$(sed -n 's/^ic-testkit-server setup failed (exit 56); evidence: //p' "$fixture/output")
+errors=("$evidence/launcher/download.stderr")
+[[ -f "${errors[0]}" ]]
+rg -q 'Source: .*launcher/download.stderr' "$fixture/retained"
 rg -q 'curl: \(56\) simulated receive failure' "$fixture/retained"
 if rg -q 'stale failure must not be displayed' "$fixture/retained"; then exit 1; fi
 [[ ! -e "$fixture/server/16.1.0-x86_64-linux/pocket-ic" && ! -e "$fixture/server/16.1.0-arm64-darwin/pocket-ic" && ! -e "$fixture/server/16.1.0-x86_64-darwin/pocket-ic" ]]
@@ -41,7 +40,7 @@ perl -e '
     use strict; use warnings;
     local $/; open my $f, "<:raw", shift or die $!; my $text = <$f>;
     die "missing useful cause" unless $text =~ /curl: \(56\) simulated receive failure/;
-    die "missing evidence location" unless $text =~ /\.setup-v1-[^\n]*\/download\.stderr/;
+    die "missing evidence location" unless $text =~ /launcher\/download\.stderr/;
     die "workflow command not neutralized" unless $text =~ /^  ::error::untrusted command\\x0d\\x1b\[2J$/m;
     die "raw control byte" if $text =~ /[\r\x1b]/;
     die "missing truncation notice" unless $text =~ /\[truncated;/;
@@ -55,7 +54,7 @@ grep -q 'No simulator setup evidence' "$fixture/missing-output"
 # The reporting command must not replace a specific setup status (or run on success).
 cat > "$fixture/bin/launcher" <<'STUB'
 #!/usr/bin/env bash
-if [[ "${1:-}" == --version ]]; then echo "ic-testkit-server 0.106.0"; exit 0; fi
+if [[ "${1:-}" == --version ]]; then echo "ic-testkit-server 0.110.0"; exit 0; fi
 if [[ "${1:-}" == check ]]; then exit "${CHECK_STATUS:-0}"; fi
 exit "${SETUP_STATUS:?}"
 STUB
