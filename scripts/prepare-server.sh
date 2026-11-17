@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # The frozen launcher owns provisioning; the current Testkit library owns no server.
 set -euo pipefail
-root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
+root=$(CDPATH='' cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
 cd "$root"
 status=0
 launcher=${TESTKIT_RELEASE_LAUNCHER:-$root/.tools/testkit-bootstrap/bin/ic-testkit-server}

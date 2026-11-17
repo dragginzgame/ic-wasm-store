@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 # Qualify consumer admission ordering without registry writes or hosted API calls.
 set -euo pipefail
-root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)
+# Relative invocations must not capture cd's CDPATH-induced stdout.
+export CDPATH=.
+root=$(CDPATH='' cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)
 fixture=$(mktemp -d)
 trap 'rm -rf "$fixture"' EXIT
 mkdir -p "$fixture/scripts" "$fixture/bin" "$fixture/vendor/toko-tooling/scripts/ci"
@@ -58,7 +60,7 @@ for CASE in success dirty status_failed package_failed provenance_failed changed
     export CASE
     rm -f "$fixture/packaged" "$fixture/provenance"
     status=0
-    CARGO_TARGET_DIR="$fixture/other-target" bash "$fixture/scripts/check-publication.sh" > "$fixture/output" 2>&1 || status=$?
+    (cd "$fixture" && CARGO_TARGET_DIR="$fixture/other-target" bash scripts/check-publication.sh) > "$fixture/output" 2>&1 || status=$?
     [[ ! -e "$fixture/hosted-query" ]] || { echo 'archive admission queried hosted CI'; exit 1; }
     if [[ "$CASE" == success ]]; then
         [[ "$status" == 0 && -f "$fixture/provenance" ]] || { cat "$fixture/output"; exit 1; }

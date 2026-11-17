@@ -772,9 +772,9 @@ dependencies = [
 
 [[package]]
 name = "ic-testkit"
-version = "0.107.3"
+version = "0.107.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f1abdecdc13e767e8f5f7f83f2c19e48a414d6a7eea2e2ffdbfe95222c56d6c2"
+checksum = "8629db43fa7a3e3655184c6173a5ccdecf67a87d29f0c929228bec7f8a1c392b"
 dependencies = [
  "pocket-ic",
 ]
@@ -799,7 +799,7 @@ dependencies = [
 
 [[package]]
 name = "ic-wasm-store-protocol"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "ic-wire",
  "serde",
@@ -821,9 +821,9 @@ dependencies = [
 
 [[package]]
 name = "ic-wire"
-version = "0.24.2"
+version = "0.24.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "852a98f3b818bf1e6841c63845d88ded595b659181377e749cf8cf50b12b48c6"
+checksum = "9bb811860c129acbf0de96b16f44cad6b554c0e12e3cc3b67f0e5ad0109292e2"
 dependencies = [
  "bytemuck",
  "postcard",

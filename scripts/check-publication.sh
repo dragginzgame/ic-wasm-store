@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Consumer admission; shared tooling owns packaging provenance and publication.
 set -euo pipefail
-root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
+root=$(CDPATH='' cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
 cd "$root"
 fail() { printf 'Store publication refused: %s\n' "$*" >&2; exit 1; }
 dirty=$(git status --porcelain --untracked-files=all)

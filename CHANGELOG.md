@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.3.1] - 2026-11-17
+
+### 🩹 Fixed
+
+- Resolve local setup, qualification and publication script paths independently of the caller's `CDPATH`, preserving correct paths and exit statuses for relative invocations.
+
+### 🔧 Changed
+
+- Adopt Platform Protocol 0.3.2 for bounded management-cache messages. Store's selected chunk codecs and public Wire contract remain compatible.
+- Refresh compatible lock selections to Platform Runtime 0.23.15, Wire 0.24.3 and Testkit 0.107.4. Retain the explicitly frozen 0.106.0 server-launcher bootstrap; migration to Testkit's newer optional launcher is deferred to the next server-tooling adoption.
+
 ## [0.3.0] - 2026-11-16
 
 ### ⚠️ Breaking

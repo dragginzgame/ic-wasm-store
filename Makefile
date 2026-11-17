@@ -25,6 +25,7 @@ help:
 	  'make qualification-test    Test installed custody, cache and maintenance' \
 	  'make qualification-predecessor-test  Test upgrade from published 0.2.2' \
 	  'make test-publication      Test publication admission without uploads' \
+	  'make test-script-paths     Test setup/build paths with CDPATH enabled' \
 	  'make ci                    Run aggregate checks; requires prepared fixtures'
 check:
 	cargo check --locked --workspace --all-targets
@@ -62,8 +63,11 @@ publication-admission:
 test-publication:
 	bash scripts/tests/publication.sh
 .PHONY: test-server-diagnostics
+.PHONY: test-script-paths
+test-script-paths:
+	bash scripts/tests/path-resolution.sh
 test-server-diagnostics:
 	bash scripts/tests/server-setup-diagnostics.sh
 ci: clippy
-	$(MAKE) fmt-check toko-tooling-check test doc test-publication test-server-diagnostics qualification-test
+	$(MAKE) fmt-check toko-tooling-check test doc test-publication test-server-diagnostics test-script-paths qualification-test
 	$(MAKE) qualification-predecessor-test

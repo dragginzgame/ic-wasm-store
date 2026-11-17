@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Frozen published input; never substitute the current checkout for this fixture.
 set -euo pipefail
-root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
+root=$(CDPATH='' cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
 cd "$root"
 version=0.2.2
 checksum=5ac8eeefd0b49bc36a1e946bc984dcabae974cb6510150296d90ae205d5e1cd0

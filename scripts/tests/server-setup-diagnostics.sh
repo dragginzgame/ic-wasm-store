@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 # Real Testkit failed-download path; only curl is substituted, with no networking.
 set -euo pipefail
-root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)
+# Exercise relative setup entrypoints with the caller's CDPATH enabled.
+export CDPATH=.
+root=$(CDPATH='' cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)
 cd "$root"
 mkdir -p target
 fixture=$(mktemp -d "$root/target/server-diagnostics.XXXXXX")
