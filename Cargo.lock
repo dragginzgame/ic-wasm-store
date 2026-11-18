@@ -104,6 +104,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "ic-platform"
+version = "0.34.16"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "370a236d0cc0e5a7328b344d8493cf367dd83178257ee809a48716fdb7301c4c"
+dependencies = [
+ "ic-stable-structures",
+]
+
+[[package]]
 name = "ic-platform-macros"
 version = "0.23.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -165,19 +174,19 @@ dependencies = [
 
 [[package]]
 name = "ic-storage"
-version = "0.78.0"
+version = "0.78.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b588819cc6cbcca64656d97863d4cd86285285e08ed58d7353013a435d4fda0a"
+checksum = "9a1c0763bc875711db48da5a4a046bd1e21f2faf93c5c4025239a97d199a1102"
 dependencies = [
+ "ic-platform",
  "ic-platform-runtime",
- "ic-stable-structures",
  "serde",
  "thiserror",
 ]
 
 [[package]]
 name = "ic-wasm-store"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "ic-platform-protocol",
  "ic-platform-runtime",
@@ -192,7 +201,7 @@ dependencies = [
 
 [[package]]
 name = "ic-wasm-store-protocol"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "ic-wire",
  "serde",
@@ -203,9 +212,9 @@ dependencies = [
 
 [[package]]
 name = "ic-wire"
-version = "0.24.4"
+version = "0.24.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "19fe83abbcb187c5bdc1f534728c3403b67ba02effda1ddb1e09e0284c833b2b"
+checksum = "c807d4a24382291f57bfdaacd200ccc38b4be57983612c978444999465a78295"
 dependencies = [
  "bytemuck",
  "postcard",
@@ -339,9 +348,9 @@ dependencies = [
 
 [[package]]
 name = "toko-tooling"
-version = "0.45.0"
+version = "0.45.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3789a925c1165317eff84cc80436195b66c0478b0c2b441bc2f1a755caf6a23a"
+checksum = "41141f3a04bea22cacdaa5e36774d69e1335f5461098311eb6bb2731ee113da5"
 
 [[package]]
 name = "typenum"

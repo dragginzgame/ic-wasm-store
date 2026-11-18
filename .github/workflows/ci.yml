@@ -70,7 +70,7 @@ jobs:
       - uses: ./vendor/toko-tooling/.github/actions/cache-tool-downloads
       - name: Prepare compiler
         id: compiler
-        run: bash scripts/run-setup.sh compiler rustup toolchain install 1.100.0 --profile minimal --component rustfmt,clippy --target wasm32-unknown-unknown
+        run: bash scripts/run-setup.sh compiler rustup toolchain install "$(sed -nE 's/^[[:space:]]*channel[[:space:]]*=[[:space:]]*"([^"]+)".*$/\1/p' rust-toolchain.toml)" --profile minimal --component rustfmt,clippy --target wasm32-unknown-unknown
       - name: Prepare repository tools and fixtures
         id: setup
         run: |

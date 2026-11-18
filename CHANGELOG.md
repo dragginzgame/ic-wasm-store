@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.4.1] - 2026-11-18
+
+### 🔧 Tooling
+
+- Adopt Toko Tooling 0.45.3 in both workspaces and the authenticated tooling snapshot.
+- Derive the CI compiler version from repository policy and clarify publication as the release qualification owner.
+- Refresh locked dependencies to Storage 0.78.1 and Wire 0.24.6.
+
 ## [0.4.0] - 2026-11-17
 
 ### Breaking changes

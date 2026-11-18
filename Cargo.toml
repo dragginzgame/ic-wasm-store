@@ -4,7 +4,7 @@ exclude = ["qualification", "target"]
 resolver = "3"
 
 [workspace.package]
-version = "0.4.0"
+version = "0.4.1"
 edition = "2024"
 rust-version = "1.100.0"
 publish = ["crates-io"]
@@ -16,12 +16,12 @@ ic-platform-protocol = { version = "0.3.2", default-features = false }
 ic-platform-runtime = { version = "0.23.14", default-features = false }
 ic-platform-types = { version = "0.21.2", default-features = false }
 ic-storage = "0.78.0"
-ic-wasm-store-protocol = { version = "0.4.0", path = "crates/ic-wasm-store-protocol" }
+ic-wasm-store-protocol = { version = "0.4.1", path = "crates/ic-wasm-store-protocol" }
 ic-wire = { version = "0.24.1", default-features = false }
 serde = "1.0.229"
 serde_bytes = "0.11.19"
 sha2 = "0.11.1"
-toko-tooling = "=0.45.0"
+toko-tooling = "=0.45.3"
 
 [workspace.lints.cargo]
 unused_dependencies = "deny"

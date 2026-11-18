@@ -20,6 +20,13 @@ All release prerequisites must succeed before installed execution. The installed
 runner builds original/candidate Wasm once, builds the frozen predecessor, and
 uses Cargo's executable artifact record for the installed test binary.
 
+For authorized upload of prepared, committed and pushed source, run only
+`make publish`. `make release-verify` is a standalone readiness check and
+`make publish-check` is an optional registry dry run. Both run the product gate,
+so running either before upload repeats qualification except for installed stages
+whose exact-input proofs remain admissible. Neither is a required upload step.
+Fresh source, archive and registry admission still runs on every publication.
+
 ## Exact installed execution evidence
 
 `scripts/release-installed.sh` selects two stages through the published shared
