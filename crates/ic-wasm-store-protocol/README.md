@@ -7,7 +7,7 @@ it does not make network calls, manage stable memory or deploy code.
 
 ```toml
 [dependencies]
-ic-wasm-store-protocol = "0.4.1"
+ic-wasm-store-protocol = "0.4.2"
 ```
 
 A release is an application-defined name and version, bound to a SHA-256 digest,
@@ -45,4 +45,4 @@ The historical method 113 remains unchanged.
 
 - [API documentation](https://docs.rs/ic-wasm-store-protocol)
 - [Source and development instructions](https://github.com/dragginzgame/ic-wasm-store)
-- [Compatibility and removal semantics](https://github.com/dragginzgame/ic-wasm-store/blob/v0.4.1/docs/design/extraction.md)
+- [Compatibility and removal semantics](https://github.com/dragginzgame/ic-wasm-store/blob/v0.4.2/docs/design/extraction.md)

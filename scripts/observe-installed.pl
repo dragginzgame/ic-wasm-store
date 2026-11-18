@@ -2,7 +2,6 @@
 # Input policy for executing already-built installed witnesses; no Cargo reuse.
 use strict;
 use warnings;
-use Cwd qw(abs_path);
 use File::Find;
 use JSON::PP;
 use DynaLoader ();

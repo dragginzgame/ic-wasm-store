@@ -38,7 +38,7 @@ cat > "$fixture/bin/cargo" <<'STUB'
 #!/usr/bin/env bash
 set -eu
 case "$*" in
-    'metadata --locked --offline --no-deps --format-version 1')
+    'metadata --locked --no-deps --format-version 1')
         echo '{"packages":[{"name":"ic-wasm-store","version":"0.2.3"},{"name":"ic-wasm-store-protocol","version":"0.2.3"}]}' ;;
     "package --locked --target-dir $FIXTURE/target --target wasm32-unknown-unknown -p ic-wasm-store-protocol -p ic-wasm-store")
         [[ "$CASE" != package_failed ]] || exit 1

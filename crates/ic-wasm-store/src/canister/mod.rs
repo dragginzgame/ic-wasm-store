@@ -3,15 +3,26 @@ use crate::state::State;
 use ic_platform_runtime::{self as runtime, system};
 use ic_storage::DefaultMemoryImpl;
 use ic_wasm_store_protocol as protocol;
-use std::cell::RefCell;
-use std::{convert::Infallible, fmt::Debug};
+use std::{cell::RefCell, convert::Infallible, fmt::Debug};
 mod cache;
 thread_local! { static STATE: RefCell<Option<State<DefaultMemoryImpl>>> = const { RefCell::new(None) }; }
-#[runtime::init(runtime = runtime, guard = lifecycle_admit, decode = lifecycle_decode, max_bytes = 16384, on_error = fail)]
+#[runtime::init(
+    runtime = runtime,
+    guard = lifecycle_admit,
+    decode = lifecycle_decode,
+    max_bytes = 16384,
+    on_error = fail
+)]
 fn init((): ()) {
     STATE.with_borrow_mut(|state| *state = Some(State::open(DefaultMemoryImpl::default(), true)));
 }
-#[runtime::post_upgrade(runtime = runtime, guard = lifecycle_admit, decode = lifecycle_decode, max_bytes = 16384, on_error = fail)]
+#[runtime::post_upgrade(
+    runtime = runtime,
+    guard = lifecycle_admit,
+    decode = lifecycle_decode,
+    max_bytes = 16384,
+    on_error = fail
+)]
 fn post_upgrade((): ()) {
     STATE.with_borrow_mut(|state| *state = Some(State::open(DefaultMemoryImpl::default(), false)));
 }
@@ -19,9 +30,11 @@ fn post_upgrade((): ()) {
 fn lifecycle_admit() -> Result<(), Infallible> {
     Ok(())
 }
+
 fn lifecycle_decode(_bytes: &[u8]) -> Result<(), Infallible> {
     Ok(())
 }
+
 fn fail(error: impl Debug) -> ! {
     system::trap(&format!("Store entrypoint: {error:?}"))
 }
@@ -82,14 +95,96 @@ macro_rules! endpoint {
         }
     };
 }
-endpoint!(prepare, "prepare", update, PREPARE, protocol::Manifest, Result<protocol::Status, protocol::Error>, LIMITS, LIMITS, |state, input| state.prepare(input));
-endpoint!(put, "put", update, PUT, protocol::Put, Result<protocol::Status, protocol::Error>, CHUNK_LIMITS, LIMITS, |state, input| state.put(input));
-endpoint!(publish, "publish", update, PUBLISH, protocol::Release, Result<protocol::Status, protocol::Error>, LIMITS, LIMITS, |state, input| state.publish(input));
-endpoint!(status, "status", query, STATUS, protocol::Release, Result<protocol::Status, protocol::Error>, LIMITS, LIMITS, |state, input| state.status(input));
-endpoint!(observe, "observe", update, STATUS, protocol::Release, Result<protocol::Status, protocol::Error>, LIMITS, LIMITS, |state, input| state.status(input));
-endpoint!(observe_custody, "observe_custody", update, CUSTODY, protocol::Release, Result<protocol::Custody, protocol::Error>, LIMITS, LIMITS, |state, input| state.custody(input));
-endpoint!(observe_preservation, "observe_preservation", update, PRESERVATION, protocol::preservation::Request, Result<protocol::preservation::Page, protocol::Error>, LIMITS, LIMITS, |state, input| state.preservation(system::caller().as_slice(), input));
-endpoint!(observe_preservation_v2, "observe_preservation_v2", update, PRESERVATION_V2, protocol::preservation::Request, Result<protocol::preservation::PageV2, protocol::Error>, LIMITS, LIMITS, |state, input| state.preservation_v2(system::caller().as_slice(), input));
+endpoint!(
+    prepare,
+    "prepare",
+    update,
+    PREPARE,
+    protocol::Manifest,
+    Result<protocol::Status, protocol::Error>,
+    LIMITS,
+    LIMITS,
+    |state, input| state.prepare(input)
+);
+endpoint!(
+    put,
+    "put",
+    update,
+    PUT,
+    protocol::Put,
+    Result<protocol::Status, protocol::Error>,
+    CHUNK_LIMITS,
+    LIMITS,
+    |state, input| state.put(input)
+);
+endpoint!(
+    publish,
+    "publish",
+    update,
+    PUBLISH,
+    protocol::Release,
+    Result<protocol::Status, protocol::Error>,
+    LIMITS,
+    LIMITS,
+    |state, input| state.publish(input)
+);
+endpoint!(
+    status,
+    "status",
+    query,
+    STATUS,
+    protocol::Release,
+    Result<protocol::Status, protocol::Error>,
+    LIMITS,
+    LIMITS,
+    |state, input| state.status(input)
+);
+endpoint!(
+    observe,
+    "observe",
+    update,
+    STATUS,
+    protocol::Release,
+    Result<protocol::Status, protocol::Error>,
+    LIMITS,
+    LIMITS,
+    |state, input| state.status(input)
+);
+endpoint!(
+    observe_custody,
+    "observe_custody",
+    update,
+    CUSTODY,
+    protocol::Release,
+    Result<protocol::Custody, protocol::Error>,
+    LIMITS,
+    LIMITS,
+    |state, input| state.custody(input)
+);
+endpoint!(
+    observe_preservation,
+    "observe_preservation",
+    update,
+    PRESERVATION,
+    protocol::preservation::Request,
+    Result<protocol::preservation::Page, protocol::Error>,
+    LIMITS,
+    LIMITS,
+    |state, input| state.preservation(system::caller().as_slice(),
+    input)
+);
+endpoint!(
+    observe_preservation_v2,
+    "observe_preservation_v2",
+    update,
+    PRESERVATION_V2,
+    protocol::preservation::Request,
+    Result<protocol::preservation::PageV2, protocol::Error>,
+    LIMITS,
+    LIMITS,
+    |state, input| state.preservation_v2(system::caller().as_slice(),
+    input)
+);
 endpoint!(
     admission,
     "admission",
@@ -101,8 +196,28 @@ endpoint!(
     LIMITS,
     |state, input| state.admission(system::caller().as_slice(), input)
 );
-endpoint!(read, "read", query, READ, protocol::Read, Result<protocol::Chunk, protocol::Error>, LIMITS, CHUNK_LIMITS, |state, input| state.read(input));
-endpoint!(read_chunk, "read_chunk", update, READ, protocol::Read, Result<protocol::Chunk, protocol::Error>, LIMITS, CHUNK_LIMITS, |state, input| state.read(input));
+endpoint!(
+    read,
+    "read",
+    query,
+    READ,
+    protocol::Read,
+    Result<protocol::Chunk, protocol::Error>,
+    LIMITS,
+    CHUNK_LIMITS,
+    |state, input| state.read(input)
+);
+endpoint!(
+    read_chunk,
+    "read_chunk",
+    update,
+    READ,
+    protocol::Read,
+    Result<protocol::Chunk, protocol::Error>,
+    LIMITS,
+    CHUNK_LIMITS,
+    |state, input| state.read(input)
+);
 endpoint!(
     list,
     "list",
@@ -136,11 +251,63 @@ endpoint!(
     LIMITS,
     |state, _| state.info()
 );
-endpoint!(configure, "configure", update, CONFIGURE, protocol::Quota, Result<protocol::Info, protocol::Error>, LIMITS, LIMITS, |state, input| state.configure(input));
-endpoint!(pin, "pin", update, PIN, protocol::Pin, Result<protocol::PinReceipt, protocol::Error>, LIMITS, LIMITS, |state, input| state.pin(system::caller().as_slice(), input));
-endpoint!(observe_pin, "observe_pin", update, OBSERVE_PIN, protocol::Pin, Result<protocol::PinReceipt, protocol::Error>, LIMITS, LIMITS, |state, input| state.observe_pin(system::caller().as_slice(), input));
-endpoint!(delete, "delete", update, DELETE, protocol::Manifest, Result<protocol::Manifest, protocol::Error>, LIMITS, LIMITS, |state, input| state.remove_release(input, true));
-endpoint!(cancel, "cancel", update, CANCEL, protocol::Manifest, Result<protocol::Manifest, protocol::Error>, LIMITS, LIMITS, |state, input| state.remove_release(input, false));
+endpoint!(
+    configure,
+    "configure",
+    update,
+    CONFIGURE,
+    protocol::Quota,
+    Result<protocol::Info, protocol::Error>,
+    LIMITS,
+    LIMITS,
+    |state, input| state.configure(input)
+);
+endpoint!(
+    pin,
+    "pin",
+    update,
+    PIN,
+    protocol::Pin,
+    Result<protocol::PinReceipt, protocol::Error>,
+    LIMITS,
+    LIMITS,
+    |state, input| state.pin(system::caller().as_slice(),
+    input)
+);
+endpoint!(
+    observe_pin,
+    "observe_pin",
+    update,
+    OBSERVE_PIN,
+    protocol::Pin,
+    Result<protocol::PinReceipt, protocol::Error>,
+    LIMITS,
+    LIMITS,
+    |state, input| state.observe_pin(system::caller().as_slice(),
+    input)
+);
+endpoint!(
+    delete,
+    "delete",
+    update,
+    DELETE,
+    protocol::Manifest,
+    Result<protocol::Manifest, protocol::Error>,
+    LIMITS,
+    LIMITS,
+    |state, input| state.remove_release(input, true)
+);
+endpoint!(
+    cancel,
+    "cancel",
+    update,
+    CANCEL,
+    protocol::Manifest,
+    Result<protocol::Manifest, protocol::Error>,
+    LIMITS,
+    LIMITS,
+    |state, input| state.remove_release(input, false)
+);
 endpoint!(
     tombstones,
     "tombstones",

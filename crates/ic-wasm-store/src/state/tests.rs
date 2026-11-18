@@ -18,6 +18,7 @@ fn fixture(version: &str, bytes: usize) -> (Manifest, Vec<u8>) {
         payload,
     )
 }
+
 fn upload(state: &mut State<VectorMemory>, manifest: &Manifest, payload: &[u8]) {
     for (index, bytes) in payload.chunks(CHUNK_BYTES).enumerate() {
         state

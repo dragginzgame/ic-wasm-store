@@ -61,6 +61,7 @@ impl<M: MemoryBacking> State<M> {
             None => Ok(0),
         }
     }
+
     pub fn cache_fence(&self, admitted: u64) -> Result<(), Error> {
         if self.admission_epoch()? != admitted {
             return Err(Error::Conflict);

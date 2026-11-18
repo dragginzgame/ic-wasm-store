@@ -1,5 +1,8 @@
 //! Immutable raw-Wasm releases and resumable publication. No deployment authority.
 #![forbid(unsafe_code)]
+
+#[cfg(test)]
+mod tests;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 pub mod preservation;
@@ -49,6 +52,7 @@ pub struct MaintenanceAttempt {
     /// Nonzero operation commitment supplied by the current controller.
     pub operation: [u8; 32],
 }
+
 /// Latest retained admission transition. Closed does not mean in-flight calls have drained.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Admission {
@@ -60,6 +64,7 @@ pub struct Admission {
     /// All publication, pin, quota and fresh cache work is refused while true.
     pub closed: bool,
 }
+
 /// Explicit local admission operations; no installation or automatic activation.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub enum AdmissionCommand {
@@ -70,6 +75,7 @@ pub enum AdmissionCommand {
     /// Reopen only the exact current attempt owned by the captured caller.
     Activate(MaintenanceAttempt),
 }
+
 /// Bounded retained pin records per artifact; exhaustion never evicts a pin.
 pub const MAX_PINS: usize = 32;
 
@@ -150,6 +156,7 @@ pub enum CacheError {
     /// Delivery or reply interpretation was uncertain; re-observe cache before repair.
     Uncertain,
 }
+
 /// Transfer unit, independent of artifact size.
 pub const CHUNK_BYTES: usize = 262_144;
 /// First qualified verification work bound: 8 MiB per artifact.
@@ -227,6 +234,7 @@ pub struct Put {
     #[serde(with = "serde_bytes")]
     pub bytes: Vec<u8>,
 }
+
 /// A chunk read from a published release.
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Read {
@@ -235,6 +243,7 @@ pub struct Read {
     /// Zero-based position.
     pub index: u32,
 }
+
 /// Metadata-only resume information, not an installation receipt.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Status {
@@ -245,6 +254,7 @@ pub struct Status {
     /// Positions whose bytes have not been committed yet.
     pub missing: Vec<u32>,
 }
+
 /// Read response preserves the blob codec and avoids per-byte node admission.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Chunk(#[serde(with = "serde_bytes")] pub Vec<u8>);
@@ -274,6 +284,7 @@ impl Quota {
             && self.releases <= 4096
     }
 }
+
 /// Current quota usage and executable witness.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Info {
@@ -290,6 +301,7 @@ pub struct Info {
     /// Distinct binary used only to qualify maintenance.
     pub maintenance_candidate: bool,
 }
+
 /// Typed refusal without partial mutation. Backing/codec failures trap instead.
 #[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub enum Error {
@@ -308,11 +320,9 @@ pub enum Error {
     /// Store mutation admission is closed; reads and exact maintenance recovery remain available.
     Closed,
 }
+
 /// Canonical content hashing, shared by producer and Store.
 #[must_use]
 pub fn digest(bytes: &[u8]) -> [u8; 32] {
     Sha256::digest(bytes).into()
 }
-
-#[cfg(test)]
-mod tests;

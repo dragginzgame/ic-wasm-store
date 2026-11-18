@@ -142,6 +142,7 @@ impl<M: MemoryBacking> State<M> {
             .ok_or(Error::NotFound)?;
         Ok((hash, self.artifacts.get(&hash).expect("retained artifact")))
     }
+
     pub fn status(&self, release: &Release) -> Result<Status, Error> {
         let (hash, artifact) = self.artifact(release)?;
         let missing = artifact
@@ -162,6 +163,7 @@ impl<M: MemoryBacking> State<M> {
             missing,
         })
     }
+
     pub fn custody(&self, release: &Release) -> Result<ic_wasm_store_protocol::Custody, Error> {
         let status = self.status(release)?;
         let artifact = self
@@ -181,6 +183,7 @@ impl<M: MemoryBacking> State<M> {
                 .collect(),
         })
     }
+
     pub fn prepare(&mut self, manifest: &Manifest) -> Result<Status, Error> {
         self.admission_epoch()?;
         if !manifest.valid() {
@@ -240,6 +243,7 @@ impl<M: MemoryBacking> State<M> {
         self.releases.insert(key, manifest.hash);
         self.status(&manifest.release)
     }
+
     pub fn put(&mut self, input: &Put) -> Result<Status, Error> {
         self.admission_epoch()?;
         let (_, artifact) = self.artifact(&input.release)?;
@@ -257,6 +261,7 @@ impl<M: MemoryBacking> State<M> {
         }
         self.status(&input.release)
     }
+
     pub fn publish(&mut self, release: &Release) -> Result<Status, Error> {
         self.admission_epoch()?;
         let (hash, mut artifact) = self.artifact(release)?;
@@ -281,6 +286,7 @@ impl<M: MemoryBacking> State<M> {
         self.artifacts.insert(hash, artifact);
         self.status(release)
     }
+
     pub fn read(&self, input: &Read) -> Result<Chunk, Error> {
         let (_, artifact) = self.artifact(&input.release)?;
         if !artifact.published {
@@ -297,6 +303,7 @@ impl<M: MemoryBacking> State<M> {
         assert_eq!(digest(&payload.0), *hash, "published chunk digest");
         Ok(Chunk(payload.0))
     }
+
     pub fn list(&self, after: Option<&Release>) -> Result<Vec<Status>, Error> {
         if after.is_some_and(|release| !release.valid()) {
             return Err(Error::Invalid);
@@ -310,6 +317,7 @@ impl<M: MemoryBacking> State<M> {
             .map(|key| self.status(&key.release()))
             .collect()
     }
+
     pub fn info(&self) -> Info {
         Info {
             quota: self.settings.get().quota.clone(),
@@ -320,6 +328,7 @@ impl<M: MemoryBacking> State<M> {
             maintenance_candidate: cfg!(feature = "maintenance-candidate"),
         }
     }
+
     pub fn configure(&mut self, quota: &Quota) -> Result<Info, Error> {
         self.admission_epoch()?;
         if !quota.valid() {

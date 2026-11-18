@@ -45,6 +45,7 @@ impl Client<'_> {
         )
         .unwrap()
     }
+
     async fn info(&self) -> store::Info {
         let reply = self
             .pic
@@ -74,6 +75,7 @@ impl Client<'_> {
         )
         .unwrap()
     }
+
     async fn status(&self, release: &store::Release) -> store::Status {
         self.update::<_, Result<store::Status, store::Error>>(
             "observe",

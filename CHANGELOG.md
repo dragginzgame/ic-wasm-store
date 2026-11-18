@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.2] - 2026-11-18
+
+### 🔧 Tooling
+
+- Adopt Toko Tooling 0.45.8 and Wire 0.25.0 in both workspaces.
+- Group dependency roles, expand endpoint declarations, separate functions and retain caller Cargo network settings during publication metadata admission.
+
 ## [0.4.1] - 2026-11-18
 
 ### 🔧 Tooling

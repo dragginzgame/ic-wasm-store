@@ -10,6 +10,7 @@ pub struct Request {
     /// Previous returned release; None starts enumeration.
     pub after: Option<Release>,
 }
+
 /// Stable metadata counters, deliberately excluding executable identity and cache state.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Catalog {
@@ -24,6 +25,7 @@ pub struct Catalog {
     /// Distinct retained payload chunks; this read does not hash their bytes.
     pub chunks: u64,
 }
+
 /// One complete release record and its shared pins; None establishes end of enumeration.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Page {
@@ -52,6 +54,7 @@ impl Entry {
             Self::Removed(value) => value,
         }
     }
+
     /// Strict scan order: name, active before removed, then version (bytewise).
     /// Use the returned manifest's release as the next request's exclusive cursor.
     /// The exact closed attempt keeps cursor identity stable across pages.

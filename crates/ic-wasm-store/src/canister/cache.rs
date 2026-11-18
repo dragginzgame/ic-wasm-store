@@ -23,6 +23,7 @@ fn admit() -> Result<(), String> {
     }
     Ok(())
 }
+
 fn decode(bytes: &[u8]) -> Result<PrepareCache, ic_wire::Error> {
     ic_wire::decode(
         bytes,
@@ -44,6 +45,7 @@ fn encode(reply: Result<CacheReady, CacheError>) -> Result<Vec<u8>, ic_wire::Err
         protocol::LIMITS,
     )
 }
+
 fn authority(caller: &Principal, expires: u64, epoch: u64) -> Result<(), CacheError> {
     if !system::is_controller(caller) {
         return Err(CacheError::Authority);
@@ -55,6 +57,7 @@ fn authority(caller: &Principal, expires: u64, epoch: u64) -> Result<(), CacheEr
         .with_borrow(|state| state.as_ref().expect("Store state").cache_fence(epoch))
         .map_err(CacheError::Pin)
 }
+
 async fn management(method: &str, bytes: Vec<u8>) -> Result<Vec<u8>, CacheError> {
     let reply = Call::new(Principal::management_canister(), method, Wait::Unbounded)
         .owned_args(bytes)
@@ -69,7 +72,15 @@ async fn management(method: &str, bytes: Vec<u8>) -> Result<Vec<u8>, CacheError>
     }
 }
 
-#[runtime::update(runtime = runtime, name = "prepare_cache", guard = admit, decode = decode, encode = encode, max_bytes = 16384, on_error = fail)]
+#[runtime::update(
+    runtime = runtime,
+    name = "prepare_cache",
+    guard = admit,
+    decode = decode,
+    encode = encode,
+    max_bytes = 16384,
+    on_error = fail
+)]
 async fn prepare_cache(input: PrepareCache) -> Result<CacheReady, CacheError> {
     let caller = system::caller();
     let epoch = STATE

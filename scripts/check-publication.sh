@@ -10,7 +10,7 @@ source=$(git rev-parse HEAD)
 repository=dragginzgame/ic-wasm-store
 # Local validation is selected by the Make publication adapter. Hosted CI is
 # reported separately; pending results do not gate archive admission.
-metadata=$(cargo metadata --locked --offline --no-deps --format-version 1)
+metadata=$(cargo metadata --locked --no-deps --format-version 1)
 arguments=()
 for package in ic-wasm-store-protocol ic-wasm-store; do
     version=$(jq -er --arg name "$package" '.packages[] | select(.name == $name) | .version' <<< "$metadata")
