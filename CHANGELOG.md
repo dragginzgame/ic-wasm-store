@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.5.2] - 2026-11-19
+
+### 🔧 Tooling
+
+- Use the shared compiler installer in CI. Select Rust, its components, and the
+  Wasm target from `rust-toolchain.toml` and retain setup failure evidence.
+  [WasmStore #6 — Use the shared Rust toolchain installer in CI](https://github.com/dragginzgame/ic-wasm-store/issues/6)
+
 ## [0.5.1] - 2026-11-19
 
 ### 🔧 Tooling

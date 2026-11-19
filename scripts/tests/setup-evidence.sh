@@ -9,10 +9,38 @@ repo="$fixture/repo with spaces"
 mkdir -p "$repo/scripts" "$repo/vendor/toko-tooling/scripts/"{ci,dev} "$fixture/bin"
 cp "$root/scripts/run-setup.sh" "$root/scripts/collect-setup-evidence.pl" "$root/scripts/testkit-launcher.sh" "$repo/scripts/"
 cp "$root/vendor/toko-tooling/scripts/ci/SetupDiagnostics.pm" "$repo/vendor/toko-tooling/scripts/ci/"
+cp "$root/vendor/toko-tooling/scripts/dev/prepare-rust-toolchain.sh" "$repo/vendor/toko-tooling/scripts/dev/"
+cp "$root/rust-toolchain.toml" "$repo/"
 cd "$repo"
 export CDPATH=.
 export FIXTURE_TOKEN=fixture-sensitive-value
 export FIXTURE_ACCESS_KEY=fixture-access-value
+
+# Run the selected workflow step with the real installer and a substitute rustup.
+compiler_setup=$(yq -o=json '.jobs.qualify.steps' "$root/.github/workflows/ci.yml" |
+    jq -er '[.[] | select(.id == "compiler") | .run] | if length == 1 then .[0] else error("expected one compiler step") end | select(type == "string" and length > 0)')
+export COMPILER_CALLS="$fixture/compiler-calls"
+cat > "$fixture/bin/rustup" <<'STUB'
+#!/usr/bin/env bash
+printf '%s\n' "$@" > "$COMPILER_CALLS"
+if [[ "${COMPILER_STATUS:-0}" != 0 ]]; then
+    printf 'rustup fixture could not install the compiler\nAuthorization: Bearer compiler-fixture-value\n' >&2
+    exit "$COMPILER_STATUS"
+fi
+STUB
+chmod +x "$fixture/bin/rustup"
+PATH="$fixture/bin:$PATH" bash -ec "$compiler_setup" > "$fixture/compiler-success" 2>&1
+printf '%s\n' toolchain install 1.100.0 --profile minimal --component rustfmt --component clippy \
+    --target wasm32-unknown-unknown > "$fixture/compiler-expected"
+cmp "$COMPILER_CALLS" "$fixture/compiler-expected"
+status=0
+PATH="$fixture/bin:$PATH" COMPILER_STATUS=52 bash -ec "$compiler_setup" > "$fixture/compiler-failure" 2>&1 || status=$?
+[[ "$status" == 52 ]]
+rg -q '^status=52$' target/setup-evidence/compiler.*/result.txt
+rg -q 'rustup fixture could not install the compiler' "$fixture/compiler-failure"
+rg -q 'rustup fixture could not install the compiler' target/setup-evidence/compiler.*/diagnostic-*
+if rg -q 'compiler-fixture-value' "$fixture/compiler-failure" target/setup-evidence/compiler.*; then exit 1; fi
+
 cat > "$fixture/fail" <<'STUB'
 #!/usr/bin/env bash
 set -euo pipefail
@@ -130,4 +158,4 @@ INSTALL_STATUS=43 bash scripts/testkit-launcher.sh check > "$fixture/rejected-se
 rm "$CALLS"
 TESTKIT_RELEASE_LAUNCHER="$LAUNCHER" INSTALL_STATUS=43 bash scripts/testkit-launcher.sh check > "$fixture/external-selection"
 [[ ! -e "$CALLS" && -e "$MARKER" ]]
-printf 'setup evidence: scanner/compiler failures, hidden logs, sanitization, bounds, missing/linked files, collector status and launcher selection passed\n'
+printf 'setup evidence: compiler selection, scanner/compiler failures, hidden logs, sanitization, bounds, missing/linked files, collector status and launcher selection passed\n'
