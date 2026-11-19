@@ -9,8 +9,8 @@ and installation.
 This package supplies the canister implementation. For request/response types in
 native clients or other canisters, use
 [ic-wasm-store-protocol](https://crates.io/crates/ic-wasm-store-protocol).
-The native library exposes no Store service API; canister entrypoints compile
-only for `wasm32-unknown-unknown`.
+The native library exposes no Store service API. IC entrypoints are exported
+on `wasm32-unknown-unknown`.
 
 ## Build
 
@@ -18,7 +18,7 @@ With Git, rustup and GNU Make installed, use the tagged source and its committed
 lockfile for a reproducible dependency selection:
 
 ```sh
-git clone --branch v0.4.2 https://github.com/dragginzgame/ic-wasm-store.git
+git clone --branch v0.5.0 https://github.com/dragginzgame/ic-wasm-store.git
 cd ic-wasm-store
 rustup toolchain install 1.100.0 --profile minimal --component rustfmt,clippy --target wasm32-unknown-unknown
 make build
@@ -64,5 +64,5 @@ does not qualify consumer orchestration or live deployment.
 
 - [Protocol API](https://docs.rs/ic-wasm-store-protocol)
 - [Source and development instructions](https://github.com/dragginzgame/ic-wasm-store)
-- [Compatibility and removal semantics](https://github.com/dragginzgame/ic-wasm-store/blob/v0.4.2/docs/design/extraction.md)
-- [Qualification coverage](https://github.com/dragginzgame/ic-wasm-store/blob/v0.4.2/qualification/README.md)
+- [Compatibility and removal semantics](https://github.com/dragginzgame/ic-wasm-store/blob/v0.5.0/docs/design/extraction.md)
+- [Qualification coverage](https://github.com/dragginzgame/ic-wasm-store/blob/v0.5.0/qualification/README.md)

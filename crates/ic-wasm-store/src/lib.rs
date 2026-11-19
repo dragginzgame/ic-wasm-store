@@ -1,7 +1,7 @@
 //! Versioned artifact custody with exact removal and restoration. No deployment authority.
 //!
 //! This crate supplies a standalone Internet Computer canister. Build for
-//! `wasm32-unknown-unknown` to compile its controller-authorized entrypoints.
+//! `wasm32-unknown-unknown` to produce its controller-authorized IC exports.
 //! The native library exposes no service API. Clients use
 //! [ic-wasm-store-protocol](https://docs.rs/ic-wasm-store-protocol) for passive
 //! request/response types and IC Wire method identifiers.
@@ -11,14 +11,8 @@
 //! [repository](https://github.com/dragginzgame/ic-wasm-store) for build,
 //! qualification and retained-state compatibility requirements.
 
-#[cfg_attr(
-    not(any(target_arch = "wasm32", test)),
-    expect(dead_code, reason = "ordinary host builds have no Store entrypoints")
-)]
 mod state;
 
-// Native tests cannot compile Platform Runtime's IC system and call execution APIs.
-#[cfg(target_arch = "wasm32")]
 mod canister {
     mod cache;
     mod mount;

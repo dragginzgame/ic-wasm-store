@@ -21,12 +21,10 @@ crate-type = ["cdylib", "rlib"]
 [features]
 maintenance-candidate = []
 
-[target.'cfg(target_arch = "wasm32")'.dependencies]
+[dependencies]
 ic-platform-protocol = { workspace = true, features = ["management-chunks"] }
 ic-platform-runtime = { workspace = true, features = ["entrypoint-macros"] }
 ic-platform-types.workspace = true
-
-[dependencies]
 ic-storage.workspace = true
 ic-wasm-store-protocol.workspace = true
 ic-wire.workspace = true

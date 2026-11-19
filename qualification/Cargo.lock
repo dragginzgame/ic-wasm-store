@@ -799,7 +799,7 @@ dependencies = [
 
 [[package]]
 name = "ic-wasm-store-protocol"
-version = "0.4.6"
+version = "0.5.0"
 dependencies = [
  "ic-wire",
  "serde",
@@ -821,9 +821,9 @@ dependencies = [
 
 [[package]]
 name = "ic-wire"
-version = "0.25.2"
+version = "0.26.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "695d18963ce56d74d2b619d90dbb560039d0bd2ecc0cc04a2ae2ce5ea2911f6f"
+checksum = "82b11b86139e137ecc6a7c6675cf58b6b2e00ba89a55166d842cdd416c19fe2b"
 dependencies = [
  "bytemuck",
  "postcard",

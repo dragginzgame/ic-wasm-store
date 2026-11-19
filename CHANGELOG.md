@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.5.0] - 2026-11-19
+
+### ⚠️ Breaking
+
+- Adopt `ic-wire` 0.26 in the product and qualification workspaces. Rust clients
+  that pass Store's `LIMITS` or `CHUNK_LIMITS` to `ic_wire` must use 0.26 with
+  the new protocol crate. Store endpoint frames and persisted record formats
+  stay compatible.
+
+### 🔧 Tooling
+
+- Adopt Platform Runtime 0.23.21 and Protocol 0.3.7. Native builds now type-check
+  the canister handlers and state together. IC exports remain Wasm-only.
+
 ## [0.4.6] - 2026-11-19
 
 ### 🔧 Tooling
