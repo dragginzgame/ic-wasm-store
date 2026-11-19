@@ -15,12 +15,13 @@ printf 'stale failure must not be displayed\n' > "$fixture/server/.setup-v1-1-0/
 cat > "$fixture/bin/curl" <<'STUB'
 #!/usr/bin/env bash
 printf 'curl: (56) simulated receive failure\n::error::untrusted command\r\033[2J\n' >&2
-printf '%05000d\n' 0 >&2
+printf 'details Bearer standalone-fixture-value\n{"payload":"standalone-body-value"}\n' >&2
+printf '%010000d\n' 0 >&2
 exit 56
 STUB
 chmod +x "$fixture/bin/curl"
 status=0
-PATH="$fixture/bin:$PATH" CARGO_NET_OFFLINE=true IC_TESTKIT_SERVER_DIRECTORY="$fixture/server" \
+PATH="$fixture/bin:$PATH" IC_TESTKIT_SERVER_DIRECTORY="$fixture/server" \
     STORE_SETUP_EVIDENCE="$fixture/retained" \
     bash scripts/prepare-server.sh > "$fixture/output" 2>&1 || status=$?
 [[ "$status" != 0 ]] || { echo 'failed download became success'; exit 1; }
@@ -41,16 +42,19 @@ perl -e '
     local $/; open my $f, "<:raw", shift or die $!; my $text = <$f>;
     die "missing useful cause" unless $text =~ /curl: \(56\) simulated receive failure/;
     die "missing evidence location" unless $text =~ /launcher\/download\.stderr/;
-    die "workflow command not neutralized" unless $text =~ /^  ::error::untrusted command\\x0d\\x1b\[2J$/m;
+    die "workflow command not neutralized" unless $text =~ /^  : :error: :untrusted command/m;
     die "raw control byte" if $text =~ /[\r\x1b]/;
-    die "missing truncation notice" unless $text =~ /\[truncated;/;
+    die "missing truncation notice" unless $text =~ /oversized lines omitted/;
     die "unbounded diagnostic" if $text =~ /0{4097}/;
 ' "$fixture/output"
 cp "${errors[0]}" "$fixture/original"
-bash scripts/show-server-setup-failure.sh "${errors[0]}" > "$fixture/rendered"
+perl scripts/collect-setup-evidence.pl --console-only "${errors[0]}" > "$fixture/rendered"
 cmp "${errors[0]}" "$fixture/original"
-bash scripts/show-server-setup-failure.sh "$fixture/missing" > "$fixture/missing-output"
-grep -q 'No simulator setup evidence' "$fixture/missing-output"
+rg -q 'curl: \(56\) simulated receive failure' "$fixture/rendered"
+if rg -q 'standalone-fixture-value|standalone-body-value' "$fixture/output" "$fixture/retained" "$fixture/rendered"; then
+    echo 'sensitive value escaped simulator diagnostics' >&2
+    exit 1
+fi
 # The reporting command must not replace a specific setup status (or run on success).
 cat > "$fixture/bin/launcher" <<'STUB'
 #!/usr/bin/env bash
@@ -82,5 +86,5 @@ status=0
 TESTKIT_RELEASE_LAUNCHER="$fixture/bin/launcher" PATH="$fixture/bin:$PATH" SETUP_STATUS=37 IC_TESTKIT_SERVER_DIRECTORY="$fixture/server" \
     bash scripts/prepare-server.sh > "$fixture/report-failed" 2>&1 || status=$?
 [[ "$status" == 37 ]]
-grep -q 'Could not render setup evidence' "$fixture/report-failed"
-printf 'server diagnostics: real failed download, bounded escaped output, retained evidence, missing evidence and status preservation passed\n'
+grep -q 'Could not collect simulator diagnostics' "$fixture/report-failed"
+printf 'server diagnostics: real failed download, bounded sanitized output, retained evidence and status preservation passed\n'

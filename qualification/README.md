@@ -8,7 +8,8 @@ make qualification-test
 make qualification-predecessor-test
 ```
 
-Testkit 0.110.0 supplies the upstream PocketIC client types. Tests require
+The Testkit library selected in `qualification/Cargo.lock` supplies the upstream
+PocketIC client types. Tests require
 `IC_TESTKIT_POCKET_IC_URL` and never discover, download or start a server.
 They create instances on that server and explicitly attempt instance deletion
 on normal completion; upstream deletion does not confirm remote cleanup.
@@ -31,32 +32,32 @@ permission. Supplying `IC_TESTKIT_POCKET_IC_URL` instead borrows that server;
 the caller retains its lifetime and cleanup responsibility, including failures.
 
 If simulator setup fails, `make qualification-setup` prints the evidence paths
-and first 4 KiB of each retained download/error diagnostic. Control and non-ASCII
-bytes are escaped, every diagnostic line is indented, and truncation is marked.
+and up to 4 KiB of each sanitized diagnostic. The shared sanitizer neutralizes
+workflow commands, removes terminal escapes and marks omitted output.
 Only the failed attempt named by that setup invocation is displayed; stale
 attempts cannot masquerade as the current cause. The original setup/check status
 is preserved even if reporting fails. CI's `setup-<host>-<attempt>` artifact retains
 sanitized setup output and available download, preparation and server diagnostics from
 that invocation’s evidence directory for seven days. Compiler and repository
 tool setup use the same collection; scanner installation has a separate
-`scanner-setup-<attempt>` artifact in the security job. Each diagnostic is capped
-at 64 KiB plus a truncation marker, with a 4 KiB console excerpt. Collection reads
-at most 1 MiB per source, escapes controls, redacts credential fields, known secret
-values, URL credentials/queries and private keys, and refuses symlink paths.
+`scanner-setup-<attempt>` artifact in the security job. Collection reads at most
+1 MiB per source and retains a sanitized tail of up to 32 KiB plus the source
+label and indentation. It omits lines containing recognized credentials,
+labelled payloads, known secret values or private keys and refuses symlink paths.
 Raw logs, archives, server binaries and unrelated runner files are excluded.
 CI links the artifact or reports upload failure/missing evidence. Collection and
 upload failures cannot hide the original setup status or make the job pass.
 
 `make test-server-diagnostics` exercises the real frozen launcher's setup with a failed
 substitute downloader, without network access. It checks useful error text,
-bounded escaped rendering, retained files, stale/missing evidence and exact setup
+bounded sanitized rendering, retained files, stale evidence and exact setup
 status preservation. This is also part of `make ci`.
 `make test-setup-evidence` additionally checks early scanner/compiler failures,
 sanitized hidden-log collection, size limits, missing/linked evidence, collector
 failures and shared launcher selection. These offline checks do not prove hosted
 artifact upload or retrieval.
 
-Testkit 0.110.0's optional `managed-server` capability is not selected in this
+Testkit's optional `managed-server` capability is not selected in this
 external-server workflow. The frozen launcher remains an explicit development
 bootstrap; migrating server ownership to that optional API is separate work.
 

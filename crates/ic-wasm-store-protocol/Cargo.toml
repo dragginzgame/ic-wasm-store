@@ -12,14 +12,18 @@ documentation = "https://docs.rs/ic-wasm-store-protocol"
 keywords = ["internet-computer", "wasm", "canister", "protocol", "ic-wire"]
 categories = ["wasm", "encoding"]
 
-[target.'cfg(any())'.dev-dependencies]
-toko-tooling.workspace = true
+[package.metadata.cargo-machete]
+# Serde names its byte adapter inside string-valued field attributes.
+ignored = ["serde_bytes", "toko-tooling"]
 
 [dependencies]
 ic-wire.workspace = true
 serde.workspace = true
 serde_bytes.workspace = true
 sha2.workspace = true
+
+[dev-dependencies]
+toko-tooling.workspace = true
 
 [lints]
 workspace = true

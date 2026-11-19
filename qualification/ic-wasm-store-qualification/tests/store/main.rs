@@ -1,8 +1,13 @@
 //! Installed Store upload custody, raw chunk integrity and independent maintenance.
+mod callbacks;
+mod capacity;
+mod maintenance;
+mod support;
+mod upload;
+
 use ic_testkit::pocket_ic::{CanisterId, nonblocking::PocketIc};
 use ic_wasm_store_protocol as store;
 use serde::{Serialize, de::DeserializeOwned};
-mod support;
 
 struct Client<'a> {
     pic: &'a PocketIc,
@@ -87,11 +92,6 @@ impl Client<'_> {
         .unwrap()
     }
 }
-
-mod callbacks;
-mod capacity;
-mod maintenance;
-mod upload;
 
 fn frame<T: Serialize>(method: u64, input: &T) -> Vec<u8> {
     ic_wire::encode(

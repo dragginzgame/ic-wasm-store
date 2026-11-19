@@ -12,8 +12,8 @@ documentation = "https://docs.rs/ic-wasm-store"
 keywords = ["internet-computer", "wasm", "canister", "storage", "uploads"]
 categories = ["wasm"]
 
-[target.'cfg(any())'.dev-dependencies]
-toko-tooling.workspace = true
+[package.metadata.cargo-machete]
+ignored = ["toko-tooling"]
 
 [lib]
 crate-type = ["cdylib", "rlib"]
@@ -37,6 +37,7 @@ ic-wasm-store-protocol.workspace = true
 ic-wire.workspace = true
 serde.workspace = true
 sha2.workspace = true
+toko-tooling.workspace = true
 
 [lints]
 workspace = true

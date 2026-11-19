@@ -168,7 +168,7 @@ fn maximum_metadata_page_and_chunk_fit_independent_wire_budgets() {
             .unwrap(),
             page
         );
-        assert!(
+        assert_eq!(
             ic_wire::decode::<Result<preservation::PageV2, Error>>(
                 &encoded,
                 ic_wire::Encoding::Frame {
@@ -177,7 +177,8 @@ fn maximum_metadata_page_and_chunk_fit_independent_wire_budgets() {
                 },
                 LIMITS
             )
-            .is_err()
+            .unwrap_err(),
+            ic_wire::Error::Identity
         );
     }
     let page = Ok::<_, Error>(vec![status; PAGE_SIZE]);
@@ -230,7 +231,7 @@ fn maximum_metadata_page_and_chunk_fit_independent_wire_budgets() {
         .len(),
         CHUNK_BYTES
     );
-    assert!(
+    assert_eq!(
         ic_wire::decode::<Put>(
             &encoded,
             ic_wire::Encoding::Frame {
@@ -239,7 +240,8 @@ fn maximum_metadata_page_and_chunk_fit_independent_wire_budgets() {
             },
             LIMITS
         )
-        .is_err()
+        .unwrap_err(),
+        ic_wire::Error::Limit
     );
     let response = Ok::<_, Error>(Chunk(input.bytes));
     let encoded = ic_wire::encode(

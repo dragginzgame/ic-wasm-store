@@ -1,4 +1,5 @@
 //! One bounded cache repair. Stable bytes and pins survive callback loss; cache writes are idempotent.
+
 use super::{STATE, fail, protocol, runtime, system};
 use ic_platform_protocol::{candid, management_chunks};
 use ic_platform_runtime::call::{Call, Outcome, Wait};
@@ -14,6 +15,8 @@ const REPLY_LIMITS: candid::Limits = candid::Limits {
     vector: 65_536,
     skipping: 131_072,
 };
+
+// Require a controller and enforce the cache request budget.
 fn admit() -> Result<(), String> {
     if !system::is_controller(&system::caller()) {
         return Err("Store controller required".into());
@@ -34,6 +37,7 @@ fn decode(bytes: &[u8]) -> Result<PrepareCache, ic_wire::Error> {
         protocol::LIMITS,
     )
 }
+
 #[expect(clippy::needless_pass_by_value, reason = "Platform owns the reply")]
 fn encode(reply: Result<CacheReady, CacheError>) -> Result<Vec<u8>, ic_wire::Error> {
     ic_wire::encode(
@@ -72,6 +76,7 @@ async fn management(method: &str, bytes: Vec<u8>) -> Result<Vec<u8>, CacheError>
     }
 }
 
+/// Prepare the management chunk cache for the artifact retained by an exact pin.
 #[runtime::update(
     runtime = runtime,
     name = "prepare_cache",

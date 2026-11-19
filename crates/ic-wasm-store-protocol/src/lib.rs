@@ -1,11 +1,12 @@
 //! Immutable raw-Wasm releases and resumable publication. No deployment authority.
 #![forbid(unsafe_code)]
 
+pub mod preservation;
 #[cfg(test)]
 mod tests;
+
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
-pub mod preservation;
 
 /// Prepare an exact release, reserving its capacity before upload.
 pub const PREPARE: u64 = 100;

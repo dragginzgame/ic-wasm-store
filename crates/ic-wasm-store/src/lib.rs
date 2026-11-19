@@ -12,5 +12,8 @@
 //! qualification and retained-state compatibility requirements.
 #[cfg(target_arch = "wasm32")]
 mod canister;
+
+// Native unit tests exercise the canister's private state implementation.
+// Ordinary host builds expose no state API and omit the storage dependencies.
 #[cfg(any(target_arch = "wasm32", test))]
 mod state;

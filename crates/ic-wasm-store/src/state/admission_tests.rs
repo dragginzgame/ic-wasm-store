@@ -1,5 +1,7 @@
-use super::records::CheckedRecord;
-use super::*;
+use super::{
+    Error, Manifest, Pin, Put, Quota, Read, Release, State, digest,
+    records::{CheckedRecord, Settings},
+};
 use ic_storage::VectorMemory;
 use ic_wasm_store_protocol::{AdmissionCommand as Command, MaintenanceAttempt};
 use std::borrow::Cow;
@@ -165,9 +167,17 @@ fn admission_settings_migrate_only_the_recognized_previous_schema() {
     assert!(encoded.starts_with(b"CWS2"));
     let decoded = Settings::decode_record(encoded).unwrap();
     assert_eq!(decoded.admission, migrated.admission);
-    for corrupt in [b"CWS1bad".as_slice(), b"CWS2bad", b"CWS3bad"] {
-        assert!(Settings::decode_record(Cow::Borrowed(corrupt)).is_err());
+    for (corrupt, expected) in [
+        (b"CWS1".as_slice(), "previous settings record"),
+        (b"CWS2", "settings record"),
+        (b"CWS1bad", "settings invariant"),
+        (b"CWS3bad", "settings schema"),
+    ] {
+        assert_eq!(
+            Settings::decode_record(Cow::Borrowed(corrupt)).err(),
+            Some(expected)
+        );
     }
     migrated.admission.as_mut().unwrap().attempt.sequence = 0;
-    assert!(migrated.encode_record().is_err());
+    assert_eq!(migrated.encode_record().unwrap_err(), "settings invariant");
 }

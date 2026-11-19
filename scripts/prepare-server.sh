@@ -25,11 +25,8 @@ else
 fi
 if (( status != 0 )); then
     printf 'ic-testkit-server %s failed (exit %d); evidence: %q\n' "$phase" "$status" "$evidence" >&2
-    if [[ -n "${STORE_SETUP_EVIDENCE:-}" ]]; then
-        perl scripts/collect-setup-evidence.pl "$STORE_SETUP_EVIDENCE" "${files[@]}" || \
-            echo 'Could not collect simulator diagnostics; original setup failure is retained.' >&2
-    fi
-    bash scripts/show-server-setup-failure.sh "${files[@]}" >&2 || echo 'Could not render setup evidence; original setup failure is retained.' >&2
+    perl scripts/collect-setup-evidence.pl "${STORE_SETUP_EVIDENCE:---console-only}" "${files[@]}" >&2 || \
+        echo 'Could not collect simulator diagnostics; original setup failure is retained.' >&2
 else
     cat "$evidence/check.stdout"
 fi

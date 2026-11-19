@@ -10,8 +10,8 @@ Read it before edits; update managed files only through the authenticated instal
 - Native tests stay with their packages; installed tests live in the independent qualification workspace.
 - Use Rust 1.100.0 and inherited workspace lints. Product packages are authorized for crates.io publication; qualification packages remain unpublished.
 - Runtime's generated IC export attributes are the only unsafe-lint exception: workspace deny permits the supplier's item-scoped expectations; Store state and passive protocol code retain forbid.
-- Use make test, make clippy, make doc and make qualification-test for affected checks. Simulator preparation is explicit via make qualification-setup. Publication enforces make release-verify and fresh archive admission; make ci additionally runs tooling caller fixtures. Installed execution alone may reuse exact-input evidence through the shared runner and scripts/observe-installed.pl; all other stages execute normally. Neither gate requires a completed GitHub Actions run. See docs/operations/delivery.md for evidence scope and recovery.
-- maintenance-candidate marks qualification only; do not select it for live deployment.
+- Select affected checks from [Development](README.md#development). Prepare the simulator explicitly with `make qualification-setup`. Follow the [delivery contract](docs/operations/delivery.md) for local gates, fresh archive admission and installed evidence reuse.
+- Reserve `maintenance-candidate` for qualification executables.
 - No automatic browser or desktop launches.
 
 Read [the extraction contract](docs/design/extraction.md) for provenance, compatibility and the boundary with Canic.

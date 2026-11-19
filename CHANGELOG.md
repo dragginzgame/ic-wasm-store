@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.4.3] - 2026-11-19
+
+### 🔧 Tooling
+
+- Adopt Toko Tooling 0.45.15 in both workspaces. Simulator and CI setup diagnostics
+  use its shared sanitizer for console excerpts and retained artifacts.
+- Refresh the product lock to Platform Protocol 0.3.6, Runtime 0.23.18 and Types
+  0.21.3, and both locks to Wire 0.25.1. Qualification uses Testkit 0.110.1 with
+  the frozen 0.110.0 launcher.
+  Defer the optional Testkit 0.110.2 client refresh to the next dependency update.
+
 ## [0.4.2] - 2026-11-18
 
 ### 🔧 Tooling

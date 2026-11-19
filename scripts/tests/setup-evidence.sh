@@ -6,11 +6,13 @@ mkdir -p "$root/target"
 fixture=$(mktemp -d "$root/target/setup-evidence-test.XXXXXX")
 trap 'rm -rf "$fixture"' EXIT
 repo="$fixture/repo with spaces"
-mkdir -p "$repo/scripts" "$repo/vendor/toko-tooling/scripts/dev" "$fixture/bin"
+mkdir -p "$repo/scripts" "$repo/vendor/toko-tooling/scripts/"{ci,dev} "$fixture/bin"
 cp "$root/scripts/run-setup.sh" "$root/scripts/collect-setup-evidence.pl" "$root/scripts/testkit-launcher.sh" "$repo/scripts/"
+cp "$root/vendor/toko-tooling/scripts/ci/SetupDiagnostics.pm" "$repo/vendor/toko-tooling/scripts/ci/"
 cd "$repo"
 export CDPATH=.
 export FIXTURE_TOKEN=fixture-sensitive-value
+export FIXTURE_ACCESS_KEY=fixture-access-value
 cat > "$fixture/fail" <<'STUB'
 #!/usr/bin/env bash
 set -euo pipefail
@@ -19,7 +21,8 @@ printf 'curl: (56) simulated receive failure\nAuthorization: Bearer hidden-secre
 perl scripts/collect-setup-evidence.pl "$STORE_SETUP_EVIDENCE" target/server/.setup-v1-1-2/download.stderr
 printf 'compiler/scanner setup refused\n::error::untrusted\r\033[2J\n' >&2
 printf 'token=%s\nhttps://user:secret@example.test/log?key=hidden-query\n' "$FIXTURE_TOKEN" >&2
-printf '%05000d\n' 0 >&2
+printf 'received Bearer bare-fixture-value\n{"payload":"fixture-body-value"}\ncontext %s\n' "$FIXTURE_ACCESS_KEY" >&2
+for i in {1..30}; do printf 'ordinary context line %03d%200s\n' "$i" '' >&2; done
 exit 37
 STUB
 for phase in gitleaks compiler; do
@@ -28,13 +31,13 @@ for phase in gitleaks compiler; do
     [[ "$status" == 37 ]]
     rg -q 'compiler/scanner setup refused' "$fixture/$phase-output"
     rg -q 'curl: \(56\) simulated receive failure' "$fixture/$phase-output"
-    rg -q '^  ::error::untrusted\\x0d\\x1b\[2J' "$fixture/$phase-output"
+    rg -q '^  : :error: :untrusted' "$fixture/$phase-output"
     rg -q 'console excerpt truncated' "$fixture/$phase-output"
 done
 # The scanner's actual shared installer must preserve its failed downloader status.
 cat > "$fixture/bin/curl" <<'STUB'
 #!/usr/bin/env bash
-echo 'curl: (56) scanner download refused; token=hidden-scanner-token' >&2
+printf 'curl: (56) scanner download refused\ntoken=hidden-scanner-token\n' >&2
 exit 56
 STUB
 chmod +x "$fixture/bin/curl"
@@ -49,12 +52,13 @@ rg -q 'curl: \(56\) scanner download refused' "$fixture/scanner-download"
 if rg -q 'hidden-scanner-token' "$fixture/scanner-download" target/setup-evidence; then exit 1; fi
 rg -q 'status=37' target/setup-evidence/*/result.txt
 rg -q 'curl: \(56\) simulated receive failure' target/setup-evidence/*/diagnostic-*
-if rg -q 'fixture-sensitive-value|hidden-secret|user:secret|hidden-query' target/setup-evidence "$fixture/gitleaks-output" "$fixture/compiler-output"; then
+if rg -q 'fixture-sensitive-value|hidden-secret|user:secret|hidden-query|bare-fixture-value|fixture-body-value|fixture-access-value' \
+    target/setup-evidence "$fixture/gitleaks-output" "$fixture/compiler-output"; then
     echo 'sensitive value escaped sanitization' >&2; exit 1
 fi
 perl -e '
     for my $file (@ARGV) {
-        -s $file <= 65616 or die "unbounded artifact\n";
+        -s $file <= 32768 or die "unbounded artifact\n";
         open my $f, "<:raw", $file or die $!; local $/; my $text = <$f>;
         $text !~ /[\r\x1b]/ or die "raw control byte\n";
     }
@@ -63,7 +67,7 @@ perl -e '
 mkdir -p target/collected
 perl -e 'print "x" x 2000000' > target/large
 perl scripts/collect-setup-evidence.pl target/collected target/large > "$fixture/large-output"
-rg -q 'truncated; remaining raw output omitted' target/collected/*
+rg -q 'input truncated at byte limit' target/collected/*
 ln -s "$fixture/fail" target/linked
 ln -s "$fixture" target/linked-directory
 for file in target/missing target/linked target/linked-directory/fail; do

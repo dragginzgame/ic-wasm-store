@@ -171,19 +171,26 @@ async fn closed_upgrade_preserves_removal_fences_and_exact_activation_owner() {
             .unwrap();
             assert_eq!(decoded, Err(store::Error::Conflict));
         } else {
-            assert!(reply.is_err());
+            let refusal = reply.unwrap_err();
+            assert_eq!(refusal.reject_code as u64, 5);
+            assert!(refusal.reject_message.contains("Store controller required"));
         }
     }
-    for malformed in [
-        frame(store::PRESERVATION, &request),
-        vec![0; store::LIMITS.bytes + 1],
+    for (malformed, diagnostic) in [
+        (frame(store::PRESERVATION, &request), "Decode(Identity)"),
+        (vec![0; store::LIMITS.bytes + 1], "Store frame too large"),
     ] {
+        let refusal = pic
+            .update_call(id, operator, "observe_preservation_v2", malformed)
+            .await
+            .unwrap_err();
+        assert_eq!(refusal.reject_code as u64, 5);
         assert!(
-            pic.update_call(id, operator, "observe_preservation_v2", malformed)
-                .await
-                .is_err()
+            refusal.reject_message.contains(diagnostic),
+            "expected {diagnostic} in {refusal:?}"
         );
     }
+    assert_eq!(preservation_pages(&client, &attempt).await, preserved);
     let candidate = std::fs::read(std::env::var_os("IC_WASM_STORE_CANDIDATE").unwrap()).unwrap();
     pic.stop_canister(id, Some(operator)).await.unwrap();
     pic.upgrade_canister(id, candidate, vec![], Some(operator))

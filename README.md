@@ -1,6 +1,7 @@
 # IC Wasm Store
 
-The development version uses Storage 0.78.0 and requires fresh backing. Existing Store installations on Storage 0.74.1 require explicit export and migration before adoption.
+The current Storage 0.78 line requires fresh backing. Existing Store installations
+on Storage 0.74.1 require explicit export and migration before adoption.
 
 A standalone, controller-authorized Internet Computer canister for immutable,
 versioned Wasm custody. It retains resumable uploads, shared chunks, quotas and
@@ -41,8 +42,7 @@ Removal retains the identity as a tombstone: `prepare` replaces it with an activ
 release only for the same manifest, and cannot assign different bytes to that
 name/version. Restoration rechecks payload quota; when no active alias retains
 the published artifact, missing bytes must be uploaded and publication repeated.
-Payload reservations
-and unshared chunks are reclaimed when the last active alias is removed.
+Removing the last active alias reclaims its payload reservation and unshared chunks.
 Tombstones still occupy release-label quota; there is no unpin operation.
 The replicated `tombstones` endpoint lists removed manifests in bounded pages.
 Ordinary `status` and `list` expose active releases; `Info.releases` counts active
@@ -94,7 +94,7 @@ The main checks are:
 | `make doc` | Both workspaces' documentation, with warnings denied |
 | `make build` | Standalone Store Wasm, without qualification features |
 | `make qualification-setup` | Explicit PocketIC server and released-archive preparation |
-| `make qualification-test` | Builds both test executables and runs installed qualification |
+| `make qualification-test` | Builds both qualification Wasms and runs installed tests. Set `QUALIFICATION_TEST` to a test name for focused execution |
 | `make qualification-predecessor-test` | Builds published 0.2.2 and verifies refusal and rollback when upgrading its old image |
 | `make release-verify` | Formatting, tooling admission, product tests, lints, docs and both installed qualification suites |
 | `make test-tooling` | Publication, setup, diagnostics, path and delivery caller fixtures |
@@ -107,7 +107,8 @@ Wasm-only and are checked by `make clippy-wasm`. `make help` lists these targets
 
 Run `make qualification-setup` after tool installation and before the installed
 test or `make ci` on a fresh checkout. Setup admits the prepared 0.110.0 launcher
-and may download the server; tests use Testkit 0.110.0 clients and the prepared bundle.
+and may download the server. Tests use the Testkit client from the qualification
+lockfile with that prepared bundle.
 The launcher owns one server for the test command. Alternatively, supply
 `IC_TESTKIT_POCKET_IC_URL` for an externally owned server; see the
 [qualification ownership contract](qualification/README.md).

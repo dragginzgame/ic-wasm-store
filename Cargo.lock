@@ -105,18 +105,18 @@ dependencies = [
 
 [[package]]
 name = "ic-platform"
-version = "0.34.16"
+version = "0.34.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "370a236d0cc0e5a7328b344d8493cf367dd83178257ee809a48716fdb7301c4c"
+checksum = "866eba5d2c1bf18457a3c2a5c1a306dab075626efbe9c83acf1eeb952d58a023"
 dependencies = [
  "ic-stable-structures",
 ]
 
 [[package]]
 name = "ic-platform-macros"
-version = "0.23.17"
+version = "0.23.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8b291d0610822352f1b69e21ec5669b2f2a56b5629c09fd719374b3b5ea9a74e"
+checksum = "3255bda21deaeaf1998bf8fd8b187740f68bb1f20865ba2c9613f023e26ef7b2"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -125,9 +125,9 @@ dependencies = [
 
 [[package]]
 name = "ic-platform-protocol"
-version = "0.3.5"
+version = "0.3.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a2ae9adc784809f210d491f301a9b4549bf619dbbeac835dc7c8d49d1eb152b0"
+checksum = "34a9e427266040f66a8a1734942cb8adecfeee30ad84e186bbe155ed5eafcae6"
 dependencies = [
  "ic-platform-types",
  "serde",
@@ -135,9 +135,9 @@ dependencies = [
 
 [[package]]
 name = "ic-platform-runtime"
-version = "0.23.17"
+version = "0.23.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dfc857c146215a6f2ae50e724c70b7afffaebeb407c54c283f6860357d5da439"
+checksum = "b7381b5315043417fe9c309223c516f0c43a4c1c5dc5620726b72f1a4785746e"
 dependencies = [
  "ic-platform-macros",
  "ic-platform-runtime-guard",
@@ -146,15 +146,15 @@ dependencies = [
 
 [[package]]
 name = "ic-platform-runtime-guard"
-version = "0.23.17"
+version = "0.23.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "32124ec3fa34eb2a21a2818a8578757057d9fb2eb57f6355f73d925bc46e2258"
+checksum = "d55a56b4aa7dd39d2217d73481899f3b28bb00ca78670b3095917531dd316502"
 
 [[package]]
 name = "ic-platform-types"
-version = "0.21.2"
+version = "0.21.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3b08201b2ebbb9a9f0e1c8ee2854f48ff3f68a777c441147273c600bf6723d7d"
+checksum = "1ebaae959b3a485c68803aa242a967568ed15411208670de5a858da84324dba0"
 dependencies = [
  "crc32fast",
  "data-encoding",
@@ -186,7 +186,7 @@ dependencies = [
 
 [[package]]
 name = "ic-wasm-store"
-version = "0.4.2"
+version = "0.4.3"
 dependencies = [
  "ic-platform-protocol",
  "ic-platform-runtime",
@@ -201,7 +201,7 @@ dependencies = [
 
 [[package]]
 name = "ic-wasm-store-protocol"
-version = "0.4.2"
+version = "0.4.3"
 dependencies = [
  "ic-wire",
  "serde",
@@ -212,9 +212,9 @@ dependencies = [
 
 [[package]]
 name = "ic-wire"
-version = "0.25.0"
+version = "0.25.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e6060f57a051fb12d02f6140a8751fc122c1c23925ee6412ee600743f5c664eb"
+checksum = "90127bd0f1ed54cb466b3dcd08339d62a92d54edeb4759379794422fd09845d0"
 dependencies = [
  "bytemuck",
  "postcard",
@@ -348,9 +348,9 @@ dependencies = [
 
 [[package]]
 name = "toko-tooling"
-version = "0.45.8"
+version = "0.45.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "adbc76769b2231de6704851c363550ddc486bb6204a0f89c2ad365eb7cf740a3"
+checksum = "047d160b116c300b7dfadae595c5c7b1f184257937b7d8541b1abc3aac6b6a52"
 
 [[package]]
 name = "typenum"

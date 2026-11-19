@@ -1,5 +1,15 @@
 //! Single-message transitions. Storage failure traps; no partial typed-error mutation.
 #![forbid(unsafe_code)]
+
+mod admission;
+#[cfg(test)]
+mod admission_tests;
+mod preservation;
+mod records;
+mod removal;
+#[cfg(test)]
+mod tests;
+
 use ic_storage::{
     AllocationGrants, GenericAllocationPolicy, MemoryAuthority, MemoryBacking, MemoryRequest,
     MemoryRuntime, SealedDeclarationSnapshot, StableKey, StorageConfig,
@@ -12,14 +22,6 @@ use ic_wasm_store_protocol::{
 use records::{Artifact, Key, Payload, RetainedPin, Settings};
 use sha2::{Digest, Sha256};
 use std::ops::Bound::{Excluded, Unbounded};
-mod admission;
-#[cfg(test)]
-mod admission_tests;
-mod preservation;
-mod records;
-mod removal;
-#[cfg(test)]
-mod tests;
 
 pub(crate) struct State<M: MemoryBacking> {
     releases: StableBTreeMap<Key, [u8; 32], M>,
