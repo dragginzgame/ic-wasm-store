@@ -2,8 +2,6 @@
 #![forbid(unsafe_code)]
 
 mod admission;
-#[cfg(test)]
-mod admission_tests;
 mod preservation;
 mod records;
 mod removal;

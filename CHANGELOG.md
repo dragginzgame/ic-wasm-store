@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.4.5] - 2026-11-19
+
+### 🔧 Tooling
+
+- Refresh the product lock to Storage 0.78.5 and both locks to Wire 0.25.2.
+
+### 🧪 Testing
+
+- Group admission tests under the state test module so the suite uses one test
+  guard. [WasmStore #5 — Group state admission tests under the existing test module](https://github.com/dragginzgame/ic-wasm-store/issues/5)
+
 ## [0.4.4] - 2026-11-19
 
 ### 🔧 Tooling

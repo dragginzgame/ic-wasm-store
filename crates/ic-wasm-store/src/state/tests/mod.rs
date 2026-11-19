@@ -1,3 +1,5 @@
+mod admission_tests;
+
 use super::*;
 use ic_storage::VectorMemory;
 use ic_wasm_store_protocol::CHUNK_BYTES;
