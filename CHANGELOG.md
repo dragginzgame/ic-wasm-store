@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.4.4] - 2026-11-19
+
+### 🔧 Tooling
+
+- Adopt Toko Tooling 0.45.16. Compile the private Store state on host and Wasm
+  builds, and limit the Wasm target guard to the IC entrypoints.
+- Refresh the product lock to Storage 0.78.4 and the qualification lock to
+  Testkit 0.110.2.
+
 ## [0.4.3] - 2026-11-19
 
 ### 🔧 Tooling

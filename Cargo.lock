@@ -174,9 +174,9 @@ dependencies = [
 
 [[package]]
 name = "ic-storage"
-version = "0.78.3"
+version = "0.78.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "71f944acc53d41720d70856cb5f81b0b3af9491833b70d22e836772899ac12de"
+checksum = "3b35e5c997073a48c5cb4a232f4b2cce89f24bf856ce6fd5798866be84b2ad8f"
 dependencies = [
  "ic-platform",
  "ic-platform-runtime",
@@ -186,7 +186,7 @@ dependencies = [
 
 [[package]]
 name = "ic-wasm-store"
-version = "0.4.3"
+version = "0.4.4"
 dependencies = [
  "ic-platform-protocol",
  "ic-platform-runtime",
@@ -201,7 +201,7 @@ dependencies = [
 
 [[package]]
 name = "ic-wasm-store-protocol"
-version = "0.4.3"
+version = "0.4.4"
 dependencies = [
  "ic-wire",
  "serde",
@@ -348,9 +348,9 @@ dependencies = [
 
 [[package]]
 name = "toko-tooling"
-version = "0.45.15"
+version = "0.45.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "047d160b116c300b7dfadae595c5c7b1f184257937b7d8541b1abc3aac6b6a52"
+checksum = "a2095850545e0fd3c5580fab610cab78561242fc09c74221e27f3e7f654d5776"
 
 [[package]]
 name = "typenum"

@@ -4,7 +4,7 @@ exclude = ["qualification", "target"]
 resolver = "3"
 
 [workspace.package]
-version = "0.4.3"
+version = "0.4.4"
 edition = "2024"
 rust-version = "1.100.0"
 publish = ["crates-io"]
@@ -20,13 +20,13 @@ serde_bytes = "0.11.19"
 
 # Production and tests
 ic-storage = "0.78.0"
-ic-wasm-store-protocol = { version = "0.4.3", path = "crates/ic-wasm-store-protocol" }
+ic-wasm-store-protocol = { version = "0.4.4", path = "crates/ic-wasm-store-protocol" }
 ic-wire = { version = "0.25.0", default-features = false }
 serde = "1.0.229"
 sha2 = "0.11.1"
 
 # Tests and tooling
-toko-tooling = "=0.45.15"
+toko-tooling = "=0.45.16"
 
 [workspace.lints.cargo]
 unused_dependencies = "deny"

@@ -25,6 +25,8 @@ maintenance-candidate = []
 ic-platform-protocol = { workspace = true, features = ["management-chunks"] }
 ic-platform-runtime = { workspace = true, features = ["entrypoint-macros"] }
 ic-platform-types.workspace = true
+
+[dependencies]
 ic-storage.workspace = true
 ic-wasm-store-protocol.workspace = true
 ic-wire.workspace = true
@@ -32,11 +34,6 @@ serde.workspace = true
 sha2.workspace = true
 
 [dev-dependencies]
-ic-storage.workspace = true
-ic-wasm-store-protocol.workspace = true
-ic-wire.workspace = true
-serde.workspace = true
-sha2.workspace = true
 toko-tooling.workspace = true
 
 [lints]

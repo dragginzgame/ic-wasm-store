@@ -10,10 +10,13 @@
 //! must not be selected for live deployment. See the
 //! [repository](https://github.com/dragginzgame/ic-wasm-store) for build,
 //! qualification and retained-state compatibility requirements.
+
+// Native tests cannot compile Platform Runtime's IC system and call execution APIs.
 #[cfg(target_arch = "wasm32")]
 mod canister;
 
-// Native unit tests exercise the canister's private state implementation.
-// Ordinary host builds expose no state API and omit the storage dependencies.
-#[cfg(any(target_arch = "wasm32", test))]
+#[cfg_attr(
+    not(any(target_arch = "wasm32", test)),
+    expect(dead_code, reason = "ordinary host builds have no Store entrypoints")
+)]
 mod state;
