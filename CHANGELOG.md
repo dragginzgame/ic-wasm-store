@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.4.6] - 2026-11-19
+
+### 🔧 Tooling
+
+- Adopt Toko Tooling 0.45.18 and group Store endpoint declarations in the library
+  root with their caller scope and limits.
+- Refresh the product lock to Platform Runtime 0.23.20 and Storage 0.78.6.
+
 ## [0.4.5] - 2026-11-19
 
 ### 🔧 Tooling

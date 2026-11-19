@@ -1,6 +1,6 @@
 //! One bounded cache repair. Stable bytes and pins survive callback loss; cache writes are idempotent.
 
-use super::{STATE, fail, protocol, runtime, system};
+use super::{STATE, protocol, system};
 use ic_platform_protocol::{candid, management_chunks};
 use ic_platform_runtime::call::{Call, Outcome, Wait};
 use ic_platform_types::Principal;
@@ -16,8 +16,8 @@ const REPLY_LIMITS: candid::Limits = candid::Limits {
     skipping: 131_072,
 };
 
-// Require a controller and enforce the cache request budget.
-fn admit() -> Result<(), String> {
+/// Require a controller and enforce the cache request budget.
+pub(super) fn admit() -> Result<(), String> {
     if !system::is_controller(&system::caller()) {
         return Err("Store controller required".into());
     }
@@ -27,7 +27,7 @@ fn admit() -> Result<(), String> {
     Ok(())
 }
 
-fn decode(bytes: &[u8]) -> Result<PrepareCache, ic_wire::Error> {
+pub(super) fn decode(bytes: &[u8]) -> Result<PrepareCache, ic_wire::Error> {
     ic_wire::decode(
         bytes,
         ic_wire::Encoding::Frame {
@@ -39,7 +39,7 @@ fn decode(bytes: &[u8]) -> Result<PrepareCache, ic_wire::Error> {
 }
 
 #[expect(clippy::needless_pass_by_value, reason = "Platform owns the reply")]
-fn encode(reply: Result<CacheReady, CacheError>) -> Result<Vec<u8>, ic_wire::Error> {
+pub(super) fn encode(reply: Result<CacheReady, CacheError>) -> Result<Vec<u8>, ic_wire::Error> {
     ic_wire::encode(
         &reply,
         ic_wire::Encoding::Frame {
@@ -76,17 +76,7 @@ async fn management(method: &str, bytes: Vec<u8>) -> Result<Vec<u8>, CacheError>
     }
 }
 
-/// Prepare the management chunk cache for the artifact retained by an exact pin.
-#[runtime::update(
-    runtime = runtime,
-    name = "prepare_cache",
-    guard = admit,
-    decode = decode,
-    encode = encode,
-    max_bytes = 16384,
-    on_error = fail
-)]
-async fn prepare_cache(input: PrepareCache) -> Result<CacheReady, CacheError> {
+pub(super) async fn prepare(input: PrepareCache) -> Result<CacheReady, CacheError> {
     let caller = system::caller();
     let epoch = STATE
         .with_borrow(|state| state.as_ref().expect("Store state").admission_epoch())
