@@ -129,6 +129,7 @@ impl<M: MemoryBacking> State<M> {
                 "missing release artifact"
             );
         }
+
         state
     }
 
@@ -140,6 +141,7 @@ impl<M: MemoryBacking> State<M> {
             .releases
             .get(&Key::new(release))
             .ok_or(Error::NotFound)?;
+
         Ok((hash, self.artifacts.get(&hash).expect("retained artifact")))
     }
 
@@ -152,6 +154,7 @@ impl<M: MemoryBacking> State<M> {
             .filter(|(_, hash)| !self.chunks.contains_key(hash))
             .map(|(index, _)| index as u32)
             .collect();
+
         Ok(Status {
             manifest: Manifest {
                 release: release.clone(),
@@ -170,6 +173,7 @@ impl<M: MemoryBacking> State<M> {
             .artifacts
             .get(&status.manifest.hash)
             .expect("retained artifact");
+
         Ok(ic_wasm_store_protocol::Custody {
             status,
             pins: artifact
@@ -241,6 +245,7 @@ impl<M: MemoryBacking> State<M> {
         self.settings.set(settings);
         self.releases.remove(&tombstone);
         self.releases.insert(key, manifest.hash);
+
         self.status(&manifest.release)
     }
 
@@ -259,6 +264,7 @@ impl<M: MemoryBacking> State<M> {
         if !self.chunks.contains_key(expected) {
             self.chunks.insert(*expected, Payload(input.bytes.clone()));
         }
+
         self.status(&input.release)
     }
 
@@ -284,6 +290,7 @@ impl<M: MemoryBacking> State<M> {
         }
         artifact.published = true;
         self.artifacts.insert(hash, artifact);
+
         self.status(release)
     }
 
@@ -301,6 +308,7 @@ impl<M: MemoryBacking> State<M> {
             "published chunk size"
         );
         assert_eq!(digest(&payload.0), *hash, "published chunk digest");
+
         Ok(Chunk(payload.0))
     }
 
@@ -309,6 +317,7 @@ impl<M: MemoryBacking> State<M> {
             return Err(Error::Invalid);
         }
         let lower = after.map_or(Unbounded, |release| Excluded(Key::new(release)));
+
         self.releases
             .range((lower, Unbounded))
             .map(|entry| entry.key().clone())
@@ -342,6 +351,7 @@ impl<M: MemoryBacking> State<M> {
         let mut settings = self.settings.get().clone();
         settings.quota = quota.clone();
         self.settings.set(settings);
+
         Ok(self.info())
     }
 
@@ -356,6 +366,7 @@ impl<M: MemoryBacking> State<M> {
         if !status.published || !status.missing.is_empty() {
             return Err(Error::Incomplete);
         }
+
         Ok(self
             .artifacts
             .get(&pin.manifest.hash)
@@ -384,6 +395,7 @@ impl<M: MemoryBacking> State<M> {
             });
             self.artifacts.insert(pin.manifest.hash, artifact);
         }
+
         Ok(PinReceipt {
             owner: caller.to_vec(),
             pin: pin.clone(),
@@ -400,6 +412,7 @@ impl<M: MemoryBacking> State<M> {
         if retained.release != pin.manifest.release {
             return Err(Error::Conflict);
         }
+
         Ok(PinReceipt {
             owner: caller.to_vec(),
             pin: pin.clone(),

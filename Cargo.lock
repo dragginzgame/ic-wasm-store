@@ -114,9 +114,9 @@ dependencies = [
 
 [[package]]
 name = "ic-platform-macros"
-version = "0.23.21"
+version = "0.23.22"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0809c6a90943bd695a56928c383308a39c21da0445518f4e0a3789f39f82f0fe"
+checksum = "8b3b45edad46665abedb5cead2c9ff983de108e6e1faab588e8906f655d32167"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -135,9 +135,9 @@ dependencies = [
 
 [[package]]
 name = "ic-platform-runtime"
-version = "0.23.21"
+version = "0.23.22"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e9b373427677f7e0077cf0b80dc13121d9abda8fd2fbf17cbe638c25b4fc22f7"
+checksum = "49ac0af0e78945df40f85dc34a65e47b2a9acd9716354169ecfc1911c6923f2a"
 dependencies = [
  "ic-platform-macros",
  "ic-platform-runtime-guard",
@@ -146,9 +146,9 @@ dependencies = [
 
 [[package]]
 name = "ic-platform-runtime-guard"
-version = "0.23.21"
+version = "0.23.22"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2af39e5414cf5bd599774d7e8e072bc7a773ce4ece50f9e29fc9a9e56d520162"
+checksum = "18ad17c256b4079de3ea347710e6ee222a8481754641a748142c2c3a62b3ab12"
 
 [[package]]
 name = "ic-platform-types"
@@ -174,9 +174,9 @@ dependencies = [
 
 [[package]]
 name = "ic-storage"
-version = "0.78.6"
+version = "0.78.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "79bdbcaae7761bce702a103922a08a90d8204f1d86f73023666517a9d240316e"
+checksum = "cfd78eb2becf9ae4a0a7d46ca4c742d0041eb19b364c50384e4cbc4e5aafdb11"
 dependencies = [
  "ic-platform",
  "ic-platform-runtime",
@@ -186,7 +186,7 @@ dependencies = [
 
 [[package]]
 name = "ic-wasm-store"
-version = "0.5.0"
+version = "0.5.1"
 dependencies = [
  "ic-platform-protocol",
  "ic-platform-runtime",
@@ -201,7 +201,7 @@ dependencies = [
 
 [[package]]
 name = "ic-wasm-store-protocol"
-version = "0.5.0"
+version = "0.5.1"
 dependencies = [
  "ic-wire",
  "serde",
@@ -212,9 +212,9 @@ dependencies = [
 
 [[package]]
 name = "ic-wire"
-version = "0.26.0"
+version = "0.26.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "82b11b86139e137ecc6a7c6675cf58b6b2e00ba89a55166d842cdd416c19fe2b"
+checksum = "0375907693869ca5de23befc66639d7e982d85a342b8fb06c1bc7ceafed13c4b"
 dependencies = [
  "bytemuck",
  "postcard",
@@ -348,9 +348,9 @@ dependencies = [
 
 [[package]]
 name = "toko-tooling"
-version = "0.45.18"
+version = "0.45.21"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d24c2c13aacee2afda27e77ed8d6c13ff5ad383e08a2f80645561b2a9f935b11"
+checksum = "af1ba8e16aaf1dae0951f08a228a4f00b928d09ff68997bd94ccc397ace5e4be"
 
 [[package]]
 name = "typenum"

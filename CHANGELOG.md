@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.5.1] - 2026-11-19
+
+### 🔧 Tooling
+
+- Adopt Toko Tooling 0.45.21 in both workspaces and refresh the Platform Runtime
+  lock to 0.23.22.
+- Refresh the product lock to Storage 0.78.7 and both locks to Wire 0.26.1.
+- Document endpoint admission guards and Wire budgets, and group persisted
+  record implementations with their types.
+
 ## [0.5.0] - 2026-11-19
 
 ### ⚠️ Breaking

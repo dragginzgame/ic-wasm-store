@@ -11,6 +11,7 @@ pub fn wasm() -> Vec<u8> {
 pub async fn instance() -> PocketIc {
     let url = std::env::var("IC_TESTKIT_POCKET_IC_URL")
         .expect("run make qualification-test or supply an externally owned server URL");
+
     PocketIcBuilder::new()
         .with_server_url(url.parse().expect("valid PocketIC server URL"))
         .with_max_request_time_ms(Some(30_000))

@@ -159,6 +159,7 @@ async fn closed_upgrade_preserves_removal_fences_and_exact_activation_owner() {
                 frame(store::PRESERVATION_V2, &request),
             )
             .await;
+
         if caller == other {
             let decoded: Result<store::preservation::PageV2, store::Error> = ic_wire::decode(
                 &reply.unwrap(),

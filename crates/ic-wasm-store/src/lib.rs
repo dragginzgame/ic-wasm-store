@@ -26,7 +26,7 @@ mod canister {
 
     // init
     // Initializes a fresh Store with its four checked allocations.
-    // scope  : IC-authorized installation
+    // guard  : lifecycle_admit, with installation authorized by the IC
     // limits : 16 KiB lifecycle arguments
     #[runtime::init(
         runtime = runtime,
@@ -43,7 +43,7 @@ mod canister {
 
     // post_upgrade
     // Reopens the existing Store after an upgrade.
-    // scope  : IC-authorized upgrade
+    // guard  : lifecycle_admit, with upgrade authorized by the IC
     // limits : 16 KiB lifecycle arguments
     #[runtime::post_upgrade(
         runtime = runtime,
@@ -59,9 +59,9 @@ mod canister {
     }
 
     // prepare
-    // Reserve quota and stage the exact release manifest.
-    // scope  : controllers
-    // limits : 16 KiB request and response frames, 8 MiB per artifact
+    // Reserves quota and stages the exact manifest for an artifact up to 8 MiB.
+    // guard  : canister controller
+    // limits : 16 KiB request and response frames
     endpoint!(
         prepare,
         "prepare",
@@ -75,9 +75,9 @@ mod canister {
     );
 
     // put
-    // Write a verified chunk and return upload progress.
-    // scope  : controllers
-    // limits : 260 KiB request frame with a 256 KiB chunk, 16 KiB response frame
+    // Writes one verified chunk of up to 256 KiB and returns upload progress.
+    // guard  : canister controller
+    // limits : 260 KiB request frame, 16 KiB response frame
     endpoint!(
         put,
         "put",
@@ -91,9 +91,9 @@ mod canister {
     );
 
     // publish
-    // Publish a complete upload after verifying its artifact digest.
-    // scope  : controllers
-    // limits : 16 KiB request and response frames, 8 MiB per artifact
+    // Publishes a complete artifact of up to 8 MiB after verifying its digest.
+    // guard  : canister controller
+    // limits : 16 KiB request and response frames
     endpoint!(
         publish,
         "publish",
@@ -108,7 +108,7 @@ mod canister {
 
     // status
     // Query the current status of an active release.
-    // scope  : controllers
+    // guard  : canister controller
     // limits : 16 KiB request and response frames
     endpoint!(
         status,
@@ -124,7 +124,7 @@ mod canister {
 
     // observe
     // Read active release status through replicated execution.
-    // scope  : controllers
+    // guard  : canister controller
     // limits : 16 KiB request and response frames
     endpoint!(
         observe,
@@ -140,7 +140,7 @@ mod canister {
 
     // observe_custody
     // Read upload progress and retained pins through replicated execution.
-    // scope  : controllers
+    // guard  : canister controller
     // limits : 16 KiB request and response frames
     endpoint!(
         observe_custody,
@@ -155,9 +155,9 @@ mod canister {
     );
 
     // observe_preservation
-    // Page through preservation custody under the captured maintenance attempt.
-    // scope  : the controller that owns the exact closed maintenance attempt
-    // limits : 16 KiB request and response frames, one entry per page
+    // Returns one preservation custody entry for the controller that owns the exact closed attempt.
+    // guard  : canister controller
+    // limits : 16 KiB request and response frames
     endpoint!(
         observe_preservation,
         "observe_preservation",
@@ -172,9 +172,9 @@ mod canister {
     );
 
     // observe_preservation_v2
-    // Page through explicit active and removed entries under the same closed attempt.
-    // scope  : the controller that owns the exact closed maintenance attempt
-    // limits : 16 KiB request and response frames, one entry per page
+    // Returns one active or removed entry for the controller that owns the exact closed attempt.
+    // guard  : canister controller
+    // limits : 16 KiB request and response frames
     endpoint!(
         observe_preservation_v2,
         "observe_preservation_v2",
@@ -189,8 +189,8 @@ mod canister {
     );
 
     // admission
-    // Observe or change maintenance admission for the exact attempt.
-    // scope  : controllers, with exact attempt ownership required for activation
+    // Observes or changes exact maintenance admission. Activation requires the captured owner.
+    // guard  : canister controller
     // limits : 16 KiB request and response frames
     endpoint!(
         admission,
@@ -205,9 +205,9 @@ mod canister {
     );
 
     // read
-    // Query one verified chunk of a published release.
-    // scope  : controllers
-    // limits : 16 KiB request frame, 260 KiB response frame with a 256 KiB chunk
+    // Queries one verified chunk of up to 256 KiB from a published release.
+    // guard  : canister controller
+    // limits : 16 KiB request frame, 260 KiB response frame
     endpoint!(
         read,
         "read",
@@ -221,9 +221,9 @@ mod canister {
     );
 
     // read_chunk
-    // Read one verified chunk through replicated execution.
-    // scope  : controllers
-    // limits : 16 KiB request frame, 260 KiB response frame with a 256 KiB chunk
+    // Reads one verified chunk of up to 256 KiB through replicated execution.
+    // guard  : canister controller
+    // limits : 16 KiB request frame, 260 KiB response frame
     endpoint!(
         read_chunk,
         "read_chunk",
@@ -237,9 +237,9 @@ mod canister {
     );
 
     // list
-    // Query the next page of active releases.
-    // scope  : controllers
-    // limits : 16 KiB request and response frames, four releases per page
+    // Queries the next page of up to four active releases.
+    // guard  : canister controller
+    // limits : 16 KiB request and response frames
     endpoint!(
         list,
         "list",
@@ -254,7 +254,7 @@ mod canister {
 
     // info
     // Query Store quotas and usage.
-    // scope  : controllers
+    // guard  : canister controller
     // limits : 16 KiB request and response frames
     endpoint!(
         info,
@@ -270,7 +270,7 @@ mod canister {
 
     // observe_info
     // Read Store quotas and usage through replicated execution.
-    // scope  : controllers
+    // guard  : canister controller
     // limits : 16 KiB request and response frames
     endpoint!(
         observe_info,
@@ -285,9 +285,9 @@ mod canister {
     );
 
     // configure
-    // Apply quotas within the configured limits and current reservations.
-    // scope  : controllers
-    // limits : 16 KiB request and response frames, 256 MiB reserved and 4,096 releases maximum
+    // Applies quotas up to 256 MiB and 4,096 releases, subject to current reservations.
+    // guard  : canister controller
+    // limits : 16 KiB request and response frames
     endpoint!(
         configure,
         "configure",
@@ -301,9 +301,9 @@ mod canister {
     );
 
     // pin
-    // Retain the exact operation against a published release.
-    // scope  : controllers, with pins owned by the caller
-    // limits : 16 KiB request and response frames, 32 retained pins per artifact
+    // Retains the caller's exact operation against a published release, up to 32 pins per artifact.
+    // guard  : canister controller
+    // limits : 16 KiB request and response frames
     endpoint!(
         pin,
         "pin",
@@ -318,8 +318,8 @@ mod canister {
     );
 
     // observe_pin
-    // Observe the receipt for an exact retained operation.
-    // scope  : controllers, restricted to the caller's exact pin
+    // Returns the receipt for the caller's exact retained pin.
+    // guard  : canister controller
     // limits : 16 KiB request and response frames
     endpoint!(
         observe_pin,
@@ -336,7 +336,7 @@ mod canister {
 
     // delete
     // Remove an exact published release.
-    // scope  : controllers
+    // guard  : canister controller
     // limits : 16 KiB request and response frames
     endpoint!(
         delete,
@@ -352,7 +352,7 @@ mod canister {
 
     // cancel
     // Cancel an exact unpublished upload.
-    // scope  : controllers
+    // guard  : canister controller
     // limits : 16 KiB request and response frames
     endpoint!(
         cancel,
@@ -367,9 +367,9 @@ mod canister {
     );
 
     // tombstones
-    // Read the next page of retained removed identities.
-    // scope  : controllers
-    // limits : 16 KiB request and response frames, four manifests per page
+    // Returns the next page of up to four removed manifests.
+    // guard  : canister controller
+    // limits : 16 KiB request and response frames
     endpoint!(
         tombstones,
         "tombstones",
@@ -383,9 +383,9 @@ mod canister {
     );
 
     // prepare_cache
-    // Prepares the management chunk cache for the artifact retained by the caller's exact pin.
-    // scope  : controllers with the exact pin and a valid admission epoch
-    // limits : 16 KiB request and response frames, deadline at most 300 seconds ahead
+    // Prepares the caller's exact pinned artifact under current admission with a deadline at most 300 seconds ahead.
+    // guard  : canister controller
+    // limits : 16 KiB request and response frames
     #[runtime::update(
         runtime = runtime,
         name = "prepare_cache",

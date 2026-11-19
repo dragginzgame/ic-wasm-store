@@ -7,6 +7,7 @@ use ic_wasm_store_protocol::CHUNK_BYTES;
 fn fixture(version: &str, bytes: usize) -> (Manifest, Vec<u8>) {
     let mut payload = vec![42; bytes];
     payload[..8].copy_from_slice(b"\0asm\x01\0\0\0");
+
     (
         Manifest {
             release: Release {

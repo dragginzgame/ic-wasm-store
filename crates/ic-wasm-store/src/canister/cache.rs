@@ -24,6 +24,7 @@ pub(super) fn admit() -> Result<(), String> {
     if system::argument_size() > protocol::LIMITS.bytes {
         return Err("Store frame too large".into());
     }
+
     Ok(())
 }
 
@@ -57,6 +58,7 @@ fn authority(caller: &Principal, expires: u64, epoch: u64) -> Result<(), CacheEr
     if system::time() > expires {
         return Err(CacheError::Expired);
     }
+
     STATE
         .with_borrow(|state| state.as_ref().expect("Store state").cache_fence(epoch))
         .map_err(CacheError::Pin)
@@ -68,6 +70,7 @@ async fn management(method: &str, bytes: Vec<u8>) -> Result<Vec<u8>, CacheError>
         .execute()
         .await
         .map_err(|_| CacheError::Uncertain)?;
+
     match reply.into_parts().0 {
         Outcome::Reply(bytes) => Ok(bytes),
         Outcome::Rejected(rejection) | Outcome::OutcomeUnknown(rejection) => {
@@ -109,6 +112,7 @@ pub(super) async fn prepare(input: PrepareCache) -> Result<CacheReady, CacheErro
             .with_borrow(|state| {
                 let state = state.as_ref().expect("Store state");
                 state.observe_pin(caller.as_slice(), &input.pin)?;
+
                 state.read(&Read {
                     release: input.pin.manifest.release.clone(),
                     index: index as u32,
@@ -138,6 +142,7 @@ pub(super) async fn prepare(input: PrepareCache) -> Result<CacheReady, CacheErro
     STATE
         .with_borrow(|state| state.as_ref().expect("Store state").cache_fence(epoch))
         .map_err(CacheError::Pin)?;
+
     // Late completion remains evidence, never permission to install past the approval deadline.
     Ok(CacheReady {
         pin: input.pin,

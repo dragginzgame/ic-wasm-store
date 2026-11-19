@@ -15,6 +15,7 @@ macro_rules! endpoint {
                 if system::argument_size() > protocol::$input_limits.bytes {
                     return Err("Store frame too large".into());
                 }
+
                 Ok(())
             }
 
@@ -42,7 +43,7 @@ macro_rules! endpoint {
 
             // $name
             // The mount supplies the caller-visible behavior.
-            // scope  : controllers, subject to the operation's admission rules
+            // guard  : canister controller
             // limits : $input_limits request and $output_limits response Wire budgets
             #[runtime::$kind(
                 runtime = runtime,
@@ -57,6 +58,7 @@ macro_rules! endpoint {
                 STATE.with_borrow_mut(|state| {
                     let operation: fn(&mut State<DefaultMemoryImpl>, &$request) -> $reply =
                         $operation;
+
                     operation(state.as_mut().expect("initialized Store"), &input)
                 })
             }

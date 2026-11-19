@@ -1,4 +1,5 @@
 //! Versioned metadata and independently bounded chunk payloads.
+
 use ic_storage::adapter::{Bound, Storable};
 use ic_wasm_store_protocol::{CHUNK_BYTES, LIMITS, MAX_CHUNKS, MAX_PINS, Quota, Release};
 use serde::{Deserialize, Serialize};
@@ -16,6 +17,7 @@ macro_rules! stable_record {
     ($record:ty) => {
         impl Storable for $record {
             const BOUND: Bound = <Self as CheckedRecord>::BOUND;
+
             fn to_bytes(&self) -> Cow<'_, [u8]> {
                 self.encode_record().expect("invalid Store record")
             }
@@ -30,13 +32,15 @@ macro_rules! stable_record {
         }
     };
 }
-stable_record!(Key);
-stable_record!(Artifact);
-stable_record!(Settings);
-stable_record!(Payload);
+
+///
+/// Key
+/// Encodes release labels, with separate separators for active entries and tombstones.
+///
 
 #[derive(Clone, Eq, Ord, PartialEq, PartialOrd)]
 pub(super) struct Key(pub String);
+
 impl Key {
     pub fn new(release: &Release) -> Self {
         Self(format!("{}\0{}", release.name, release.version))
@@ -55,17 +59,20 @@ impl Key {
             .0
             .split_once(['\0', '\x01'])
             .expect("validated release key");
+
         Release {
             name: name.into(),
             version: version.into(),
         }
     }
 }
+
 impl CheckedRecord for Key {
     const BOUND: Bound = Bound::Bounded {
         max_size: 129,
         is_fixed_size: false,
     };
+
     fn encode_record(&self) -> Result<Cow<'_, [u8]>, &'static str> {
         Ok(Cow::Borrowed(self.0.as_bytes()))
     }
@@ -81,9 +88,17 @@ impl CheckedRecord for Key {
         {
             return Err("release labels");
         }
+
         Ok(Self(key))
     }
 }
+
+stable_record!(Key);
+
+///
+/// Artifact
+/// Retains artifact geometry, publication state and pins in the artifact allocation.
+///
 
 #[derive(Clone, Deserialize, Serialize)]
 pub(super) struct Artifact {
@@ -92,6 +107,7 @@ pub(super) struct Artifact {
     pub published: bool,
     pub pins: Vec<RetainedPin>,
 }
+
 impl Artifact {
     fn valid(&self) -> bool {
         self.bytes >= 8
@@ -111,66 +127,15 @@ impl Artifact {
         (self.bytes as usize - index * CHUNK_BYTES).min(CHUNK_BYTES)
     }
 }
-#[derive(Clone, Deserialize, Serialize)]
-pub(super) struct Settings {
-    pub quota: Quota,
-    pub reserved_bytes: u64,
-    pub admission: Option<ic_wasm_store_protocol::Admission>,
-}
-impl Settings {
-    fn valid(&self) -> bool {
-        self.quota.valid()
-            && self.reserved_bytes <= self.quota.reserved_bytes
-            && self.admission.as_ref().is_none_or(|gate| {
-                gate.attempt.sequence > 0
-                    && gate.attempt.operation != [0; 32]
-                    && !gate.owner.is_empty()
-                    && gate.owner.len() <= 29
-                    && gate.owner != [4]
-            })
-    }
-}
 
-// Pins are small obligations inside the artifact metadata, under the original lease.
-// This avoids changing the four-allocation directory created by the first Store.
-#[derive(Clone, Deserialize, Serialize)]
-pub(super) struct RetainedPin {
-    pub owner: Vec<u8>,
-    pub operation: [u8; 32],
-    pub release: Release,
-}
-impl RetainedPin {
-    fn valid(&self) -> bool {
-        !self.owner.is_empty()
-            && self.owner.len() <= 29
-            && self.owner != [4]
-            && self.operation != [0; 32]
-            && self.release.valid()
-    }
-}
-const RECORD_LIMITS: ic_wire::Limits = ic_wire::Limits {
-    allocation: 1_048_576,
-    nodes: 65_536,
-    ..LIMITS
-};
-const METADATA_BOUND: Bound = Bound::Bounded {
-    max_size: 16_384,
-    is_fixed_size: false,
-};
-fn encode<T: Serialize>(value: &T, tag: &[u8]) -> Result<Cow<'static, [u8]>, &'static str> {
-    let mut bytes = tag.to_vec();
-    bytes.extend(
-        ic_wire::encode(value, ic_wire::Encoding::Payload, RECORD_LIMITS)
-            .map_err(|_| "store record")?,
-    );
-    Ok(Cow::Owned(bytes))
-}
 impl CheckedRecord for Artifact {
     const BOUND: Bound = METADATA_BOUND;
+
     fn encode_record(&self) -> Result<Cow<'_, [u8]>, &'static str> {
         if !self.valid() {
             return Err("artifact invariant");
         }
+
         encode(self, b"CWA2")
     }
 
@@ -187,6 +152,7 @@ impl CheckedRecord for Artifact {
             }
             let old: Legacy = ic_wire::decode(payload, ic_wire::Encoding::Payload, LIMITS)
                 .map_err(|_| "legacy artifact")?;
+
             Self {
                 bytes: old.bytes,
                 chunks: old.chunks,
@@ -199,15 +165,47 @@ impl CheckedRecord for Artifact {
         if !value.valid() {
             return Err("artifact invariant");
         }
+
         Ok(value)
     }
 }
+
+stable_record!(Artifact);
+
+///
+/// Settings
+/// Retains quota, reserved bytes and maintenance admission across upgrades.
+///
+
+#[derive(Clone, Deserialize, Serialize)]
+pub(super) struct Settings {
+    pub quota: Quota,
+    pub reserved_bytes: u64,
+    pub admission: Option<ic_wasm_store_protocol::Admission>,
+}
+
+impl Settings {
+    fn valid(&self) -> bool {
+        self.quota.valid()
+            && self.reserved_bytes <= self.quota.reserved_bytes
+            && self.admission.as_ref().is_none_or(|gate| {
+                gate.attempt.sequence > 0
+                    && gate.attempt.operation != [0; 32]
+                    && !gate.owner.is_empty()
+                    && gate.owner.len() <= 29
+                    && gate.owner != [4]
+            })
+    }
+}
+
 impl CheckedRecord for Settings {
     const BOUND: Bound = METADATA_BOUND;
+
     fn encode_record(&self) -> Result<Cow<'_, [u8]>, &'static str> {
         if !self.valid() {
             return Err("settings invariant");
         }
+
         encode(self, b"CWS2")
     }
 
@@ -223,6 +221,7 @@ impl CheckedRecord for Settings {
             }
             let old: Previous = ic_wire::decode(payload, ic_wire::Encoding::Payload, LIMITS)
                 .map_err(|_| "previous settings record")?;
+
             Self {
                 quota: old.quota,
                 reserved_bytes: old.reserved_bytes,
@@ -234,16 +233,68 @@ impl CheckedRecord for Settings {
         if !value.valid() {
             return Err("settings invariant");
         }
+
         Ok(value)
     }
 }
 
+stable_record!(Settings);
+
+///
+/// RetainedPin
+/// Binds an artifact to the exact owner, operation and release without a separate allocation.
+///
+
+#[derive(Clone, Deserialize, Serialize)]
+pub(super) struct RetainedPin {
+    pub owner: Vec<u8>,
+    pub operation: [u8; 32],
+    pub release: Release,
+}
+
+impl RetainedPin {
+    fn valid(&self) -> bool {
+        !self.owner.is_empty()
+            && self.owner.len() <= 29
+            && self.owner != [4]
+            && self.operation != [0; 32]
+            && self.release.valid()
+    }
+}
+
+const RECORD_LIMITS: ic_wire::Limits = ic_wire::Limits {
+    allocation: 1_048_576,
+    nodes: 65_536,
+    ..LIMITS
+};
+const METADATA_BOUND: Bound = Bound::Bounded {
+    max_size: 16_384,
+    is_fixed_size: false,
+};
+
+fn encode<T: Serialize>(value: &T, tag: &[u8]) -> Result<Cow<'static, [u8]>, &'static str> {
+    let mut bytes = tag.to_vec();
+    bytes.extend(
+        ic_wire::encode(value, ic_wire::Encoding::Payload, RECORD_LIMITS)
+            .map_err(|_| "store record")?,
+    );
+
+    Ok(Cow::Owned(bytes))
+}
+
+///
+/// Payload
+/// Stores one verified Wasm chunk as raw stable bytes.
+///
+
 pub(super) struct Payload(pub Vec<u8>);
+
 impl CheckedRecord for Payload {
     const BOUND: Bound = Bound::Bounded {
         max_size: CHUNK_BYTES as u32,
         is_fixed_size: false,
     };
+
     fn encode_record(&self) -> Result<Cow<'_, [u8]>, &'static str> {
         Ok(Cow::Borrowed(&self.0))
     }
@@ -252,6 +303,9 @@ impl CheckedRecord for Payload {
         if bytes.is_empty() || bytes.len() > CHUNK_BYTES {
             return Err("chunk size");
         }
+
         Ok(Self(bytes.into_owned()))
     }
 }
+
+stable_record!(Payload);

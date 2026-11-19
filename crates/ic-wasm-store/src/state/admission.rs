@@ -50,6 +50,7 @@ impl<M: MemoryBacking> State<M> {
         });
         let result = settings.admission.clone();
         self.settings.set(settings);
+
         Ok(result)
     }
 
@@ -66,6 +67,7 @@ impl<M: MemoryBacking> State<M> {
         if self.admission_epoch()? != admitted {
             return Err(Error::Conflict);
         }
+
         Ok(())
     }
 }

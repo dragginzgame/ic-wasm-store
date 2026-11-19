@@ -101,6 +101,7 @@ async fn exercise_upload(legacy_image: bool) {
         );
         pic.start_canister(id, Some(operator)).await.unwrap();
         assert_eq!(client.status(&manifest.release).await, partial);
+
         return;
     }
     upgraded.unwrap();

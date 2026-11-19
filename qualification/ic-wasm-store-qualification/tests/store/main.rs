@@ -40,6 +40,7 @@ impl Client<'_> {
             )
             .await
             .unwrap();
+
         ic_wire::decode(
             &reply,
             ic_wire::Encoding::Frame {
@@ -70,6 +71,7 @@ impl Client<'_> {
             )
             .await
             .unwrap();
+
         ic_wire::decode(
             &reply,
             ic_wire::Encoding::Frame {

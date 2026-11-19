@@ -15,6 +15,7 @@ impl<M: MemoryBacking> State<M> {
     pub(super) fn removed_manifest(&self, key: &Key) -> Manifest {
         let hash = self.releases.get(key).expect("removed release");
         let artifact = self.artifacts.get(&hash).expect("retained identity");
+
         Manifest {
             release: key.release(),
             hash,
@@ -28,6 +29,7 @@ impl<M: MemoryBacking> State<M> {
             return Err(Error::Invalid);
         }
         let lower = after.map_or(Unbounded, |release| Excluded(Key::tombstone(release)));
+
         Ok(self
             .releases
             .range((lower, Unbounded))
@@ -51,6 +53,7 @@ impl<M: MemoryBacking> State<M> {
         let tombstone = Key::tombstone(&manifest.release);
         if self.releases.contains_key(&tombstone) {
             let old = self.removed_manifest(&tombstone);
+
             return if old == *manifest {
                 Ok(old)
             } else {
@@ -99,6 +102,7 @@ impl<M: MemoryBacking> State<M> {
                 .expect("artifact reservation");
             self.settings.set(settings);
         }
+
         Ok(manifest.clone())
     }
 }

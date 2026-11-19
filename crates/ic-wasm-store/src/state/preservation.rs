@@ -8,6 +8,7 @@ use ic_wasm_store_protocol::{
 impl<M: MemoryBacking> State<M> {
     pub fn preservation(&self, caller: &[u8], request: &Request) -> Result<Page, Error> {
         let page = self.preservation_v2(caller, request)?;
+
         Ok(Page {
             catalog: page.catalog,
             entry: page.entry.map(|entry| match entry {
@@ -58,6 +59,7 @@ impl<M: MemoryBacking> State<M> {
                 }
             })
             .transpose()?;
+
         Ok(PageV2 {
             catalog: Catalog {
                 quota: settings.quota.clone(),

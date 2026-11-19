@@ -61,6 +61,7 @@ impl Entry {
     #[must_use]
     pub fn order_key(&self) -> (&str, bool, &str) {
         let release = &self.manifest().release;
+
         (
             &release.name,
             matches!(self, Self::Removed(_)),
