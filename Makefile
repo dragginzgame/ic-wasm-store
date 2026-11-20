@@ -4,6 +4,7 @@ CARGO_PUBLISH_PACKAGES := ic-wasm-store-protocol ic-wasm-store
 CARGO_PUBLISH_REGISTRY := crates-io
 # Product qualification and fresh archive admission have separate owners.
 CARGO_PUBLISH_VERIFY_TARGETS := release-verify publication-admission
+WIRE_API_WASM ?= target/qualification/original.wasm
 LOCAL_TOOL_INSTALL_TARGETS := install-testkit-launcher
 LOCAL_TOOL_CHECK_TARGETS := testkit-launcher-check
 include vendor/toko-tooling/make/consumer.mk
@@ -31,6 +32,7 @@ help:
 	  'make test-setup-evidence   Test CI setup failure collection and launcher selection' \
 	  'make test-tooling          Qualify repository tooling callers (also in CI)' \
 	  'make release-verify        Qualify product behavior for publication' \
+	  'make check-wire-api       Compare the selected release Wasm with the Wire baseline' \
 	  'make ci                    Run aggregate checks; requires prepared fixtures'
 check:
 	cargo check --locked --workspace --all-targets
@@ -87,5 +89,8 @@ test-delivery-flow:
 	bash scripts/tests/delivery-flow.sh
 test-installed-evidence:
 	bash scripts/tests/installed-evidence.sh
+.PHONY: check-wire-api
+check-wire-api:
+	bash vendor/toko-tooling/scripts/ci/check-api-baseline.sh api/wire -- bash scripts/write-wire-api.sh "$(WIRE_API_WASM)"
 ci: release-verify
-	$(MAKE) test-tooling
+	$(MAKE) check-wire-api test-tooling

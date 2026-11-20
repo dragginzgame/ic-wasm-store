@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.6.0] - 2026-11-20
+
+### ⚠️ Breaking
+
+- Adopt `ic-wire` 0.27. Rust clients that pass Store's `LIMITS` or
+  `CHUNK_LIMITS` to `ic_wire` must use 0.27 with the new protocol crate.
+
+### 🧪 Testing
+
+- Adopt Toko Tooling 0.46.0 and check the reviewed Wire manifests in PR CI
+  against the mounted contracts and callable exports of the release Wasm.
+
+### 🔧 Changed
+
+- Refresh the locked Platform, Storage and Testkit patch versions.
+
 ## [0.5.2] - 2026-11-19
 
 ### 🔧 Tooling

@@ -16,12 +16,14 @@ mod state;
 mod canister {
     mod cache;
     mod mount;
+    #[cfg(test)]
+    mod wire_api;
 
     use crate::state::State;
     use ic_platform_runtime::{self as runtime, system};
     use ic_storage::DefaultMemoryImpl;
     use ic_wasm_store_protocol as protocol;
-    use mount::endpoint;
+    use mount::endpoints;
     use std::{cell::RefCell, convert::Infallible, fmt::Debug};
 
     // init
@@ -58,347 +60,346 @@ mod canister {
         });
     }
 
-    // prepare
-    // Reserves quota and stages the exact manifest for an artifact up to 8 MiB.
-    // guard  : canister controller
-    // limits : 16 KiB request and response frames
-    endpoint!(
-        prepare,
-        "prepare",
-        update,
-        PREPARE,
-        protocol::Manifest,
-        Result<protocol::Status, protocol::Error>,
-        LIMITS,
-        LIMITS,
-        |state, input| state.prepare(input)
-    );
+    endpoints! {
+        // prepare
+        // Reserves quota and stages the exact manifest for an artifact up to 8 MiB.
+        // guard  : canister controller
+        // limits : 16 KiB request and response frames
+        endpoint!(
+            prepare,
+            "prepare",
+            update,
+            PREPARE,
+            protocol::Manifest,
+            Result<protocol::Status, protocol::Error>,
+            LIMITS,
+            LIMITS,
+            |state, input| state.prepare(input)
+        );
 
-    // put
-    // Writes one verified chunk of up to 256 KiB and returns upload progress.
-    // guard  : canister controller
-    // limits : 260 KiB request frame, 16 KiB response frame
-    endpoint!(
-        put,
-        "put",
-        update,
-        PUT,
-        protocol::Put,
-        Result<protocol::Status, protocol::Error>,
-        CHUNK_LIMITS,
-        LIMITS,
-        |state, input| state.put(input)
-    );
+        // put
+        // Writes one verified chunk of up to 256 KiB and returns upload progress.
+        // guard  : canister controller
+        // limits : 260 KiB request frame, 16 KiB response frame
+        endpoint!(
+            put,
+            "put",
+            update,
+            PUT,
+            protocol::Put,
+            Result<protocol::Status, protocol::Error>,
+            CHUNK_LIMITS,
+            LIMITS,
+            |state, input| state.put(input)
+        );
 
-    // publish
-    // Publishes a complete artifact of up to 8 MiB after verifying its digest.
-    // guard  : canister controller
-    // limits : 16 KiB request and response frames
-    endpoint!(
-        publish,
-        "publish",
-        update,
-        PUBLISH,
-        protocol::Release,
-        Result<protocol::Status, protocol::Error>,
-        LIMITS,
-        LIMITS,
-        |state, input| state.publish(input)
-    );
+        // publish
+        // Publishes a complete artifact of up to 8 MiB after verifying its digest.
+        // guard  : canister controller
+        // limits : 16 KiB request and response frames
+        endpoint!(
+            publish,
+            "publish",
+            update,
+            PUBLISH,
+            protocol::Release,
+            Result<protocol::Status, protocol::Error>,
+            LIMITS,
+            LIMITS,
+            |state, input| state.publish(input)
+        );
 
-    // status
-    // Query the current status of an active release.
-    // guard  : canister controller
-    // limits : 16 KiB request and response frames
-    endpoint!(
-        status,
-        "status",
-        query,
-        STATUS,
-        protocol::Release,
-        Result<protocol::Status, protocol::Error>,
-        LIMITS,
-        LIMITS,
-        |state, input| state.status(input)
-    );
+        // status
+        // Query the current status of an active release.
+        // guard  : canister controller
+        // limits : 16 KiB request and response frames
+        endpoint!(
+            status,
+            "status",
+            query,
+            STATUS,
+            protocol::Release,
+            Result<protocol::Status, protocol::Error>,
+            LIMITS,
+            LIMITS,
+            |state, input| state.status(input)
+        );
 
-    // observe
-    // Read active release status through replicated execution.
-    // guard  : canister controller
-    // limits : 16 KiB request and response frames
-    endpoint!(
-        observe,
-        "observe",
-        update,
-        STATUS,
-        protocol::Release,
-        Result<protocol::Status, protocol::Error>,
-        LIMITS,
-        LIMITS,
-        |state, input| state.status(input)
-    );
+        // observe
+        // Read active release status through replicated execution.
+        // guard  : canister controller
+        // limits : 16 KiB request and response frames
+        endpoint!(
+            observe,
+            "observe",
+            update,
+            STATUS,
+            protocol::Release,
+            Result<protocol::Status, protocol::Error>,
+            LIMITS,
+            LIMITS,
+            |state, input| state.status(input)
+        );
 
-    // observe_custody
-    // Read upload progress and retained pins through replicated execution.
-    // guard  : canister controller
-    // limits : 16 KiB request and response frames
-    endpoint!(
-        observe_custody,
-        "observe_custody",
-        update,
-        CUSTODY,
-        protocol::Release,
-        Result<protocol::Custody, protocol::Error>,
-        LIMITS,
-        LIMITS,
-        |state, input| state.custody(input)
-    );
+        // observe_custody
+        // Read upload progress and retained pins through replicated execution.
+        // guard  : canister controller
+        // limits : 16 KiB request and response frames
+        endpoint!(
+            observe_custody,
+            "observe_custody",
+            update,
+            CUSTODY,
+            protocol::Release,
+            Result<protocol::Custody, protocol::Error>,
+            LIMITS,
+            LIMITS,
+            |state, input| state.custody(input)
+        );
 
-    // observe_preservation
-    // Returns one preservation custody entry for the controller that owns the exact closed attempt.
-    // guard  : canister controller
-    // limits : 16 KiB request and response frames
-    endpoint!(
-        observe_preservation,
-        "observe_preservation",
-        update,
-        PRESERVATION,
-        protocol::preservation::Request,
-        Result<protocol::preservation::Page, protocol::Error>,
-        LIMITS,
-        LIMITS,
-        |state, input| state.preservation(system::caller().as_slice(),
-        input)
-    );
+        // observe_preservation
+        // Returns one preservation custody entry for the controller that owns the exact closed attempt.
+        // guard  : canister controller
+        // limits : 16 KiB request and response frames
+        endpoint!(
+            observe_preservation,
+            "observe_preservation",
+            update,
+            PRESERVATION,
+            protocol::preservation::Request,
+            Result<protocol::preservation::Page, protocol::Error>,
+            LIMITS,
+            LIMITS,
+            |state, input| state.preservation(system::caller().as_slice(),
+            input)
+        );
 
-    // observe_preservation_v2
-    // Returns one active or removed entry for the controller that owns the exact closed attempt.
-    // guard  : canister controller
-    // limits : 16 KiB request and response frames
-    endpoint!(
-        observe_preservation_v2,
-        "observe_preservation_v2",
-        update,
-        PRESERVATION_V2,
-        protocol::preservation::Request,
-        Result<protocol::preservation::PageV2, protocol::Error>,
-        LIMITS,
-        LIMITS,
-        |state, input| state.preservation_v2(system::caller().as_slice(),
-        input)
-    );
+        // observe_preservation_v2
+        // Returns one active or removed entry for the controller that owns the exact closed attempt.
+        // guard  : canister controller
+        // limits : 16 KiB request and response frames
+        endpoint!(
+            observe_preservation_v2,
+            "observe_preservation_v2",
+            update,
+            PRESERVATION_V2,
+            protocol::preservation::Request,
+            Result<protocol::preservation::PageV2, protocol::Error>,
+            LIMITS,
+            LIMITS,
+            |state, input| state.preservation_v2(system::caller().as_slice(),
+            input)
+        );
 
-    // admission
-    // Observes or changes exact maintenance admission. Activation requires the captured owner.
-    // guard  : canister controller
-    // limits : 16 KiB request and response frames
-    endpoint!(
-        admission,
-        "admission",
-        update,
-        ADMISSION,
-        protocol::AdmissionCommand,
-        Result<Option<protocol::Admission>, protocol::Error>,
-        LIMITS,
-        LIMITS,
-        |state, input| state.admission(system::caller().as_slice(), input)
-    );
+        // admission
+        // Observes or changes exact maintenance admission. Activation requires the captured owner.
+        // guard  : canister controller
+        // limits : 16 KiB request and response frames
+        endpoint!(
+            admission,
+            "admission",
+            update,
+            ADMISSION,
+            protocol::AdmissionCommand,
+            Result<Option<protocol::Admission>, protocol::Error>,
+            LIMITS,
+            LIMITS,
+            |state, input| state.admission(system::caller().as_slice(), input)
+        );
 
-    // read
-    // Queries one verified chunk of up to 256 KiB from a published release.
-    // guard  : canister controller
-    // limits : 16 KiB request frame, 260 KiB response frame
-    endpoint!(
-        read,
-        "read",
-        query,
-        READ,
-        protocol::Read,
-        Result<protocol::Chunk, protocol::Error>,
-        LIMITS,
-        CHUNK_LIMITS,
-        |state, input| state.read(input)
-    );
+        // read
+        // Queries one verified chunk of up to 256 KiB from a published release.
+        // guard  : canister controller
+        // limits : 16 KiB request frame, 260 KiB response frame
+        endpoint!(
+            read,
+            "read",
+            query,
+            READ,
+            protocol::Read,
+            Result<protocol::Chunk, protocol::Error>,
+            LIMITS,
+            CHUNK_LIMITS,
+            |state, input| state.read(input)
+        );
 
-    // read_chunk
-    // Reads one verified chunk of up to 256 KiB through replicated execution.
-    // guard  : canister controller
-    // limits : 16 KiB request frame, 260 KiB response frame
-    endpoint!(
-        read_chunk,
-        "read_chunk",
-        update,
-        READ,
-        protocol::Read,
-        Result<protocol::Chunk, protocol::Error>,
-        LIMITS,
-        CHUNK_LIMITS,
-        |state, input| state.read(input)
-    );
+        // read_chunk
+        // Reads one verified chunk of up to 256 KiB through replicated execution.
+        // guard  : canister controller
+        // limits : 16 KiB request frame, 260 KiB response frame
+        endpoint!(
+            read_chunk,
+            "read_chunk",
+            update,
+            READ,
+            protocol::Read,
+            Result<protocol::Chunk, protocol::Error>,
+            LIMITS,
+            CHUNK_LIMITS,
+            |state, input| state.read(input)
+        );
 
-    // list
-    // Queries the next page of up to four active releases.
-    // guard  : canister controller
-    // limits : 16 KiB request and response frames
-    endpoint!(
-        list,
-        "list",
-        query,
-        LIST,
-        Option<protocol::Release>,
-        Result<Vec<protocol::Status>, protocol::Error>,
-        LIMITS,
-        LIMITS,
-        |state, input| state.list(input.as_ref())
-    );
+        // list
+        // Queries the next page of up to four active releases.
+        // guard  : canister controller
+        // limits : 16 KiB request and response frames
+        endpoint!(
+            list,
+            "list",
+            query,
+            LIST,
+            Option<protocol::Release>,
+            Result<Vec<protocol::Status>, protocol::Error>,
+            LIMITS,
+            LIMITS,
+            |state, input| state.list(input.as_ref())
+        );
 
-    // info
-    // Query Store quotas and usage.
-    // guard  : canister controller
-    // limits : 16 KiB request and response frames
-    endpoint!(
-        info,
-        "info",
-        query,
-        INFO,
-        (),
-        protocol::Info,
-        LIMITS,
-        LIMITS,
-        |state, _| state.info()
-    );
+        // info
+        // Query Store quotas and usage.
+        // guard  : canister controller
+        // limits : 16 KiB request and response frames
+        endpoint!(
+            info,
+            "info",
+            query,
+            INFO,
+            (),
+            protocol::Info,
+            LIMITS,
+            LIMITS,
+            |state, _| state.info()
+        );
 
-    // observe_info
-    // Read Store quotas and usage through replicated execution.
-    // guard  : canister controller
-    // limits : 16 KiB request and response frames
-    endpoint!(
-        observe_info,
-        "observe_info",
-        update,
-        INFO,
-        (),
-        protocol::Info,
-        LIMITS,
-        LIMITS,
-        |state, _| state.info()
-    );
+        // observe_info
+        // Read Store quotas and usage through replicated execution.
+        // guard  : canister controller
+        // limits : 16 KiB request and response frames
+        endpoint!(
+            observe_info,
+            "observe_info",
+            update,
+            INFO,
+            (),
+            protocol::Info,
+            LIMITS,
+            LIMITS,
+            |state, _| state.info()
+        );
 
-    // configure
-    // Applies quotas up to 256 MiB and 4,096 releases, subject to current reservations.
-    // guard  : canister controller
-    // limits : 16 KiB request and response frames
-    endpoint!(
-        configure,
-        "configure",
-        update,
-        CONFIGURE,
-        protocol::Quota,
-        Result<protocol::Info, protocol::Error>,
-        LIMITS,
-        LIMITS,
-        |state, input| state.configure(input)
-    );
+        // configure
+        // Applies quotas up to 256 MiB and 4,096 releases, subject to current reservations.
+        // guard  : canister controller
+        // limits : 16 KiB request and response frames
+        endpoint!(
+            configure,
+            "configure",
+            update,
+            CONFIGURE,
+            protocol::Quota,
+            Result<protocol::Info, protocol::Error>,
+            LIMITS,
+            LIMITS,
+            |state, input| state.configure(input)
+        );
 
-    // pin
-    // Retains the caller's exact operation against a published release, up to 32 pins per artifact.
-    // guard  : canister controller
-    // limits : 16 KiB request and response frames
-    endpoint!(
-        pin,
-        "pin",
-        update,
-        PIN,
-        protocol::Pin,
-        Result<protocol::PinReceipt, protocol::Error>,
-        LIMITS,
-        LIMITS,
-        |state, input| state.pin(system::caller().as_slice(),
-        input)
-    );
+        // pin
+        // Retains the caller's exact operation against a published release, up to 32 pins per artifact.
+        // guard  : canister controller
+        // limits : 16 KiB request and response frames
+        endpoint!(
+            pin,
+            "pin",
+            update,
+            PIN,
+            protocol::Pin,
+            Result<protocol::PinReceipt, protocol::Error>,
+            LIMITS,
+            LIMITS,
+            |state, input| state.pin(system::caller().as_slice(),
+            input)
+        );
 
-    // observe_pin
-    // Returns the receipt for the caller's exact retained pin.
-    // guard  : canister controller
-    // limits : 16 KiB request and response frames
-    endpoint!(
-        observe_pin,
-        "observe_pin",
-        update,
-        OBSERVE_PIN,
-        protocol::Pin,
-        Result<protocol::PinReceipt, protocol::Error>,
-        LIMITS,
-        LIMITS,
-        |state, input| state.observe_pin(system::caller().as_slice(),
-        input)
-    );
+        // observe_pin
+        // Returns the receipt for the caller's exact retained pin.
+        // guard  : canister controller
+        // limits : 16 KiB request and response frames
+        endpoint!(
+            observe_pin,
+            "observe_pin",
+            update,
+            OBSERVE_PIN,
+            protocol::Pin,
+            Result<protocol::PinReceipt, protocol::Error>,
+            LIMITS,
+            LIMITS,
+            |state, input| state.observe_pin(system::caller().as_slice(),
+            input)
+        );
 
-    // delete
-    // Remove an exact published release.
-    // guard  : canister controller
-    // limits : 16 KiB request and response frames
-    endpoint!(
-        delete,
-        "delete",
-        update,
-        DELETE,
-        protocol::Manifest,
-        Result<protocol::Manifest, protocol::Error>,
-        LIMITS,
-        LIMITS,
-        |state, input| state.remove_release(input, true)
-    );
+        // delete
+        // Remove an exact published release.
+        // guard  : canister controller
+        // limits : 16 KiB request and response frames
+        endpoint!(
+            delete,
+            "delete",
+            update,
+            DELETE,
+            protocol::Manifest,
+            Result<protocol::Manifest, protocol::Error>,
+            LIMITS,
+            LIMITS,
+            |state, input| state.remove_release(input, true)
+        );
 
-    // cancel
-    // Cancel an exact unpublished upload.
-    // guard  : canister controller
-    // limits : 16 KiB request and response frames
-    endpoint!(
-        cancel,
-        "cancel",
-        update,
-        CANCEL,
-        protocol::Manifest,
-        Result<protocol::Manifest, protocol::Error>,
-        LIMITS,
-        LIMITS,
-        |state, input| state.remove_release(input, false)
-    );
+        // cancel
+        // Cancel an exact unpublished upload.
+        // guard  : canister controller
+        // limits : 16 KiB request and response frames
+        endpoint!(
+            cancel,
+            "cancel",
+            update,
+            CANCEL,
+            protocol::Manifest,
+            Result<protocol::Manifest, protocol::Error>,
+            LIMITS,
+            LIMITS,
+            |state, input| state.remove_release(input, false)
+        );
 
-    // tombstones
-    // Returns the next page of up to four removed manifests.
-    // guard  : canister controller
-    // limits : 16 KiB request and response frames
-    endpoint!(
-        tombstones,
-        "tombstones",
-        update,
-        TOMBSTONES,
-        Option<protocol::Release>,
-        Result<Vec<protocol::Manifest>, protocol::Error>,
-        LIMITS,
-        LIMITS,
-        |state, input| state.tombstones(input.as_ref())
-    );
+        // tombstones
+        // Returns the next page of up to four removed manifests.
+        // guard  : canister controller
+        // limits : 16 KiB request and response frames
+        endpoint!(
+            tombstones,
+            "tombstones",
+            update,
+            TOMBSTONES,
+            Option<protocol::Release>,
+            Result<Vec<protocol::Manifest>, protocol::Error>,
+            LIMITS,
+            LIMITS,
+            |state, input| state.tombstones(input.as_ref())
+        );
 
-    // prepare_cache
-    // Prepares the caller's exact pinned artifact under current admission with a deadline at most 300 seconds ahead.
-    // guard  : canister controller
-    // limits : 16 KiB request and response frames
-    #[runtime::update(
-        runtime = runtime,
-        name = "prepare_cache",
-        guard = cache::admit,
-        decode = cache::decode,
-        encode = cache::encode,
-        max_bytes = 16384,
-        on_error = fail
-    )]
-    async fn prepare_cache(
-        input: protocol::PrepareCache,
-    ) -> Result<protocol::CacheReady, protocol::CacheError> {
-        cache::prepare(input).await
+        // prepare_cache
+        // Prepares the caller's exact pinned artifact under current admission with a deadline at most 300 seconds ahead.
+        // guard  : canister controller
+        // limits : 16 KiB request and response frames
+        async_endpoint!(
+            prepare_cache,
+            "prepare_cache",
+            update,
+            PREPARE_CACHE,
+            protocol::PrepareCache,
+            Result<protocol::CacheReady, protocol::CacheError>,
+            LIMITS,
+            LIMITS,
+            super::cache::prepare
+        );
     }
 
     thread_local! { static STATE: RefCell<Option<State<DefaultMemoryImpl>>> = const { RefCell::new(None) }; }

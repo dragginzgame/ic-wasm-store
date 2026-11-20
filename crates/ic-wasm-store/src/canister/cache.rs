@@ -16,41 +16,6 @@ const REPLY_LIMITS: candid::Limits = candid::Limits {
     skipping: 131_072,
 };
 
-/// Require a controller and enforce the cache request budget.
-pub(super) fn admit() -> Result<(), String> {
-    if !system::is_controller(&system::caller()) {
-        return Err("Store controller required".into());
-    }
-    if system::argument_size() > protocol::LIMITS.bytes {
-        return Err("Store frame too large".into());
-    }
-
-    Ok(())
-}
-
-pub(super) fn decode(bytes: &[u8]) -> Result<PrepareCache, ic_wire::Error> {
-    ic_wire::decode(
-        bytes,
-        ic_wire::Encoding::Frame {
-            method: protocol::PREPARE_CACHE,
-            direction: ic_wire::Direction::Request,
-        },
-        protocol::LIMITS,
-    )
-}
-
-#[expect(clippy::needless_pass_by_value, reason = "Platform owns the reply")]
-pub(super) fn encode(reply: Result<CacheReady, CacheError>) -> Result<Vec<u8>, ic_wire::Error> {
-    ic_wire::encode(
-        &reply,
-        ic_wire::Encoding::Frame {
-            method: protocol::PREPARE_CACHE,
-            direction: ic_wire::Direction::Response,
-        },
-        protocol::LIMITS,
-    )
-}
-
 fn authority(caller: &Principal, expires: u64, epoch: u64) -> Result<(), CacheError> {
     if !system::is_controller(caller) {
         return Err(CacheError::Authority);

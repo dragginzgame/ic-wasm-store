@@ -32,7 +32,10 @@ serde.workspace = true
 sha2.workspace = true
 
 [dev-dependencies]
+ic-wasm-store-protocol = { workspace = true, features = ["wire-schema"] }
+ic-wire = { workspace = true, features = ["api-manifest"] }
 toko-tooling.workspace = true
+wasmparser = { version = "0.263.0", default-features = false, features = ["std"] }
 
 [lints]
 workspace = true

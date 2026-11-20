@@ -1,0 +1,33 @@
+{
+  "format":1,
+  "endpoint":"configure",
+  "export":"wire_configure",
+  "id":"107",
+  "request":{"root":"Request","payload_limits":{"bytes":16373,"nodes":32768,"depth":16}},
+  "response":{"root":"Reply","payload_limits":{"bytes":16373,"nodes":32768,"depth":16}},
+  "schemas":{
+    "Reply":{"k":"ref","name":"Wire_Result_badfed8fa618baba"},
+    "Request":{"k":"ref","name":"Wire_Quota_10bc9cfef31e2fe7"},
+    "Wire_Quota_10bc9cfef31e2fe7":{"k":"record","fields":[
+      {"name":"reserved_bytes","value":{"k":"ref","name":"Wire_u64_4d35d3193e8d66f2"}},
+      {"name":"releases","value":{"k":"ref","name":"Wire_u64_4d35d3193e8d66f2"}}]},
+    "Wire_Result_badfed8fa618baba":{"k":"result","ok":{"k":"ref","name":"Wire_Info_de3888068430f989"},"err":{"k":"ref","name":"Wire_Error_2703fb430e01c1f5"}},
+    "Wire_Error_2703fb430e01c1f5":{"k":"enum","variants":[
+      {"name":"Invalid","id":0,"value":{"k":"unit"}},
+      {"name":"Conflict","id":1,"value":{"k":"unit"}},
+      {"name":"NotFound","id":2,"value":{"k":"unit"}},
+      {"name":"Incomplete","id":3,"value":{"k":"unit"}},
+      {"name":"Hash","id":4,"value":{"k":"unit"}},
+      {"name":"Capacity","id":5,"value":{"k":"unit"}},
+      {"name":"Closed","id":6,"value":{"k":"unit"}}]},
+    "Wire_Info_de3888068430f989":{"k":"record","fields":[
+      {"name":"quota","value":{"k":"ref","name":"Wire_Quota_10bc9cfef31e2fe7"}},
+      {"name":"reserved_bytes","value":{"k":"ref","name":"Wire_u64_4d35d3193e8d66f2"}},
+      {"name":"releases","value":{"k":"ref","name":"Wire_u64_4d35d3193e8d66f2"}},
+      {"name":"artifacts","value":{"k":"ref","name":"Wire_u64_4d35d3193e8d66f2"}},
+      {"name":"chunks","value":{"k":"ref","name":"Wire_u64_4d35d3193e8d66f2"}},
+      {"name":"maintenance_candidate","value":{"k":"ref","name":"Wire_bool_cd2fd49bc6b014bd"}}]},
+    "Wire_bool_cd2fd49bc6b014bd":{"k":"bool"},
+    "Wire_u64_4d35d3193e8d66f2":{"k":"u","bits":64}
+  }
+}

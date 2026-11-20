@@ -16,6 +16,9 @@ categories = ["wasm", "encoding"]
 # Serde names its byte adapter inside string-valued field attributes.
 ignored = ["serde_bytes", "toko-tooling"]
 
+[features]
+wire-schema = ["ic-wire/derive"]
+
 [dependencies]
 ic-wire.workspace = true
 serde.workspace = true

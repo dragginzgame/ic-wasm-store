@@ -1,0 +1,25 @@
+{
+  "format":1,
+  "endpoint":"info",
+  "export":"wire_info",
+  "id":"106",
+  "request":{"root":"Request","payload_limits":{"bytes":16373,"nodes":32768,"depth":16}},
+  "response":{"root":"Reply","payload_limits":{"bytes":16373,"nodes":32768,"depth":16}},
+  "schemas":{
+    "Reply":{"k":"ref","name":"Wire_Info_de3888068430f989"},
+    "Request":{"k":"ref","name":"Wire____07e11f07b4a6665a"},
+    "Wire_Info_de3888068430f989":{"k":"record","fields":[
+      {"name":"quota","value":{"k":"ref","name":"Wire_Quota_10bc9cfef31e2fe7"}},
+      {"name":"reserved_bytes","value":{"k":"ref","name":"Wire_u64_4d35d3193e8d66f2"}},
+      {"name":"releases","value":{"k":"ref","name":"Wire_u64_4d35d3193e8d66f2"}},
+      {"name":"artifacts","value":{"k":"ref","name":"Wire_u64_4d35d3193e8d66f2"}},
+      {"name":"chunks","value":{"k":"ref","name":"Wire_u64_4d35d3193e8d66f2"}},
+      {"name":"maintenance_candidate","value":{"k":"ref","name":"Wire_bool_cd2fd49bc6b014bd"}}]},
+    "Wire_Quota_10bc9cfef31e2fe7":{"k":"record","fields":[
+      {"name":"reserved_bytes","value":{"k":"ref","name":"Wire_u64_4d35d3193e8d66f2"}},
+      {"name":"releases","value":{"k":"ref","name":"Wire_u64_4d35d3193e8d66f2"}}]},
+    "Wire____07e11f07b4a6665a":{"k":"unit"},
+    "Wire_bool_cd2fd49bc6b014bd":{"k":"bool"},
+    "Wire_u64_4d35d3193e8d66f2":{"k":"u","bits":64}
+  }
+}

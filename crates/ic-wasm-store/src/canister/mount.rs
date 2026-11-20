@@ -2,10 +2,10 @@
 
 // Rustfmt 1.100 repeatedly reindents the interpolated Runtime attribute.
 #[rustfmt::skip]
-macro_rules! endpoint {
-    ($name:ident, $export:literal, $kind:ident, $id:ident, $request:ty, $reply:ty, $input_limits:ident, $output_limits:ident, $operation:expr) => {
+macro_rules! mount_endpoint {
+    ([$($qualifier:tt)*], $maximum:literal, $name:ident, $export:literal, $kind:ident, $id:ident, $request:ty, $reply:ty, $input_limits:ident, $output_limits:ident, |$input:ident| $body:block) => {
         mod $name {
-            use super::{DefaultMemoryImpl, STATE, State, fail, protocol, runtime, system};
+            use super::{fail, protocol, runtime, system};
 
             /// Require a controller and enforce this endpoint's request budget.
             fn admit() -> Result<(), String> {
@@ -51,19 +51,67 @@ macro_rules! endpoint {
                 guard = admit,
                 decode = decode,
                 encode = encode,
-                max_bytes = 266240,
+                max_bytes = $maximum,
                 on_error = fail
             )]
-            fn $name(input: $request) -> $reply {
-                STATE.with_borrow_mut(|state| {
-                    let operation: fn(&mut State<DefaultMemoryImpl>, &$request) -> $reply =
-                        $operation;
-
-                    operation(state.as_mut().expect("initialized Store"), &input)
-                })
-            }
+            $($qualifier)* fn $name($input: $request) -> $reply $body
         }
     };
 }
 
-pub(super) use endpoint;
+macro_rules! endpoint {
+    ($name:ident, $export:literal, $kind:ident, $id:ident, $request:ty, $reply:ty, $input_limits:ident, $output_limits:ident, $operation:expr) => {
+        mount::mount_endpoint!(
+            [],
+            266240,
+            $name,
+            $export,
+            $kind,
+            $id,
+            $request,
+            $reply,
+            $input_limits,
+            $output_limits,
+            |input| {
+                use super::{DefaultMemoryImpl, STATE, State};
+
+                STATE.with_borrow_mut(|state| {
+                    let operation: fn(&mut State<DefaultMemoryImpl>, &$request) -> $reply =
+                        $operation;
+                    operation(state.as_mut().expect("initialized Store"), &input)
+                })
+            }
+        );
+    };
+}
+
+macro_rules! async_endpoint {
+    ($name:ident, $export:literal, $kind:ident, $id:ident, $request:ty, $reply:ty, $input_limits:ident, $output_limits:ident, $operation:expr) => {
+        mount::mount_endpoint!([async], 16384, $name, $export, $kind, $id, $request, $reply, $input_limits, $output_limits, |input| {
+            $operation(input).await
+        });
+    };
+}
+
+macro_rules! endpoints {
+    ($(
+        $mount:ident!($name:ident, $export:literal, $kind:ident, $id:ident, $request:ty, $reply:ty, $input_limits:ident, $output_limits:ident, $operation:expr);
+    )*) => {
+        $(mount::$mount!($name, $export, $kind, $id, $request, $reply, $input_limits, $output_limits, $operation);)*
+
+        #[cfg(test)]
+        fn wire_endpoints() -> Vec<wire_api::Endpoint> {
+            vec![$(
+                wire_api::Endpoint::new::<$request, $reply>(
+                    $export,
+                    stringify!($kind),
+                    protocol::$id,
+                    protocol::$input_limits,
+                    protocol::$output_limits,
+                ),
+            )*]
+        }
+    };
+}
+
+pub(super) use {async_endpoint, endpoint, endpoints, mount_endpoint};

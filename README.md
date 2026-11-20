@@ -97,8 +97,9 @@ The main checks are:
 | `make qualification-test` | Builds both qualification Wasms and runs installed tests. Set `QUALIFICATION_TEST` to a test name for focused execution |
 | `make qualification-predecessor-test` | Builds published 0.2.2 and verifies refusal and rollback when upgrading its old image |
 | `make release-verify` | Formatting, tooling admission, product tests, lints, docs and both installed qualification suites |
+| `make check-wire-api` | Compare mounted Wire contracts and release Wasm exports with the reviewed baseline |
 | `make test-tooling` | Publication, setup, diagnostics, path and delivery caller fixtures |
-| `make ci` | Release verification followed by tooling caller fixtures |
+| `make ci` | Release verification followed by the Wire baseline and tooling caller checks |
 
 For focused work, use `make test-protocol` or `make test-store`, and select
 `make clippy-native`, `make clippy-wasm` or `make clippy-qualification` as appropriate.
@@ -115,6 +116,26 @@ The launcher owns one server for the test command. Alternatively, supply
 CI retains bounded, sanitized scanner, compiler and fixture setup diagnostics
 for seven days on failure. `make test-setup-evidence` checks the collection and
 launcher-selection failure paths without network access.
+
+### Wire API baseline
+
+PR CI regenerates [the Wire manifests](api/wire) from the mounted requests,
+replies, method IDs and limits. It verifies the name and call mode of every
+method against the same release Wasm used for installed qualification. The two
+non-Wire exports are the IC lifecycle hooks. Each filename records the method's
+call mode.
+
+To check a standalone build from the repository root:
+
+```sh
+make build
+make check-wire-api WIRE_API_WASM=target/wasm32-unknown-unknown/release/ic_wasm_store.wasm
+```
+
+For an intentional API change, review the diff and candidate directory reported
+by the check. Include the corresponding additions, changes and removals in
+`api/wire` for PR review. Check representative supported client bytes if the
+encoding changes.
 
 The `maintenance-candidate` feature identifies a qualification executable and
 must not be selected for live deployment. See [qualification](qualification/README.md)

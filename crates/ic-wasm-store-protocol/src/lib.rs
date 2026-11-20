@@ -46,6 +46,7 @@ pub const TOMBSTONES: u64 = 116;
 pub const PRESERVATION_V2: u64 = 117;
 
 /// Monotonic maintenance identity; a new attempt uses the previous sequence plus one.
+#[cfg_attr(feature = "wire-schema", derive(ic_wire::typescript::Wire))]
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct MaintenanceAttempt {
     /// Nonzero sequence; never wraps or resets after activation.
@@ -55,6 +56,7 @@ pub struct MaintenanceAttempt {
 }
 
 /// Latest retained admission transition. Closed does not mean in-flight calls have drained.
+#[cfg_attr(feature = "wire-schema", derive(ic_wire::typescript::Wire))]
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Admission {
     /// Original attempt, retained after activation to fence stale requests.
@@ -67,6 +69,7 @@ pub struct Admission {
 }
 
 /// Explicit local admission operations; no installation or automatic activation.
+#[cfg_attr(feature = "wire-schema", derive(ic_wire::typescript::Wire))]
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub enum AdmissionCommand {
     /// Read the latest attempt, or None before the first closure.
@@ -82,6 +85,7 @@ pub const MAX_PINS: usize = 32;
 
 /// One immutable retention obligation, scoped by caller and artifact hash.
 /// An operation may pin several artifacts, but cannot relabel an existing pin.
+#[cfg_attr(feature = "wire-schema", derive(ic_wire::typescript::Wire))]
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Pin {
     /// Digest of the caller's retained operation; nonzero and never inferred from “latest”.
@@ -91,6 +95,7 @@ pub struct Pin {
 }
 
 /// Durable retention evidence, independent of cache availability and deployment approval.
+#[cfg_attr(feature = "wire-schema", derive(ic_wire::typescript::Wire))]
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct PinReceipt {
     /// Authenticated caller that owns this obligation.
@@ -102,6 +107,7 @@ pub struct PinReceipt {
 
 /// One retained obligation on the artifact identified by a custody observation.
 /// Labels may differ from the requested release when several versions share bytes.
+#[cfg_attr(feature = "wire-schema", derive(ic_wire::typescript::Wire))]
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Retention {
     /// Actual principal captured when the pin was admitted.
@@ -114,6 +120,7 @@ pub struct Retention {
 }
 
 /// One bounded observation, not an atomic catalog snapshot or maintenance approval.
+#[cfg_attr(feature = "wire-schema", derive(ic_wire::typescript::Wire))]
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Custody {
     /// Requested release's progress, including staged and unpublished content.
@@ -124,6 +131,7 @@ pub struct Custody {
 }
 
 /// One explicitly bounded, idempotent cache preparation request; never installs code.
+#[cfg_attr(feature = "wire-schema", derive(ic_wire::typescript::Wire))]
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct PrepareCache {
     /// Must already be retained for this caller.
@@ -133,6 +141,7 @@ pub struct PrepareCache {
 }
 
 /// Cache preparation evidence; cache availability must still hold at installation.
+#[cfg_attr(feature = "wire-schema", derive(ic_wire::typescript::Wire))]
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct CacheReady {
     /// Exact caller-owned artifact.
@@ -142,6 +151,7 @@ pub struct CacheReady {
 }
 
 /// Cache failures preserve pins and never authorize another installation.
+#[cfg_attr(feature = "wire-schema", derive(ic_wire::typescript::Wire))]
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub enum CacheError {
     /// Exact caller-owned pin is absent or mismatched.
@@ -181,6 +191,7 @@ pub const CHUNK_LIMITS: ic_wire::Limits = ic_wire::Limits {
 };
 
 /// Logical release identity; labels have no implicit ordering or “latest” behavior.
+#[cfg_attr(feature = "wire-schema", derive(ic_wire::typescript::Wire))]
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Release {
     /// Application-owned artifact name, at most 64 ASCII label bytes.
@@ -202,6 +213,7 @@ impl Release {
 }
 
 /// Exact uncompressed module identity. Publication does not approve installation.
+#[cfg_attr(feature = "wire-schema", derive(ic_wire::typescript::Wire))]
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Manifest {
     /// Immutable logical release label.
@@ -225,6 +237,7 @@ impl Manifest {
 }
 
 /// One chunk belonging to an already prepared release.
+#[cfg_attr(feature = "wire-schema", derive(ic_wire::typescript::Wire))]
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Put {
     /// Exact prepared release.
@@ -237,6 +250,7 @@ pub struct Put {
 }
 
 /// A chunk read from a published release.
+#[cfg_attr(feature = "wire-schema", derive(ic_wire::typescript::Wire))]
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Read {
     /// Exact published release.
@@ -246,6 +260,7 @@ pub struct Read {
 }
 
 /// Metadata-only resume information, not an installation receipt.
+#[cfg_attr(feature = "wire-schema", derive(ic_wire::typescript::Wire))]
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Status {
     /// Exact retained identity.
@@ -257,9 +272,11 @@ pub struct Status {
 }
 
 /// Read response preserves the blob codec and avoids per-byte node admission.
+#[cfg_attr(feature = "wire-schema", derive(ic_wire::typescript::Wire))]
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Chunk(#[serde(with = "serde_bytes")] pub Vec<u8>);
 /// First catalog limits are payload reservations and logical release count.
+#[cfg_attr(feature = "wire-schema", derive(ic_wire::typescript::Wire))]
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Quota {
     /// Sum of unique artifact lengths, including incomplete uploads; excludes metadata.
@@ -287,6 +304,7 @@ impl Quota {
 }
 
 /// Current quota usage and executable witness.
+#[cfg_attr(feature = "wire-schema", derive(ic_wire::typescript::Wire))]
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Info {
     /// Configured admission ceilings.
@@ -304,6 +322,7 @@ pub struct Info {
 }
 
 /// Typed refusal without partial mutation. Backing/codec failures trap instead.
+#[cfg_attr(feature = "wire-schema", derive(ic_wire::typescript::Wire))]
 #[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub enum Error {
     /// Malformed identity, geometry or unsupported raw Wasm framing.
