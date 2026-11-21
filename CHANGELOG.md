@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.7.0] - 2026-11-21
+
+### ⚠️ Breaking
+
+- Upload and read Wasm in 1 MiB chunks, up to eight per 8 MiB artifact.
+  This release requires a fresh Store. Upgrades from the 256 KiB format
+  are refused. Rebuild client manifests and upload artifacts to the new Store.
+- Adopt IC Wire 0.28. Rust clients that pass Store's `LIMITS` or
+  `CHUNK_LIMITS` to `ic_wire` must use 0.28.
+
 ## [0.6.0] - 2026-11-20
 
 ### ⚠️ Breaking

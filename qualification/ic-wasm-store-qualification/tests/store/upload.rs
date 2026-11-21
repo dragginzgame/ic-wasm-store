@@ -1,4 +1,4 @@
-use super::{CanisterId, Client, store, support};
+use super::{CanisterId, Client, frame, store, support};
 
 #[tokio::test(flavor = "current_thread")]
 async fn versioned_upload_resumes_across_two_executables_and_reuses_bytes() {
@@ -28,8 +28,14 @@ async fn exercise_upload(legacy_image: bool) {
         .await;
     let client = Client { pic, id, operator };
     // More than the old combined Root budget. Integrity publication is not Wasm validation.
+    // Published predecessors use the 256 KiB release geometry.
+    let chunk_bytes = if legacy_image {
+        256 * 1024
+    } else {
+        store::CHUNK_BYTES
+    };
     let mut bytes = vec![0; store::CHUNK_BYTES * store::MAX_CHUNKS];
-    for (index, chunk) in bytes.chunks_mut(store::CHUNK_BYTES).enumerate() {
+    for (index, chunk) in bytes.chunks_mut(chunk_bytes).enumerate() {
         chunk.fill(index as u8);
     }
     bytes[..8].copy_from_slice(b"\0asm\x01\0\0\0");
@@ -40,10 +46,7 @@ async fn exercise_upload(legacy_image: bool) {
         },
         hash: store::digest(&bytes),
         bytes: bytes.len() as u64,
-        chunks: bytes
-            .chunks(store::CHUNK_BYTES)
-            .map(store::digest)
-            .collect(),
+        chunks: bytes.chunks(chunk_bytes).map(store::digest).collect(),
     };
     assert!(
         pic.update_call(
@@ -77,7 +80,7 @@ async fn exercise_upload(legacy_image: bool) {
     let first = store::Put {
         release: manifest.release.clone(),
         index: 0,
-        bytes: bytes[..store::CHUNK_BYTES].to_vec(),
+        bytes: bytes[..chunk_bytes].to_vec(),
     };
     let _: Result<store::Status, store::Error> = client
         .update("put", store::PUT, &first, store::CHUNK_LIMITS)
@@ -204,6 +207,25 @@ async fn exercise_upload(legacy_image: bool) {
         recovered.extend(chunk.unwrap().0);
     }
     assert_eq!(recovered, bytes);
+    let first_read = store::Read {
+        release: manifest.release.clone(),
+        index: 0,
+    };
+    let query_reply = pic
+        .query_call(id, operator, "read", frame(store::READ, &first_read))
+        .await
+        .unwrap();
+    let first_chunk: Result<store::Chunk, store::Error> = ic_wire::decode(
+        &query_reply,
+        ic_wire::Encoding::Frame {
+            method: store::READ,
+            direction: ic_wire::Direction::Response,
+        },
+        store::CHUNK_LIMITS,
+    )
+    .unwrap();
+    assert_eq!(first_chunk.unwrap().0, bytes[..store::CHUNK_BYTES]);
+
     let reply = pic
         .query_call(
             id,

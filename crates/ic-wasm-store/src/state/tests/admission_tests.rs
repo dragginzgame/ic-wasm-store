@@ -133,29 +133,13 @@ fn admission_preserves_closed_attempt_and_fences_replays_and_cache_continuations
 }
 
 #[test]
-fn admission_settings_migrate_only_the_recognized_previous_schema() {
-    #[derive(serde::Serialize)]
-    struct Previous {
-        quota: Quota,
-        reserved_bytes: u64,
-    }
-    let previous = Previous {
+fn admission_settings_round_trip_and_reject_invalid_formats() {
+    let mut settings = Settings {
         quota: Quota::default(),
         reserved_bytes: 8,
+        admission: None,
     };
-    let mut bytes = b"CWS1".to_vec();
-    bytes.extend(
-        ic_wire::encode(
-            &previous,
-            ic_wire::Encoding::Payload,
-            ic_wasm_store_protocol::LIMITS,
-        )
-        .unwrap(),
-    );
-    let mut migrated = Settings::decode_record(Cow::Owned(bytes)).unwrap();
-    assert_eq!(migrated.reserved_bytes, 8);
-    assert!(migrated.admission.is_none());
-    migrated.admission = Some(ic_wasm_store_protocol::Admission {
+    settings.admission = Some(ic_wasm_store_protocol::Admission {
         attempt: MaintenanceAttempt {
             sequence: 1,
             operation: [1; 32],
@@ -163,21 +147,21 @@ fn admission_settings_migrate_only_the_recognized_previous_schema() {
         owner: vec![1],
         closed: true,
     });
-    let encoded = migrated.encode_record().unwrap();
-    assert!(encoded.starts_with(b"CWS2"));
+    let encoded = settings.encode_record().unwrap();
+    assert!(encoded.starts_with(b"CWS3"));
     let decoded = Settings::decode_record(encoded).unwrap();
-    assert_eq!(decoded.admission, migrated.admission);
+    assert_eq!(decoded.admission, settings.admission);
     for (corrupt, expected) in [
-        (b"CWS1".as_slice(), "previous settings record"),
-        (b"CWS2", "settings record"),
-        (b"CWS1bad", "settings invariant"),
-        (b"CWS3bad", "settings schema"),
+        (b"CWS1".as_slice(), "settings schema"),
+        (b"CWS2", "settings schema"),
+        (b"CWS3bad", "settings record"),
+        (b"CWS3", "settings record"),
     ] {
         assert_eq!(
             Settings::decode_record(Cow::Borrowed(corrupt)).err(),
             Some(expected)
         );
     }
-    migrated.admission.as_mut().unwrap().attempt.sequence = 0;
-    assert_eq!(migrated.encode_record().unwrap_err(), "settings invariant");
+    settings.admission.as_mut().unwrap().attempt.sequence = 0;
+    assert_eq!(settings.encode_record().unwrap_err(), "settings invariant");
 }

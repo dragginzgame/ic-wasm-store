@@ -169,9 +169,9 @@ pub enum CacheError {
 }
 
 /// Transfer unit, independent of artifact size.
-pub const CHUNK_BYTES: usize = 262_144;
-/// First qualified verification work bound: 8 MiB per artifact.
-pub const MAX_CHUNKS: usize = 32;
+pub const CHUNK_BYTES: usize = 1024 * 1024;
+/// Publication verifies at most 8 MiB per artifact.
+pub const MAX_CHUNKS: usize = (8 * 1024 * 1024) / CHUNK_BYTES;
 /// Maximum releases returned by one metadata page.
 pub const PAGE_SIZE: usize = 4;
 /// Small metadata and pagination frames.

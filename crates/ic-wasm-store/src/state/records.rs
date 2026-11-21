@@ -136,32 +136,13 @@ impl CheckedRecord for Artifact {
             return Err("artifact invariant");
         }
 
-        encode(self, b"CWA2")
+        encode(self, b"CWA3")
     }
 
     fn decode_record(bytes: Cow<'_, [u8]>) -> Result<Self, &'static str> {
-        let value: Self = if let Some(payload) = bytes.strip_prefix(b"CWA2") {
-            ic_wire::decode(payload, ic_wire::Encoding::Payload, RECORD_LIMITS)
-                .map_err(|_| "artifact record")?
-        } else if let Some(payload) = bytes.strip_prefix(b"CWA1") {
-            #[derive(Deserialize)]
-            struct Legacy {
-                bytes: u64,
-                chunks: Vec<[u8; 32]>,
-                published: bool,
-            }
-            let old: Legacy = ic_wire::decode(payload, ic_wire::Encoding::Payload, LIMITS)
-                .map_err(|_| "legacy artifact")?;
-
-            Self {
-                bytes: old.bytes,
-                chunks: old.chunks,
-                published: old.published,
-                pins: vec![],
-            }
-        } else {
-            return Err("artifact schema");
-        };
+        let payload = bytes.strip_prefix(b"CWA3").ok_or("artifact schema")?;
+        let value: Self = ic_wire::decode(payload, ic_wire::Encoding::Payload, RECORD_LIMITS)
+            .map_err(|_| "artifact record")?;
         if !value.valid() {
             return Err("artifact invariant");
         }
@@ -206,30 +187,13 @@ impl CheckedRecord for Settings {
             return Err("settings invariant");
         }
 
-        encode(self, b"CWS2")
+        encode(self, b"CWS3")
     }
 
     fn decode_record(bytes: Cow<'_, [u8]>) -> Result<Self, &'static str> {
-        let value: Self = if let Some(payload) = bytes.strip_prefix(b"CWS2") {
-            ic_wire::decode(payload, ic_wire::Encoding::Payload, LIMITS)
-                .map_err(|_| "settings record")?
-        } else if let Some(payload) = bytes.strip_prefix(b"CWS1") {
-            #[derive(Deserialize)]
-            struct Previous {
-                quota: Quota,
-                reserved_bytes: u64,
-            }
-            let old: Previous = ic_wire::decode(payload, ic_wire::Encoding::Payload, LIMITS)
-                .map_err(|_| "previous settings record")?;
-
-            Self {
-                quota: old.quota,
-                reserved_bytes: old.reserved_bytes,
-                admission: None,
-            }
-        } else {
-            return Err("settings schema");
-        };
+        let payload = bytes.strip_prefix(b"CWS3").ok_or("settings schema")?;
+        let value: Self = ic_wire::decode(payload, ic_wire::Encoding::Payload, LIMITS)
+            .map_err(|_| "settings record")?;
         if !value.valid() {
             return Err("settings invariant");
         }

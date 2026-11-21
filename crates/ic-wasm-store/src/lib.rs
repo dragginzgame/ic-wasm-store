@@ -78,9 +78,9 @@ mod canister {
         );
 
         // put
-        // Writes one verified chunk of up to 256 KiB and returns upload progress.
+        // Writes one verified chunk of up to 1 MiB and returns upload progress.
         // guard  : canister controller
-        // limits : 260 KiB request frame, 16 KiB response frame
+        // limits : 1028 KiB request frame, 16 KiB response frame
         endpoint!(
             put,
             "put",
@@ -208,9 +208,9 @@ mod canister {
         );
 
         // read
-        // Queries one verified chunk of up to 256 KiB from a published release.
+        // Queries one verified chunk of up to 1 MiB from a published release.
         // guard  : canister controller
-        // limits : 16 KiB request frame, 260 KiB response frame
+        // limits : 16 KiB request frame, 1028 KiB response frame
         endpoint!(
             read,
             "read",
@@ -224,9 +224,9 @@ mod canister {
         );
 
         // read_chunk
-        // Reads one verified chunk of up to 256 KiB through replicated execution.
+        // Reads one verified chunk of up to 1 MiB through replicated execution.
         // guard  : canister controller
-        // limits : 16 KiB request frame, 260 KiB response frame
+        // limits : 16 KiB request frame, 1028 KiB response frame
         endpoint!(
             read_chunk,
             "read_chunk",
@@ -421,6 +421,6 @@ mod canister {
     // Platform owns IC entrypoints; Wire owns codecs. No lifecycle is generated here.
     // Platform's attributes require literal byte ceilings. The guard enforces each
     // endpoint's narrower protocol limit before Runtime captures any argument bytes.
-    const _: () = assert!(protocol::CHUNK_LIMITS.bytes == 266_240);
+    const _: () = assert!(protocol::CHUNK_LIMITS.bytes == 1_052_672);
     const _: () = assert!(protocol::LIMITS.bytes == 16_384);
 }

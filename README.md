@@ -30,7 +30,8 @@ the complete artifact digest. Publication does **not** validate the full Wasm
 module or approve installation. Release labels cannot be reassigned to different
 content; labels sharing an artifact reuse its stored bytes.
 
-Artifacts are limited to 8 MiB, transferred in 256 KiB chunks. Default quotas are
+Artifacts are limited to 8 MiB, transferred in 1 MiB chunks. Version 0.7 requires a fresh Store.
+To republish an earlier artifact, rebuild its manifest from the original Wasm. Default quotas are
 128 MiB of reserved artifact payload and 1,024 releases; configurable ceilings
 are 256 MiB and 4,096 releases. Reservations include incomplete artifacts and
 exclude metadata. All endpoints, including reads, require a controller.

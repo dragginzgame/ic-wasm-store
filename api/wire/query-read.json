@@ -4,7 +4,7 @@
   "export":"wire_read",
   "id":"104",
   "request":{"root":"Request","payload_limits":{"bytes":16373,"nodes":32768,"depth":16}},
-  "response":{"root":"Reply","payload_limits":{"bytes":266229,"nodes":4096,"depth":16}},
+  "response":{"root":"Reply","payload_limits":{"bytes":1052661,"nodes":4096,"depth":16}},
   "schemas":{
     "Reply":{"k":"ref","name":"Wire_Result_13ec7748ab158443"},
     "Request":{"k":"ref","name":"Wire_Read_3dd8b159fd949851"},

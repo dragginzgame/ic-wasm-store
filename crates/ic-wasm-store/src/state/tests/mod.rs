@@ -372,34 +372,23 @@ fn pins_keep_exact_owner_operation_and_release_across_reopen() {
 }
 
 #[test]
-fn pin_capacity_never_evicts_and_old_artifact_schema_gains_no_authority() {
+fn previous_chunk_format_is_rejected() {
     use super::records::CheckedRecord;
     use std::borrow::Cow;
-    #[derive(serde::Serialize)]
-    struct Legacy {
-        bytes: u64,
-        chunks: Vec<[u8; 32]>,
-        published: bool,
-    }
-    let old = Legacy {
-        bytes: 8,
-        chunks: vec![[3; 32]],
-        published: true,
+
+    let settings = Settings {
+        quota: Quota::default(),
+        reserved_bytes: 0,
+        admission: None,
     };
-    let mut encoded = b"CWA1".to_vec();
-    encoded.extend(
-        ic_wire::encode(
-            &old,
-            ic_wire::Encoding::Payload,
-            ic_wasm_store_protocol::LIMITS,
-        )
-        .unwrap(),
-    );
-    let decoded = Artifact::decode_record(Cow::Owned(encoded)).unwrap();
-    assert!(decoded.published);
-    assert!(decoded.pins.is_empty());
-    let round_trip = Artifact::decode_record(decoded.encode_record().unwrap()).unwrap();
-    assert!(round_trip.pins.is_empty());
+    let mut previous = settings.encode_record().unwrap().into_owned();
+    previous[..4].copy_from_slice(b"CWS2");
+    assert!(Settings::decode_record(Cow::Owned(previous)).is_err());
+}
+
+#[test]
+fn pin_capacity_never_evicts() {
+    use super::records::CheckedRecord;
 
     let mut state = State::open(VectorMemory::default(), true);
     let (mut manifest, bytes) = fixture(&"v".repeat(64), 10);

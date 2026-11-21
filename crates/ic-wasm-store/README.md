@@ -42,7 +42,7 @@ quota. Missing bytes must be uploaded and publication repeated unless an active
 alias already retains the published artifact. Ordinary status/list calls expose
 active releases; the tombstone endpoint lists removed identities separately.
 
-Artifacts are limited to 8 MiB in 256 KiB chunks. Publication verifies hashes and
+Artifacts are limited to 8 MiB in 1 MiB chunks. Publication verifies hashes and
 the raw Wasm header, not full module validity. All endpoints require a controller.
 Closing maintenance admission does not drain outstanding calls. Consumers must
 settle outstanding removal requests before restoring a label, and executables

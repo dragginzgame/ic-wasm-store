@@ -63,7 +63,7 @@ macro_rules! endpoint {
     ($name:ident, $export:literal, $kind:ident, $id:ident, $request:ty, $reply:ty, $input_limits:ident, $output_limits:ident, $operation:expr) => {
         mount::mount_endpoint!(
             [],
-            266240,
+            1052672,
             $name,
             $export,
             $kind,

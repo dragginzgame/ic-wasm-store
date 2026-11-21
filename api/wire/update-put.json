@@ -3,7 +3,7 @@
   "endpoint":"put",
   "export":"wire_put",
   "id":"101",
-  "request":{"root":"Request","payload_limits":{"bytes":266229,"nodes":4096,"depth":16}},
+  "request":{"root":"Request","payload_limits":{"bytes":1052661,"nodes":4096,"depth":16}},
   "response":{"root":"Reply","payload_limits":{"bytes":16373,"nodes":32768,"depth":16}},
   "schemas":{
     "Reply":{"k":"ref","name":"Wire_Result_7116f94cb141bc48"},
