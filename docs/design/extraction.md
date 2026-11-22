@@ -66,8 +66,8 @@ semantics and belongs to the 0.2 minor line; registry publication does not imply
 
 ## Explicit preservation entries
 
-`observe_preservation_v2` (117) accepts the existing closed-attempt Request and
-returns PageV2. Entry::Active retains Custody; Entry::Removed retains the exact
+`observe_preservation` (117) accepts the existing closed-attempt Request and
+returns Page. Entry::Active retains Custody; Entry::Removed retains the exact
 Manifest. Entry::order_key defines name, active-before-removed, then version;
 use the returned manifest's release as the exclusive cursor. The method performs
 one ordered-map range step per page, without a catalog copy or payload scan.
@@ -76,11 +76,9 @@ Consumers hash the complete discriminated entry, include removed labels in quota
 and counts, and require an explicit end page. They must not compare only release
 name/version or infer removal from empty upload progress.
 
-Historical method 113 remains byte-compatible through a projection of this same
-engine. Its response cannot independently prove tombstone preservation; existing
-consumers must explicitly adopt method 117. No storage migration or implicit
-activation is introduced. This does not add restoration generations: outstanding
-removals still must settle before restoring an identical label.
+Store 0.8 exposes this single preservation endpoint. Complete old maintenance
+attempts using their original Root and Store before switching. Outstanding
+removals must still settle before restoring an identical label.
 
 ## Platform replacement adoption (2026-11-16)
 
@@ -120,3 +118,16 @@ The installed qualification covers management-cache preparation/reuse, controlle
 revocation and close/reopen callback fences, removal at capacity, and retained
 state across upgrade. See the qualification workspace for the actual scenarios;
 local evidence does not establish mainnet deployment or native macOS acceptance.
+## Pinned delivery
+
+A controller can authorize replicated delivery of one exact retained pin to a
+named installer for up to five minutes. The installer supplies the unchanged
+grant and the issuing controller's principal. Store checks the actual caller,
+current controller authority, open maintenance sequence, retained pin and
+deadline before returning a verified chunk. Issuing or using a grant has no
+effect on publication, pins or installation authority.
+
+The settings allocation stores at most 32 grant fingerprints. Settings without
+grants retain the original `CWS3` encoding. Settings with grants use `CWS4`,
+which earlier executables refuse. A maintenance closure clears the grants before
+preservation starts and fences any reissued request from the prior sequence.

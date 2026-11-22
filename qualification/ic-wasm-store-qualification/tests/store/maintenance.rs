@@ -155,16 +155,16 @@ async fn closed_upgrade_preserves_removal_fences_and_exact_activation_owner() {
             .update_call(
                 id,
                 caller,
-                "observe_preservation_v2",
-                frame(store::PRESERVATION_V2, &request),
+                "observe_preservation",
+                frame(store::PRESERVATION, &request),
             )
             .await;
 
         if caller == other {
-            let decoded: Result<store::preservation::PageV2, store::Error> = ic_wire::decode(
+            let decoded: Result<store::preservation::Page, store::Error> = ic_wire::decode(
                 &reply.unwrap(),
                 ic_wire::Encoding::Frame {
-                    method: store::PRESERVATION_V2,
+                    method: store::PRESERVATION,
                     direction: ic_wire::Direction::Response,
                 },
                 store::LIMITS,
@@ -178,11 +178,11 @@ async fn closed_upgrade_preserves_removal_fences_and_exact_activation_owner() {
         }
     }
     for (malformed, diagnostic) in [
-        (frame(store::PRESERVATION, &request), "Decode(Identity)"),
+        (frame(113, &request), "Decode(Identity)"),
         (vec![0; store::LIMITS.bytes + 1], "Store frame too large"),
     ] {
         let refusal = pic
-            .update_call(id, operator, "observe_preservation_v2", malformed)
+            .update_call(id, operator, "observe_preservation", malformed)
             .await
             .unwrap_err();
         assert_eq!(refusal.reject_code as u64, 5);
@@ -292,17 +292,17 @@ async fn closed_upgrade_preserves_removal_fences_and_exact_activation_owner() {
 async fn preservation_pages(
     client: &Client<'_>,
     attempt: &store::MaintenanceAttempt,
-) -> Vec<store::preservation::PageV2> {
+) -> Vec<store::preservation::Page> {
     let mut request = store::preservation::Request {
         attempt: attempt.clone(),
         after: None,
     };
-    let mut pages: Vec<store::preservation::PageV2> = Vec::new();
+    let mut pages: Vec<store::preservation::Page> = Vec::new();
     for _ in 0..4 {
         let page = client
-            .update::<_, Result<store::preservation::PageV2, store::Error>>(
-                "observe_preservation_v2",
-                store::PRESERVATION_V2,
+            .update::<_, Result<store::preservation::Page, store::Error>>(
+                "observe_preservation",
+                store::PRESERVATION,
                 &request,
                 store::LIMITS,
             )

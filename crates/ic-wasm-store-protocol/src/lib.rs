@@ -34,8 +34,6 @@ pub const PREPARE_CACHE: u64 = 110;
 pub const CUSTODY: u64 = 111;
 /// Close, inspect or explicitly reopen Store mutation admission for one exact attempt.
 pub const ADMISSION: u64 = 112;
-/// Enumerate one catalog entry under an exact closed maintenance attempt.
-pub const PRESERVATION: u64 = 113;
 /// Delete an exact published release unless its artifact has retained pins.
 pub const DELETE: u64 = 114;
 /// Cancel an exact unpublished release, reclaiming unshared payloads.
@@ -43,7 +41,44 @@ pub const CANCEL: u64 = 115;
 /// Page through removed manifests; exact prepare restores these identities.
 pub const TOMBSTONES: u64 = 116;
 /// Enumerate explicit active/removed metadata under one exact closed attempt.
-pub const PRESERVATION_V2: u64 = 117;
+pub const PRESERVATION: u64 = 117;
+/// Issue exact, time-bounded delivery authority to one installer.
+pub const GRANT_READ: u64 = 118;
+/// Read one chunk using an exact delivery grant.
+pub const READ_GRANTED: u64 = 119;
+
+/// Maximum number of active read grants retained by one Store.
+pub const MAX_READ_GRANTS: usize = 32;
+/// Maximum time from grant issuance to its absolute deadline.
+pub const MAX_READ_GRANT_NS: u64 = 300_000_000_000;
+
+/// Controller-issued authority for a named installer to read one pinned release.
+#[cfg_attr(feature = "wire-schema", derive(ic_wire::typescript::Wire))]
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+pub struct ReadGrant {
+    /// Exact manifest and operation of the issuing controller's retained pin.
+    pub pin: Pin,
+    /// Raw principal bytes of the installer allowed to use the grant.
+    #[serde(with = "serde_bytes")]
+    pub installer: Vec<u8>,
+    /// Latest open maintenance attempt sequence, or zero before the first attempt.
+    pub epoch: u64,
+    /// Absolute deadline in IC nanoseconds. Reads at the deadline are refused.
+    pub expires_at_ns: u64,
+}
+
+/// Replicated read of one chunk under a previously issued grant.
+#[cfg_attr(feature = "wire-schema", derive(ic_wire::typescript::Wire))]
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+pub struct GrantedRead {
+    /// Raw principal bytes of the controller that issued the grant.
+    #[serde(with = "serde_bytes")]
+    pub owner: Vec<u8>,
+    /// Unchanged grant supplied by that controller.
+    pub grant: ReadGrant,
+    /// Zero-based chunk index in the exact granted manifest.
+    pub index: u32,
+}
 
 /// Monotonic maintenance identity; a new attempt uses the previous sequence plus one.
 #[cfg_attr(feature = "wire-schema", derive(ic_wire::typescript::Wire))]

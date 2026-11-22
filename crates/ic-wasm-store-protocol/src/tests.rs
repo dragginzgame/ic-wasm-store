@@ -104,63 +104,38 @@ fn maximum_metadata_page_and_chunk_fit_independent_wire_budgets() {
     )
     .unwrap();
     assert_eq!(decoded, custody);
-    let old = preservation::Page {
-        catalog: preservation::Catalog {
-            quota: Quota {
-                reserved_bytes: u64::MAX,
-                releases: u64::MAX,
-            },
+    let catalog = preservation::Catalog {
+        quota: Quota {
             reserved_bytes: u64::MAX,
             releases: u64::MAX,
-            artifacts: u64::MAX,
-            chunks: u64::MAX,
         },
-        entry: Some(decoded.unwrap()),
+        reserved_bytes: u64::MAX,
+        releases: u64::MAX,
+        artifacts: u64::MAX,
+        chunks: u64::MAX,
     };
-    let preservation = Ok::<_, Error>(old.clone());
-    let encoded = ic_wire::encode(
-        &preservation,
-        ic_wire::Encoding::Frame {
-            method: PRESERVATION,
-            direction: ic_wire::Direction::Response,
-        },
-        LIMITS,
-    )
-    .unwrap();
-    assert_eq!(
-        ic_wire::decode::<Result<preservation::Page, Error>>(
-            &encoded,
-            ic_wire::Encoding::Frame {
-                method: PRESERVATION,
-                direction: ic_wire::Direction::Response
-            },
-            LIMITS
-        )
-        .unwrap(),
-        preservation
-    );
     for entry in [
-        preservation::Entry::Active(old.entry.unwrap()),
+        preservation::Entry::Active(decoded.unwrap()),
         preservation::Entry::Removed(manifest.clone()),
     ] {
-        let page = Ok::<_, Error>(preservation::PageV2 {
-            catalog: old.catalog.clone(),
+        let page = Ok::<_, Error>(preservation::Page {
+            catalog: catalog.clone(),
             entry: Some(entry),
         });
         let encoded = ic_wire::encode(
             &page,
             ic_wire::Encoding::Frame {
-                method: PRESERVATION_V2,
+                method: PRESERVATION,
                 direction: ic_wire::Direction::Response,
             },
             LIMITS,
         )
         .unwrap();
         assert_eq!(
-            ic_wire::decode::<Result<preservation::PageV2, Error>>(
+            ic_wire::decode::<Result<preservation::Page, Error>>(
                 &encoded,
                 ic_wire::Encoding::Frame {
-                    method: PRESERVATION_V2,
+                    method: PRESERVATION,
                     direction: ic_wire::Direction::Response
                 },
                 LIMITS
@@ -169,10 +144,10 @@ fn maximum_metadata_page_and_chunk_fit_independent_wire_budgets() {
             page
         );
         assert_eq!(
-            ic_wire::decode::<Result<preservation::PageV2, Error>>(
+            ic_wire::decode::<Result<preservation::Page, Error>>(
                 &encoded,
                 ic_wire::Encoding::Frame {
-                    method: PRESERVATION,
+                    method: 113,
                     direction: ic_wire::Direction::Response
                 },
                 LIMITS

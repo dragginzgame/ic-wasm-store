@@ -1,15 +1,15 @@
-//! Mount a controller-only Store operation with its Wire method and frame budgets.
+//! Mount Store operations with their authority, Wire methods and frame budgets.
 
 // Rustfmt 1.100 repeatedly reindents the interpolated Runtime attribute.
 #[rustfmt::skip]
 macro_rules! mount_endpoint {
-    ([$($qualifier:tt)*], $maximum:literal, $name:ident, $export:literal, $kind:ident, $id:ident, $request:ty, $reply:ty, $input_limits:ident, $output_limits:ident, |$input:ident| $body:block) => {
+    ([$($qualifier:tt)*], $controller:literal, $maximum:literal, $name:ident, $export:literal, $kind:ident, $id:ident, $request:ty, $reply:ty, $input_limits:ident, $output_limits:ident, |$input:ident| $body:block) => {
         mod $name {
             use super::{fail, protocol, runtime, system};
 
-            /// Require a controller and enforce this endpoint's request budget.
+            /// Enforce the request budget and the controller gate when selected.
             fn admit() -> Result<(), String> {
-                if !system::is_controller(&system::caller()) {
+                if $controller && !system::is_controller(&system::caller()) {
                     return Err("Store controller required".into());
                 }
                 if system::argument_size() > protocol::$input_limits.bytes {
@@ -43,7 +43,7 @@ macro_rules! mount_endpoint {
 
             // $name
             // The mount supplies the caller-visible behavior.
-            // guard  : canister controller
+            // guard  : configured controller gate, followed by operation-specific admission
             // limits : $input_limits request and $output_limits response Wire budgets
             #[runtime::$kind(
                 runtime = runtime,
@@ -60,9 +60,18 @@ macro_rules! mount_endpoint {
 }
 
 macro_rules! endpoint {
-    ($name:ident, $export:literal, $kind:ident, $id:ident, $request:ty, $reply:ty, $input_limits:ident, $output_limits:ident, $operation:expr) => {
+    ($($args:tt)*) => { mount::sync_endpoint!(true, $($args)*); };
+}
+
+macro_rules! granted_endpoint {
+    ($($args:tt)*) => { mount::sync_endpoint!(false, $($args)*); };
+}
+
+macro_rules! sync_endpoint {
+    ($controller:literal, $name:ident, $export:literal, $kind:ident, $id:ident, $request:ty, $reply:ty, $input_limits:ident, $output_limits:ident, $operation:expr) => {
         mount::mount_endpoint!(
             [],
+            $controller,
             1052672,
             $name,
             $export,
@@ -87,7 +96,7 @@ macro_rules! endpoint {
 
 macro_rules! async_endpoint {
     ($name:ident, $export:literal, $kind:ident, $id:ident, $request:ty, $reply:ty, $input_limits:ident, $output_limits:ident, $operation:expr) => {
-        mount::mount_endpoint!([async], 16384, $name, $export, $kind, $id, $request, $reply, $input_limits, $output_limits, |input| {
+        mount::mount_endpoint!([async], true, 16384, $name, $export, $kind, $id, $request, $reply, $input_limits, $output_limits, |input| {
             $operation(input).await
         });
     };
@@ -114,4 +123,6 @@ macro_rules! endpoints {
     };
 }
 
-pub(super) use {async_endpoint, endpoint, endpoints, mount_endpoint};
+pub(super) use {
+    async_endpoint, endpoint, endpoints, granted_endpoint, mount_endpoint, sync_endpoint,
+};

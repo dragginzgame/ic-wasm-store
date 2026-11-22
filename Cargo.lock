@@ -204,7 +204,7 @@ dependencies = [
 
 [[package]]
 name = "ic-wasm-store"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "ic-platform-protocol",
  "ic-platform-runtime",
@@ -220,7 +220,7 @@ dependencies = [
 
 [[package]]
 name = "ic-wasm-store-protocol"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "ic-wire",
  "serde",

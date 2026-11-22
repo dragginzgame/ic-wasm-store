@@ -1,7 +1,9 @@
 //! Versioned metadata and independently bounded chunk payloads.
 
 use ic_storage::adapter::{Bound, Storable};
-use ic_wasm_store_protocol::{CHUNK_BYTES, LIMITS, MAX_CHUNKS, MAX_PINS, Quota, Release};
+use ic_wasm_store_protocol::{
+    CHUNK_BYTES, LIMITS, MAX_CHUNKS, MAX_PINS, MAX_READ_GRANTS, Quota, Release,
+};
 use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
 
@@ -163,6 +165,14 @@ pub(super) struct Settings {
     pub quota: Quota,
     pub reserved_bytes: u64,
     pub admission: Option<ic_wasm_store_protocol::Admission>,
+    #[serde(skip)]
+    pub read_grants: Vec<RetainedReadGrant>,
+}
+
+#[derive(Clone, Deserialize, Serialize)]
+pub(super) struct RetainedReadGrant {
+    pub fingerprint: [u8; 32],
+    pub expires_at_ns: u64,
 }
 
 impl Settings {
@@ -176,6 +186,17 @@ impl Settings {
                     && gate.owner.len() <= 29
                     && gate.owner != [4]
             })
+            && self.read_grants.len() <= MAX_READ_GRANTS
+            && self
+                .admission
+                .as_ref()
+                .is_none_or(|gate| !gate.closed || self.read_grants.is_empty())
+            && self.read_grants.iter().enumerate().all(|(index, grant)| {
+                grant.expires_at_ns > 0
+                    && !self.read_grants[..index]
+                        .iter()
+                        .any(|prior| prior.fingerprint == grant.fingerprint)
+            })
     }
 }
 
@@ -187,13 +208,29 @@ impl CheckedRecord for Settings {
             return Err("settings invariant");
         }
 
-        encode(self, b"CWS3")
+        if self.read_grants.is_empty() {
+            encode(self, b"CWS3")
+        } else {
+            encode(&(self, &self.read_grants), b"CWS4")
+        }
     }
 
     fn decode_record(bytes: Cow<'_, [u8]>) -> Result<Self, &'static str> {
-        let payload = bytes.strip_prefix(b"CWS3").ok_or("settings schema")?;
-        let value: Self = ic_wire::decode(payload, ic_wire::Encoding::Payload, LIMITS)
-            .map_err(|_| "settings record")?;
+        let value: Self = if let Some(payload) = bytes.strip_prefix(b"CWS3") {
+            ic_wire::decode(payload, ic_wire::Encoding::Payload, LIMITS)
+                .map_err(|_| "settings record")?
+        } else if let Some(payload) = bytes.strip_prefix(b"CWS4") {
+            let (mut settings, grants): (Self, Vec<RetainedReadGrant>) =
+                ic_wire::decode(payload, ic_wire::Encoding::Payload, RECORD_LIMITS)
+                    .map_err(|_| "settings record")?;
+            if grants.is_empty() {
+                return Err("settings invariant");
+            }
+            settings.read_grants = grants;
+            settings
+        } else {
+            return Err("settings schema");
+        };
         if !value.valid() {
             return Err("settings invariant");
         }

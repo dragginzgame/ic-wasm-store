@@ -28,18 +28,6 @@ pub struct Catalog {
     pub chunks: u64,
 }
 
-/// One complete release record and its shared pins; None establishes end of enumeration.
-#[cfg_attr(feature = "wire-schema", derive(ic_wire::typescript::Wire))]
-#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
-pub struct Page {
-    /// Must remain identical for every page under the selected closure.
-    pub catalog: Catalog,
-    /// At most one release, including incomplete uploads and tombstones.
-    /// Tombstones appear unpublished with every chunk missing and no pins;
-    /// the TOMBSTONES endpoint distinguishes them from active uploads.
-    pub entry: Option<Custody>,
-}
-
 /// Exact retained label state; removal is distinct from an empty upload.
 #[cfg_attr(feature = "wire-schema", derive(ic_wire::typescript::Wire))]
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
@@ -74,10 +62,10 @@ impl Entry {
     }
 }
 
-/// Versioned preservation page; unlike the historical Page, retains label state.
+/// One catalog page retaining the exact state of each label.
 #[cfg_attr(feature = "wire-schema", derive(ic_wire::typescript::Wire))]
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
-pub struct PageV2 {
+pub struct Page {
     /// Unchanged quota/counters across the closed scan, including removed labels.
     pub catalog: Catalog,
     /// One entry in Entry::order_key order, or an explicit end page.

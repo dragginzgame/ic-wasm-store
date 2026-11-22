@@ -138,6 +138,7 @@ fn admission_settings_round_trip_and_reject_invalid_formats() {
         quota: Quota::default(),
         reserved_bytes: 8,
         admission: None,
+        read_grants: Vec::new(),
     };
     settings.admission = Some(ic_wasm_store_protocol::Admission {
         attempt: MaintenanceAttempt {
@@ -148,7 +149,17 @@ fn admission_settings_round_trip_and_reject_invalid_formats() {
         closed: true,
     });
     let encoded = settings.encode_record().unwrap();
-    assert!(encoded.starts_with(b"CWS3"));
+    let previous = ic_wire::encode(
+        &(
+            &settings.quota,
+            settings.reserved_bytes,
+            &settings.admission,
+        ),
+        ic_wire::Encoding::Payload,
+        ic_wasm_store_protocol::LIMITS,
+    )
+    .unwrap();
+    assert_eq!(encoded.as_ref(), [b"CWS3".as_slice(), &previous].concat());
     let decoded = Settings::decode_record(encoded).unwrap();
     assert_eq!(decoded.admission, settings.admission);
     for (corrupt, expected) in [

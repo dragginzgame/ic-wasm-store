@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.8.0] - 2026-11-22
+
+### ⚠️ Breaking
+
+- Use `observe_preservation` for the active/removed entry contract (Wire 117). Retire the previous frame 113 and the suffixed endpoint. Upgrade callers together after outstanding maintenance is settled.
+
+### ➕ Added
+
+- Let a controller grant one named installer replicated reads of an exact
+  pinned release for up to five minutes. Maintenance closure invalidates the
+  grants. [Wasm Store #7 — Bounded delivery to a named installer](https://github.com/dragginzgame/ic-wasm-store/issues/7)
+
 ## [0.7.0] - 2026-11-21
 
 ### ⚠️ Breaking

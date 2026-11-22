@@ -35,6 +35,38 @@ fn upload(state: &mut State<VectorMemory>, manifest: &Manifest, payload: &[u8]) 
 }
 
 #[test]
+fn delivery_grants_refuse_over_capacity_and_reclaim_expired_slots() {
+    use ic_wasm_store_protocol::{MAX_READ_GRANTS, ReadGrant};
+
+    let mut state = State::open(VectorMemory::default(), true);
+    let (manifest, bytes) = fixture("one", 10);
+    state.prepare(&manifest).unwrap();
+    upload(&mut state, &manifest, &bytes);
+    state.publish(&manifest.release).unwrap();
+    let owner = [1];
+    let pin = Pin {
+        operation: [1; 32],
+        manifest,
+    };
+    state.pin(&owner, &pin).unwrap();
+    let mut grant = ReadGrant {
+        pin,
+        installer: vec![5, 0],
+        epoch: 0,
+        expires_at_ns: 200,
+    };
+    for serial in 0..MAX_READ_GRANTS {
+        grant.installer[1] = u8::try_from(serial).unwrap();
+        assert_eq!(state.grant_read(&owner, 100, &grant), Ok(()));
+    }
+    assert_eq!(state.grant_read(&owner, 100, &grant), Ok(()));
+    grant.installer[1] = 255;
+    grant.expires_at_ns = 300;
+    assert_eq!(state.grant_read(&owner, 199, &grant), Err(Error::Capacity));
+    assert_eq!(state.grant_read(&owner, 200, &grant), Ok(()));
+}
+
+#[test]
 fn preservation_pages_require_one_closed_owner_and_keep_aliases_and_partial_uploads() {
     use ic_wasm_store_protocol::{AdmissionCommand, MaintenanceAttempt, preservation::Request};
     let backing = VectorMemory::default();
@@ -78,7 +110,11 @@ fn preservation_pages_require_one_closed_owner_and_keep_aliases_and_partial_uplo
     let first_page = state.preservation(&[1], &request).unwrap();
     assert_eq!(first_page.catalog.releases, 3);
     assert_eq!(first_page.catalog.artifacts, 2);
-    assert_eq!(first_page.entry.as_ref().unwrap().pins[0].owner, vec![2]);
+    let Some(ic_wasm_store_protocol::preservation::Entry::Active(first_entry)) = &first_page.entry
+    else {
+        panic!("expected active release")
+    };
+    assert_eq!(first_entry.pins[0].owner, vec![2]);
     drop(state);
     let mut state = State::open(backing, false);
     assert_eq!(state.preservation(&[1], &request).unwrap(), first_page);
@@ -86,8 +122,9 @@ fn preservation_pages_require_one_closed_owner_and_keep_aliases_and_partial_uplo
     loop {
         let page = state.preservation(&[1], &request).unwrap();
         assert_eq!(page.catalog, first_page.catalog);
-        let Some(entry) = page.entry else {
-            break;
+        let Some(entry) = page.entry else { break };
+        let ic_wasm_store_protocol::preservation::Entry::Active(entry) = entry else {
+            panic!("expected active release")
         };
         if entry.status.manifest == pending {
             assert_eq!(entry.status.missing, vec![0]);
@@ -380,6 +417,7 @@ fn previous_chunk_format_is_rejected() {
         quota: Quota::default(),
         reserved_bytes: 0,
         admission: None,
+        read_grants: Vec::new(),
     };
     let mut previous = settings.encode_record().unwrap().into_owned();
     previous[..4].copy_from_slice(b"CWS2");
@@ -573,6 +611,7 @@ fn four_allocation_store_reopens_without_reinitializing_existing_records() {
             quota: Quota::default(),
             reserved_bytes: 8,
             admission: None,
+            read_grants: Vec::new(),
         },
     );
     drop((releases, artifacts, chunks, settings, runtime));
@@ -616,7 +655,7 @@ fn preservation_enumerates_tombstones_and_active_aliases_once() {
             )
             .unwrap();
         assert_eq!(page.catalog.releases, 3);
-        let release = page.entry.unwrap().status.manifest.release;
+        let release = page.entry.unwrap().manifest().release.clone();
         assert!(seen.insert(release.version.clone()));
         after = Some(release);
     }
@@ -730,7 +769,7 @@ fn tombstone_pages_preserve_mixed_names_and_versions_across_reopen() {
 }
 
 #[test]
-fn preservation_v2_distinguishes_restoration_and_retains_order_across_reopen() {
+fn preservation_distinguishes_restoration_and_retains_order_across_reopen() {
     use ic_wasm_store_protocol::{
         AdmissionCommand, MaintenanceAttempt,
         preservation::{Entry, Request},
@@ -756,17 +795,17 @@ fn preservation_v2_distinguishes_restoration_and_retains_order_across_reopen() {
         attempt: attempt.clone(),
         after: None,
     };
-    assert_eq!(state.preservation_v2(&[1], &request), Err(Error::Conflict));
+    assert_eq!(state.preservation(&[1], &request), Err(Error::Conflict));
     state
         .admission(&[1], &AdmissionCommand::Close(attempt.clone()))
         .unwrap();
-    assert_eq!(state.preservation_v2(&[2], &request), Err(Error::Conflict));
-    let first = state.preservation_v2(&[1], &request).unwrap();
+    assert_eq!(state.preservation(&[2], &request), Err(Error::Conflict));
+    let first = state.preservation(&[1], &request).unwrap();
     let next = Request {
         after: Some(alias.release.clone()),
         ..request.clone()
     };
-    let second = state.preservation_v2(&[1], &next).unwrap();
+    let second = state.preservation(&[1], &next).unwrap();
     assert!(matches!(first.entry, Some(Entry::Active(_))));
     assert_eq!(second.entry, Some(Entry::Removed(removed.clone())));
     assert!(first.entry.as_ref().unwrap().order_key() < second.entry.as_ref().unwrap().order_key());
@@ -775,11 +814,11 @@ fn preservation_v2_distinguishes_restoration_and_retains_order_across_reopen() {
         after: Some(removed.release.clone()),
         ..request.clone()
     };
-    assert!(state.preservation_v2(&[1], &end).unwrap().entry.is_none());
+    assert!(state.preservation(&[1], &end).unwrap().entry.is_none());
     drop(state);
     let mut state = State::open(backing, false);
-    assert_eq!(state.preservation_v2(&[1], &request).unwrap(), first);
-    assert_eq!(state.preservation_v2(&[1], &next).unwrap(), second);
+    assert_eq!(state.preservation(&[1], &request).unwrap(), first);
+    assert_eq!(state.preservation(&[1], &next).unwrap(), second);
     state
         .admission(&[1], &AdmissionCommand::Activate(attempt))
         .unwrap();
@@ -792,9 +831,9 @@ fn preservation_v2_distinguishes_restoration_and_retains_order_across_reopen() {
     state
         .admission(&[1], &AdmissionCommand::Close(attempt.clone()))
         .unwrap();
-    assert_eq!(state.preservation_v2(&[1], &request), Err(Error::Conflict));
+    assert_eq!(state.preservation(&[1], &request), Err(Error::Conflict));
     let restored = state
-        .preservation_v2(
+        .preservation(
             &[1],
             &Request {
                 attempt,

@@ -3,6 +3,7 @@
 
 mod admission;
 mod preservation;
+mod read_grants;
 mod records;
 mod removal;
 #[cfg(test)]
@@ -101,6 +102,7 @@ impl<M: MemoryBacking> State<M> {
                         quota: Quota::default(),
                         reserved_bytes: 0,
                         admission: None,
+                        read_grants: Vec::new(),
                     },
                 )
             } else {

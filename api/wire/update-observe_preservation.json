@@ -2,7 +2,7 @@
   "format":1,
   "endpoint":"observe_preservation",
   "export":"wire_observe_preservation",
-  "id":"113",
+  "id":"117",
   "request":{"root":"Request","payload_limits":{"bytes":16373,"nodes":32768,"depth":16}},
   "response":{"root":"Reply","payload_limits":{"bytes":16373,"nodes":32768,"depth":16}},
   "schemas":{
@@ -29,17 +29,25 @@
       {"name":"Closed","id":6,"value":{"k":"unit"}}]},
     "Wire_Page_f02cee9526b5dff8":{"k":"record","fields":[
       {"name":"catalog","value":{"k":"ref","name":"Wire_Catalog_8b65a344b4b37e2e"}},
-      {"name":"entry","value":{"k":"ref","name":"Wire_Option_ec100ad1c74c49f9"}}]},
+      {"name":"entry","value":{"k":"ref","name":"Wire_Option_38d2df1f87c12b02"}}]},
     "Wire_Catalog_8b65a344b4b37e2e":{"k":"record","fields":[
       {"name":"quota","value":{"k":"ref","name":"Wire_Quota_10bc9cfef31e2fe7"}},
       {"name":"reserved_bytes","value":{"k":"ref","name":"Wire_u64_4d35d3193e8d66f2"}},
       {"name":"releases","value":{"k":"ref","name":"Wire_u64_4d35d3193e8d66f2"}},
       {"name":"artifacts","value":{"k":"ref","name":"Wire_u64_4d35d3193e8d66f2"}},
       {"name":"chunks","value":{"k":"ref","name":"Wire_u64_4d35d3193e8d66f2"}}]},
-    "Wire_Option_ec100ad1c74c49f9":{"k":"option","item":{"k":"ref","name":"Wire_Custody_8757a88daed20a74"}},
+    "Wire_Option_38d2df1f87c12b02":{"k":"option","item":{"k":"ref","name":"Wire_Entry_a4cd46b57afeb53d"}},
+    "Wire_Entry_a4cd46b57afeb53d":{"k":"enum","variants":[
+      {"name":"Active","id":0,"value":{"k":"ref","name":"Wire_Custody_8757a88daed20a74"}},
+      {"name":"Removed","id":1,"value":{"k":"ref","name":"Wire_Manifest_62fe1ea223a21398"}}]},
     "Wire_Custody_8757a88daed20a74":{"k":"record","fields":[
       {"name":"status","value":{"k":"ref","name":"Wire_Status_4f068a6b2a10ff13"}},
       {"name":"pins","value":{"k":"ref","name":"Wire_Vec_eae1ec8c42875786"}}]},
+    "Wire_Manifest_62fe1ea223a21398":{"k":"record","fields":[
+      {"name":"release","value":{"k":"ref","name":"Wire_Release_e3a6c4e0d6c2bd12"}},
+      {"name":"hash","value":{"k":"ref","name":"Wire__u8__32__a6c3ffa4fc6f7348"}},
+      {"name":"bytes","value":{"k":"ref","name":"Wire_u64_4d35d3193e8d66f2"}},
+      {"name":"chunks","value":{"k":"ref","name":"Wire_Vec_5e0c6805bf276bb7"}}]},
     "Wire_Quota_10bc9cfef31e2fe7":{"k":"record","fields":[
       {"name":"reserved_bytes","value":{"k":"ref","name":"Wire_u64_4d35d3193e8d66f2"}},
       {"name":"releases","value":{"k":"ref","name":"Wire_u64_4d35d3193e8d66f2"}}]},
@@ -47,11 +55,6 @@
       {"name":"manifest","value":{"k":"ref","name":"Wire_Manifest_62fe1ea223a21398"}},
       {"name":"published","value":{"k":"ref","name":"Wire_bool_cd2fd49bc6b014bd"}},
       {"name":"missing","value":{"k":"ref","name":"Wire_Vec_edd3b04d9184b526"}}]},
-    "Wire_Manifest_62fe1ea223a21398":{"k":"record","fields":[
-      {"name":"release","value":{"k":"ref","name":"Wire_Release_e3a6c4e0d6c2bd12"}},
-      {"name":"hash","value":{"k":"ref","name":"Wire__u8__32__a6c3ffa4fc6f7348"}},
-      {"name":"bytes","value":{"k":"ref","name":"Wire_u64_4d35d3193e8d66f2"}},
-      {"name":"chunks","value":{"k":"ref","name":"Wire_Vec_5e0c6805bf276bb7"}}]},
     "Wire_String_76e26e9121e02e46":{"k":"text"},
     "Wire_Vec_5e0c6805bf276bb7":{"k":"list","item":{"k":"ref","name":"Wire__u8__32__a6c3ffa4fc6f7348"}},
     "Wire_Vec_eae1ec8c42875786":{"k":"list","item":{"k":"ref","name":"Wire_Retention_ac303bd6e107213d"}},

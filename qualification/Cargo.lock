@@ -799,7 +799,7 @@ dependencies = [
 
 [[package]]
 name = "ic-wasm-store-protocol"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "ic-wire",
  "serde",

@@ -42,6 +42,7 @@ impl<M: MemoryBacking> State<M> {
             {
                 return Err(Error::Conflict);
             }
+            settings.read_grants.clear();
         }
         settings.admission = Some(Admission {
             attempt: attempt.clone(),

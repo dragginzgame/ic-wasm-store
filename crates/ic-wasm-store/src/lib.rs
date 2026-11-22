@@ -1,7 +1,7 @@
 //! Versioned artifact custody with exact removal and restoration. No deployment authority.
 //!
 //! This crate supplies a standalone Internet Computer canister. Build for
-//! `wasm32-unknown-unknown` to produce its controller-authorized IC exports.
+//! `wasm32-unknown-unknown` to produce its IC exports.
 //! The native library exposes no service API. Clients use
 //! [ic-wasm-store-protocol](https://docs.rs/ic-wasm-store-protocol) for passive
 //! request/response types and IC Wire method identifiers.
@@ -158,7 +158,7 @@ mod canister {
         );
 
         // observe_preservation
-        // Returns one preservation custody entry for the controller that owns the exact closed attempt.
+        // Returns one active or removed entry for the controller that owns the exact closed attempt.
         // guard  : canister controller
         // limits : 16 KiB request and response frames
         endpoint!(
@@ -171,23 +171,6 @@ mod canister {
             LIMITS,
             LIMITS,
             |state, input| state.preservation(system::caller().as_slice(),
-            input)
-        );
-
-        // observe_preservation_v2
-        // Returns one active or removed entry for the controller that owns the exact closed attempt.
-        // guard  : canister controller
-        // limits : 16 KiB request and response frames
-        endpoint!(
-            observe_preservation_v2,
-            "observe_preservation_v2",
-            update,
-            PRESERVATION_V2,
-            protocol::preservation::Request,
-            Result<protocol::preservation::PageV2, protocol::Error>,
-            LIMITS,
-            LIMITS,
-            |state, input| state.preservation_v2(system::caller().as_slice(),
             input)
         );
 
@@ -237,6 +220,41 @@ mod canister {
             LIMITS,
             CHUNK_LIMITS,
             |state, input| state.read(input)
+        );
+
+        // grant_read
+        // Authorizes a named installer to read one exact caller-owned pin.
+        endpoint!(
+            grant_read,
+            "grant_read",
+            update,
+            GRANT_READ,
+            protocol::ReadGrant,
+            Result<(), protocol::Error>,
+            LIMITS,
+            LIMITS,
+            |state, input| state.grant_read(system::caller().as_slice(), system::time(), input)
+        );
+
+        // read_granted
+        // Reads one verified chunk when the caller proves the exact active grant.
+        granted_endpoint!(
+            read_granted,
+            "read_granted",
+            update,
+            READ_GRANTED,
+            protocol::GrantedRead,
+            Result<protocol::Chunk, protocol::Error>,
+            LIMITS,
+            CHUNK_LIMITS,
+            |state, input| {
+                let owner = ic_platform_types::Principal::try_from_slice(&input.owner)
+                    .map_err(|_| protocol::Error::NotFound)?;
+                if !system::is_controller(&owner) {
+                    return Err(protocol::Error::NotFound);
+                }
+                state.read_granted(system::caller().as_slice(), system::time(), input)
+            }
         );
 
         // list

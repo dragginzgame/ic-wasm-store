@@ -4,7 +4,7 @@ exclude = ["qualification", "target"]
 resolver = "3"
 
 [workspace.package]
-version = "0.7.0"
+version = "0.8.0"
 edition = "2024"
 rust-version = "1.100.0"
 publish = ["crates-io"]
@@ -20,7 +20,7 @@ serde_bytes = "0.11.19"
 
 # Production and tests
 ic-storage = "0.78.0"
-ic-wasm-store-protocol = { version = "0.7.0", path = "crates/ic-wasm-store-protocol" }
+ic-wasm-store-protocol = { version = "0.8.0", path = "crates/ic-wasm-store-protocol" }
 ic-wire = { version = "0.28.0", default-features = false }
 serde = { version = "1.0.229", features = ["derive"] }
 sha2 = "0.11.1"

@@ -43,15 +43,15 @@ alias already retains the published artifact. Ordinary status/list calls expose
 active releases; the tombstone endpoint lists removed identities separately.
 
 Artifacts are limited to 8 MiB in 1 MiB chunks. Publication verifies hashes and
-the raw Wasm header, not full module validity. All endpoints require a controller.
+the raw Wasm header, not full module validity. Only `read_granted` accepts
+non-controller callers, and only with an active read grant for that caller.
 Closing maintenance admission does not drain outstanding calls. Consumers must
 settle outstanding removal requests before restoring a label, and executables
 predating tombstones cannot reopen state after tombstones are written.
 
-Closed maintenance scans can use `observe_preservation_v2` (Wire 117) to retain
+Closed maintenance scans can use `observe_preservation` (Wire 117) to retain
 explicit active/removed identities and compare the protocol's exact entry order.
-Historical method 113 remains available; consumers must adopt the new contract
-explicitly without reinterpreting existing preservation commitments.
+Method 113 is retired. Finish outstanding maintenance using its original executable before switching.
 
 Before upgrading, stop the canister and wait for `Stopped`, then upgrade and
 restart it. Init and post-upgrade arguments are limited to 16 KiB. Controller
