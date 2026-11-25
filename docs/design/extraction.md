@@ -18,8 +18,8 @@ Linux: 10 Store state tests and one protocol budget test pass, along with native
 
 ## Removal and restoration
 
-`delete` (Wire method 114) accepts an exact published `Manifest`; `cancel` (115)
-accepts an exact unpublished manifest. Both return the removed manifest. A phase
+`remove` (Wire method 122) accepts `Delete(Manifest)` for a published release or
+`Cancel(Manifest)` for an unpublished upload. Both return the removed manifest. A phase
 or identity mismatch, or any retained pin on the shared artifact, returns
 `Conflict`. Missing labels return `NotFound`; closed admission returns `Closed`.
 An exact replay against a tombstone succeeds for either operation. All these
@@ -43,11 +43,9 @@ unless another active alias already retains it. Labels are never reusable for
 different content. Active labels plus tombstones count toward release quota;
 `Info.artifacts` includes retained metadata for removed artifacts.
 
-`tombstones` (116) takes `Option<Release>` as an exclusive pagination cursor and
-returns up to `PAGE_SIZE` manifests. `status` and ordinary `list` expose active
-releases only. Preservation enumeration includes tombstones as unpublished
-entries with all chunks missing and no pins; enumerate `tombstones` under the
-same closed admission attempt to distinguish removed identities from uploads.
+`observe(Tombstones)` (121) takes `Option<Release>` as an exclusive pagination cursor and
+returns up to `PAGE_SIZE` manifests. `inspect(Status)` and `inspect(List)` expose active
+releases only. Preservation enumeration distinguishes active and removed entries under the exact closed admission attempt.
 Use each returned release as the next cursor; do not infer an independent sort
 order. Closed admission prevents mutation throughout this enumeration.
 

@@ -81,7 +81,7 @@ if [[ $(uname -s) == Linux && $(uname -m) == x86_64 ]]; then
     cat > "$fixture/bin/git" <<'STUB'
 #!/bin/bash
 [[ "$1" == ls-files ]] || exit 98
-printf 'Cargo.lock\0'
+printf 'Cargo.lock\0removed-wire-manifest.json\0'
 STUB
     cat > "$fixture/bin/cargo" <<'STUB'
 #!/bin/bash

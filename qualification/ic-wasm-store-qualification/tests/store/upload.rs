@@ -1,4 +1,20 @@
-use super::{CanisterId, Client, frame, store, support};
+use super::{CanisterId, Client, frame, response, store, support};
+
+// Wire identities of the published 0.2.2 fixture, including after a refused upgrade.
+const PREDECESSOR_INFO: u64 = 106;
+const PREDECESSOR_STATUS: u64 = 103;
+
+async fn predecessor_status(client: &Client<'_>, release: &store::Release) -> store::Status {
+    client
+        .update::<_, Result<store::Status, store::Error>>(
+            "observe",
+            PREDECESSOR_STATUS,
+            release,
+            store::LIMITS,
+        )
+        .await
+        .unwrap()
+}
 
 #[tokio::test(flavor = "current_thread")]
 async fn versioned_upload_resumes_across_two_executables_and_reuses_bytes() {
@@ -71,7 +87,15 @@ async fn exercise_upload(legacy_image: bool) {
             .await
             .is_err()
     );
-    let initial = client.info().await;
+    let initial = if legacy_image {
+        let reply = pic
+            .query_call(id, operator, "info", frame(PREDECESSOR_INFO, &()))
+            .await
+            .unwrap();
+        response(PREDECESSOR_INFO, &reply)
+    } else {
+        client.info().await
+    };
     assert_eq!(initial.releases, 0);
     let prepared: Result<store::Status, store::Error> = client
         .update("prepare", store::PREPARE, &manifest, store::LIMITS)
@@ -82,10 +106,15 @@ async fn exercise_upload(legacy_image: bool) {
         index: 0,
         bytes: bytes[..chunk_bytes].to_vec(),
     };
-    let _: Result<store::Status, store::Error> = client
-        .update("put", store::PUT, &first, store::CHUNK_LIMITS)
-        .await;
-    let partial = client.status(&manifest.release).await;
+    let partial = client
+        .update::<_, Result<store::Status, store::Error>>(
+            "put",
+            store::PUT,
+            &first,
+            store::CHUNK_LIMITS,
+        )
+        .await
+        .unwrap();
     assert!(!partial.missing.contains(&0));
     let blocked: Result<store::Status, store::Error> = client
         .update("publish", store::PUBLISH, &manifest.release, store::LIMITS)
@@ -103,7 +132,10 @@ async fn exercise_upload(legacy_image: bool) {
             "{error:?}"
         );
         pic.start_canister(id, Some(operator)).await.unwrap();
-        assert_eq!(client.status(&manifest.release).await, partial);
+        assert_eq!(
+            predecessor_status(&client, &manifest.release).await,
+            partial
+        );
 
         return;
     }
@@ -171,7 +203,6 @@ async fn exercise_upload(legacy_image: bool) {
         .update("configure", store::CONFIGURE, &changed_quota, store::LIMITS)
         .await;
     assert_eq!(result.unwrap().quota, changed_quota);
-    // Replicated reads recover exact bytes without relying on uncertified query results.
     let mut recovered = Vec::new();
     for index in 0..manifest.chunks.len() {
         let input = store::Read {
@@ -179,20 +210,7 @@ async fn exercise_upload(legacy_image: bool) {
             index: index as u32,
         };
         let reply = pic
-            .update_call(
-                id,
-                operator,
-                "read_chunk",
-                ic_wire::encode(
-                    &input,
-                    ic_wire::Encoding::Frame {
-                        method: store::READ,
-                        direction: ic_wire::Direction::Request,
-                    },
-                    store::LIMITS,
-                )
-                .unwrap(),
-            )
+            .query_call(id, operator, "read", frame(store::READ, &input))
             .await
             .unwrap();
         let chunk: Result<store::Chunk, store::Error> = ic_wire::decode(
@@ -207,56 +225,26 @@ async fn exercise_upload(legacy_image: bool) {
         recovered.extend(chunk.unwrap().0);
     }
     assert_eq!(recovered, bytes);
-    let first_read = store::Read {
-        release: manifest.release.clone(),
-        index: 0,
+    let store::Inspection::List(listed) = client.inspect(&store::Inspect::List(None)).await else {
+        panic!("expected active releases")
     };
-    let query_reply = pic
-        .query_call(id, operator, "read", frame(store::READ, &first_read))
+    assert_eq!(listed.len(), 2);
+    let store::Inspection::Status(status) = client
+        .inspect(&store::Inspect::Status(manifest.release.clone()))
         .await
-        .unwrap();
-    let first_chunk: Result<store::Chunk, store::Error> = ic_wire::decode(
-        &query_reply,
-        ic_wire::Encoding::Frame {
-            method: store::READ,
-            direction: ic_wire::Direction::Response,
-        },
-        store::CHUNK_LIMITS,
-    )
-    .unwrap();
-    assert_eq!(first_chunk.unwrap().0, bytes[..store::CHUNK_BYTES]);
-
-    let reply = pic
-        .query_call(
-            id,
-            operator,
-            "list",
-            ic_wire::encode(
-                &Option::<store::Release>::None,
-                ic_wire::Encoding::Frame {
-                    method: store::LIST,
-                    direction: ic_wire::Direction::Request,
-                },
-                store::LIMITS,
-            )
-            .unwrap(),
-        )
-        .await
-        .unwrap();
-    let listed: Result<Vec<store::Status>, store::Error> = ic_wire::decode(
-        &reply,
-        ic_wire::Encoding::Frame {
-            method: store::LIST,
-            direction: ic_wire::Direction::Response,
-        },
-        store::LIMITS,
-    )
-    .unwrap();
-    assert_eq!(listed.unwrap().len(), 2);
+    else {
+        panic!("expected release status")
+    };
+    assert_eq!(status.manifest, manifest);
     // Remove aliases independently, reclaim the last active payload, and reopen tombstones.
     for release in [&second, &manifest] {
         let removed: Result<store::Manifest, store::Error> = client
-            .update("delete", store::DELETE, release, store::LIMITS)
+            .update(
+                "remove",
+                store::REMOVE,
+                &store::Remove::Delete(release.clone()),
+                store::LIMITS,
+            )
             .await;
         assert_eq!(removed.unwrap(), *release);
     }
@@ -268,15 +256,14 @@ async fn exercise_upload(legacy_image: bool) {
         .await
         .unwrap();
     pic.start_canister(id, Some(operator)).await.unwrap();
-    let removed: Result<Vec<store::Manifest>, store::Error> = client
-        .update(
-            "tombstones",
-            store::TOMBSTONES,
-            &Option::<store::Release>::None,
-            store::LIMITS,
-        )
-        .await;
-    assert_eq!(removed.unwrap(), vec![manifest.clone(), second.clone()]);
+    let store::Observation::Tombstones(removed) = client
+        .observe(&store::Observe::Tombstones(None))
+        .await
+        .unwrap()
+    else {
+        panic!("expected removed releases")
+    };
+    assert_eq!(removed, vec![manifest.clone(), second.clone()]);
     let conflict: Result<store::Status, store::Error> = client
         .update("prepare", store::PREPARE, &conflict, store::LIMITS)
         .await;
@@ -286,7 +273,12 @@ async fn exercise_upload(legacy_image: bool) {
         .await;
     assert_eq!(restored.unwrap().missing.len(), store::MAX_CHUNKS);
     let cancelled: Result<store::Manifest, store::Error> = client
-        .update("cancel", store::CANCEL, &manifest, store::LIMITS)
+        .update(
+            "remove",
+            store::REMOVE,
+            &store::Remove::Cancel(manifest.clone()),
+            store::LIMITS,
+        )
         .await;
     assert_eq!(cancelled.unwrap(), manifest);
     assert_eq!(client.info().await.reserved_bytes, 0);
@@ -317,7 +309,12 @@ async fn exercise_upload(legacy_image: bool) {
         client.update("pin", store::PIN, &pin, store::LIMITS).await;
     assert_eq!(receipt.unwrap().pin, pin);
     let protected: Result<store::Manifest, store::Error> = client
-        .update("delete", store::DELETE, &manifest, store::LIMITS)
+        .update(
+            "remove",
+            store::REMOVE,
+            &store::Remove::Delete(manifest.clone()),
+            store::LIMITS,
+        )
         .await;
     assert_eq!(protected, Err(store::Error::Conflict));
     let request = store::PrepareCache {

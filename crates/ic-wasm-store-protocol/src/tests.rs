@@ -71,7 +71,7 @@ fn maximum_metadata_page_and_chunk_fit_independent_wire_budgets() {
         published: false,
         missing: (0..MAX_CHUNKS as u32).collect(),
     };
-    let custody = Ok::<_, Error>(Custody {
+    let custody = Ok::<_, Error>(Observation::Custody(Custody {
         status: Status {
             published: true,
             missing: vec![],
@@ -84,26 +84,29 @@ fn maximum_metadata_page_and_chunk_fit_independent_wire_budgets() {
                 release: manifest.release.clone(),
             })
             .collect(),
-    });
+    }));
     let encoded = ic_wire::encode(
         &custody,
         ic_wire::Encoding::Frame {
-            method: CUSTODY,
+            method: OBSERVE,
             direction: ic_wire::Direction::Response,
         },
         LIMITS,
     )
     .unwrap();
-    let decoded = ic_wire::decode::<Result<Custody, Error>>(
+    let decoded = ic_wire::decode::<Result<Observation, Error>>(
         &encoded,
         ic_wire::Encoding::Frame {
-            method: CUSTODY,
+            method: OBSERVE,
             direction: ic_wire::Direction::Response,
         },
         LIMITS,
     )
     .unwrap();
     assert_eq!(decoded, custody);
+    let Observation::Custody(verified) = decoded.unwrap() else {
+        panic!("expected release custody")
+    };
     let catalog = preservation::Catalog {
         quota: Quota {
             reserved_bytes: u64::MAX,
@@ -115,7 +118,7 @@ fn maximum_metadata_page_and_chunk_fit_independent_wire_budgets() {
         chunks: u64::MAX,
     };
     for entry in [
-        preservation::Entry::Active(decoded.unwrap()),
+        preservation::Entry::Active(verified),
         preservation::Entry::Removed(manifest.clone()),
     ] {
         let page = Ok::<_, Error>(preservation::Page {
@@ -156,21 +159,21 @@ fn maximum_metadata_page_and_chunk_fit_independent_wire_budgets() {
             ic_wire::Error::Identity
         );
     }
-    let page = Ok::<_, Error>(vec![status; PAGE_SIZE]);
+    let page = Ok::<_, Error>(Inspection::List(vec![status; PAGE_SIZE]));
     let encoded = ic_wire::encode(
         &page,
         ic_wire::Encoding::Frame {
-            method: LIST,
+            method: INSPECT,
             direction: ic_wire::Direction::Response,
         },
         LIMITS,
     )
     .unwrap();
     assert_eq!(
-        ic_wire::decode::<Result<Vec<Status>, Error>>(
+        ic_wire::decode::<Result<Inspection, Error>>(
             &encoded,
             ic_wire::Encoding::Frame {
-                method: LIST,
+                method: INSPECT,
                 direction: ic_wire::Direction::Response
             },
             LIMITS
@@ -216,7 +219,7 @@ fn maximum_metadata_page_and_chunk_fit_independent_wire_budgets() {
             LIMITS
         )
         .unwrap_err(),
-        ic_wire::Error::Limit
+        ic_wire::Error::Limit(ic_wire::LimitKind::Bytes)
     );
     let response = Ok::<_, Error>(Chunk(input.bytes));
     let encoded = ic_wire::encode(

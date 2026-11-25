@@ -8,6 +8,9 @@ use DynaLoader ();
 my %files;
 sub add { my ($p)=@_; -f $p or die "missing installed input: $p\n"; $files{$p}=1; }
 for my $dir ('crates','qualification/ic-wasm-store-qualification','scripts') {
+    # File::Find warns and continues on traversal failures. A partial inventory
+    # cannot qualify an installed execution for reuse.
+    local $SIG{__WARN__} = sub { die @_ };
     find({no_chdir=>1,wanted=>sub {
         -l $_ and die "linked consumer source refuses reuse: $_\n";
         add($_) if -f $_;

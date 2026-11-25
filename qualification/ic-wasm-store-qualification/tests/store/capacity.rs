@@ -146,7 +146,12 @@ async fn removal_at_catalog_capacity_preserves_shared_bytes_and_pins() {
     let before_delete = client.info().await;
     for _ in 0..2 {
         let result: Result<store::Manifest, store::Error> = client
-            .update("delete", store::DELETE, &removable, store::LIMITS)
+            .update(
+                "remove",
+                store::REMOVE,
+                &store::Remove::Delete(removable.clone()),
+                store::LIMITS,
+            )
             .await;
         assert_eq!(result.unwrap(), removable);
     }
@@ -165,7 +170,12 @@ async fn removal_at_catalog_capacity_preserves_shared_bytes_and_pins() {
     let before = client.info().await;
     let started = std::time::Instant::now();
     let result: Result<store::Manifest, store::Error> = client
-        .update("cancel", store::CANCEL, &last, store::LIMITS)
+        .update(
+            "remove",
+            store::REMOVE,
+            &store::Remove::Cancel(last.clone()),
+            store::LIMITS,
+        )
         .await;
     result.unwrap();
     println!(
@@ -177,7 +187,12 @@ async fn removal_at_catalog_capacity_preserves_shared_bytes_and_pins() {
     assert_eq!(after.releases, 4096);
     assert_eq!(after.chunks, 1);
     let result: Result<store::Manifest, store::Error> = client
-        .update("delete", store::DELETE, &pinned, store::LIMITS)
+        .update(
+            "remove",
+            store::REMOVE,
+            &store::Remove::Delete(pinned.clone()),
+            store::LIMITS,
+        )
         .await;
     assert_eq!(result, Err(store::Error::Conflict));
     assert!(client.status(&pinned.release).await.published);
@@ -187,7 +202,12 @@ async fn removal_at_catalog_capacity_preserves_shared_bytes_and_pins() {
     assert!(result.unwrap().missing.is_empty());
     assert_eq!(client.info().await.reserved_bytes, before.reserved_bytes);
     let result: Result<store::Manifest, store::Error> = client
-        .update("cancel", store::CANCEL, &largest, store::LIMITS)
+        .update(
+            "remove",
+            store::REMOVE,
+            &store::Remove::Cancel(largest.clone()),
+            store::LIMITS,
+        )
         .await;
     assert_eq!(result.unwrap(), largest);
     let after = client.info().await;

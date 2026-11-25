@@ -14,32 +14,16 @@ pub const PREPARE: u64 = 100;
 pub const PUT: u64 = 101;
 /// Verify the complete bytes and make a release readable.
 pub const PUBLISH: u64 = 102;
-/// Read upload progress and immutable identity; also used by replicated `observe`.
-pub const STATUS: u64 = 103;
 /// Read one published chunk.
 pub const READ: u64 = 104;
-/// Page through release history, including incomplete releases.
-pub const LIST: u64 = 105;
-/// Read quotas and counters.
-pub const INFO: u64 = 106;
 /// Change quotas without replacing stored data.
 pub const CONFIGURE: u64 = 107;
 /// Retain exact published content for one caller-owned operation.
 pub const PIN: u64 = 108;
-/// Replicated observation of the exact retained pin.
-pub const OBSERVE_PIN: u64 = 109;
 /// Populate missing management-cache chunks from one pinned artifact.
 pub const PREPARE_CACHE: u64 = 110;
-/// Replicated release progress and all pins on its shared artifact; no payload scan.
-pub const CUSTODY: u64 = 111;
 /// Close, inspect or explicitly reopen Store mutation admission for one exact attempt.
 pub const ADMISSION: u64 = 112;
-/// Delete an exact published release unless its artifact has retained pins.
-pub const DELETE: u64 = 114;
-/// Cancel an exact unpublished release, reclaiming unshared payloads.
-pub const CANCEL: u64 = 115;
-/// Page through removed manifests; exact prepare restores these identities.
-pub const TOMBSTONES: u64 = 116;
 /// Enumerate explicit active/removed metadata under one exact closed attempt.
 pub const PRESERVATION: u64 = 117;
 /// Issue exact, time-bounded delivery authority to one installer.
@@ -47,12 +31,134 @@ pub const GRANT_READ: u64 = 118;
 /// Read one chunk using an exact delivery grant.
 pub const READ_GRANTED: u64 = 119;
 
+/// Query Store metadata.
+pub const INSPECT: u64 = 120;
+/// Read replicated Store evidence.
+pub const OBSERVE: u64 = 121;
+/// Remove a release in its expected phase.
+pub const REMOVE: u64 = 122;
+
 /// Maximum number of active read grants retained by one Store.
 pub const MAX_READ_GRANTS: usize = 32;
 /// Maximum time from grant issuance to its absolute deadline.
 pub const MAX_READ_GRANT_NS: u64 = 300_000_000_000;
 
+/// Bounded retained pin records per artifact; exhaustion never evicts a pin.
+pub const MAX_PINS: usize = 32;
+
+/// Transfer unit, independent of artifact size.
+pub const CHUNK_BYTES: usize = 1024 * 1024;
+/// Publication verifies at most 8 MiB per artifact.
+pub const MAX_CHUNKS: usize = (8 * 1024 * 1024) / CHUNK_BYTES;
+/// Maximum releases returned by one metadata page.
+pub const PAGE_SIZE: usize = 4;
+/// Small metadata and pagination frames.
+pub const LIMITS: ic_wire::Limits = ic_wire::Limits {
+    bytes: 16_384,
+    allocation: 262_144,
+    // Covers Wire traversal of four full manifests, including fixed hash arrays.
+    nodes: 32_768,
+    depth: 16,
+};
+/// One raw chunk plus its bounded envelope; Wire charges allocation per blob byte.
+pub const CHUNK_LIMITS: ic_wire::Limits = ic_wire::Limits {
+    bytes: CHUNK_BYTES + 4096,
+    allocation: CHUNK_BYTES * 9 + 65_536,
+    nodes: 4096,
+    depth: 16,
+};
+
+///
+/// Inspect
+/// Metadata available through query execution.
+///
+
+#[cfg_attr(feature = "wire-schema", derive(ic_wire::typescript::Wire))]
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+pub enum Inspect {
+    /// Store usage and quotas.
+    Info,
+    /// An active release.
+    Status(Release),
+    /// The next page of active releases after an exclusive cursor.
+    List(Option<Release>),
+}
+
+///
+/// Observe
+/// Evidence obtained through replicated execution.
+///
+
+#[cfg_attr(feature = "wire-schema", derive(ic_wire::typescript::Wire))]
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+pub enum Observe {
+    /// Store usage and quotas.
+    Info,
+    /// An active release.
+    Status(Release),
+    /// A release and its retained obligations.
+    Custody(Release),
+    /// The actual caller’s exact pin.
+    Pin(Pin),
+    /// The next page of removed releases after an exclusive cursor.
+    Tombstones(Option<Release>),
+}
+
+///
+/// Inspection
+/// Result of the corresponding inspection.
+///
+
+#[cfg_attr(feature = "wire-schema", derive(ic_wire::typescript::Wire))]
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+pub enum Inspection {
+    /// Usage and quotas.
+    Info(Info),
+    /// Release status.
+    Status(Status),
+    /// Active release page.
+    List(Vec<Status>),
+}
+
+///
+/// Observation
+/// Result of the corresponding observation.
+///
+
+#[cfg_attr(feature = "wire-schema", derive(ic_wire::typescript::Wire))]
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+pub enum Observation {
+    /// Usage and quotas.
+    Info(Info),
+    /// Release status.
+    Status(Status),
+    /// Release custody.
+    Custody(Custody),
+    /// Caller-owned pin receipt.
+    Pin(PinReceipt),
+    /// Removed release page.
+    Tombstones(Vec<Manifest>),
+}
+
+///
+/// Remove
+/// Remove one exact manifest, retaining its immutable identity.
+///
+
+#[cfg_attr(feature = "wire-schema", derive(ic_wire::typescript::Wire))]
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+pub enum Remove {
+    /// Expect an unpublished upload.
+    Cancel(Manifest),
+    /// Expect a published release.
+    Delete(Manifest),
+}
+
+///
+/// ReadGrant
 /// Controller-issued authority for a named installer to read one pinned release.
+///
+
 #[cfg_attr(feature = "wire-schema", derive(ic_wire::typescript::Wire))]
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct ReadGrant {
@@ -67,7 +173,11 @@ pub struct ReadGrant {
     pub expires_at_ns: u64,
 }
 
+///
+/// GrantedRead
 /// Replicated read of one chunk under a previously issued grant.
+///
+
 #[cfg_attr(feature = "wire-schema", derive(ic_wire::typescript::Wire))]
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct GrantedRead {
@@ -114,9 +224,6 @@ pub enum AdmissionCommand {
     /// Reopen only the exact current attempt owned by the captured caller.
     Activate(MaintenanceAttempt),
 }
-
-/// Bounded retained pin records per artifact; exhaustion never evicts a pin.
-pub const MAX_PINS: usize = 32;
 
 /// One immutable retention obligation, scoped by caller and artifact hash.
 /// An operation may pin several artifacts, but cannot relabel an existing pin.
@@ -202,28 +309,6 @@ pub enum CacheError {
     /// Delivery or reply interpretation was uncertain; re-observe cache before repair.
     Uncertain,
 }
-
-/// Transfer unit, independent of artifact size.
-pub const CHUNK_BYTES: usize = 1024 * 1024;
-/// Publication verifies at most 8 MiB per artifact.
-pub const MAX_CHUNKS: usize = (8 * 1024 * 1024) / CHUNK_BYTES;
-/// Maximum releases returned by one metadata page.
-pub const PAGE_SIZE: usize = 4;
-/// Small metadata and pagination frames.
-pub const LIMITS: ic_wire::Limits = ic_wire::Limits {
-    bytes: 16_384,
-    allocation: 262_144,
-    // Covers Wire traversal of four full manifests, including fixed hash arrays.
-    nodes: 32_768,
-    depth: 16,
-};
-/// One raw chunk plus its bounded envelope; Wire charges allocation per blob byte.
-pub const CHUNK_LIMITS: ic_wire::Limits = ic_wire::Limits {
-    bytes: CHUNK_BYTES + 4096,
-    allocation: CHUNK_BYTES * 9 + 65_536,
-    nodes: 4096,
-    depth: 16,
-};
 
 /// Logical release identity; labels have no implicit ordering or “latest” behavior.
 #[cfg_attr(feature = "wire-schema", derive(ic_wire::typescript::Wire))]

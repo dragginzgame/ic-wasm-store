@@ -18,11 +18,16 @@ lock="$root/target/qualification/.release-installed-lock"
 mkdir "$lock" || { echo 'Installed qualification is occupied; inspect the existing attempt before recovery.' >&2; exit 2; }
 trap 'rmdir "$lock"' EXIT
 source_identity() {
-    git ls-files -z --cached --others --exclude-standard | sort -zu | xargs -0 sha256sum | sha256sum | cut -d ' ' -f 1
+    # The index also lists tracked paths deleted from this working tree.
+    git ls-files -z --cached --others --exclude-standard |
+        perl -0ne 'chomp; if (lstat) { print "$_\0" } elsif (!$!{ENOENT}) { die "cannot inspect $_: $!" }' |
+        sort -zu | xargs -0 -r sha256sum -- | sha256sum | cut -d ' ' -f 1
 }
 source_commit=$(source_identity)
 check_source() {
-    [[ $(source_identity) == "$source_commit" ]] || { echo 'Source changed during installed preparation/admission; no complete gate admitted.' >&2; exit 2; }
+    local current
+    current=$(source_identity) || return 1
+    [[ "$current" == "$source_commit" ]] || { echo 'Source changed during installed preparation/admission; no complete gate admitted.' >&2; exit 2; }
 }
 # Compile and admit actual final artifacts on every call. Proofs cover execution only.
 bash scripts/test-installed.sh --build-only

@@ -7,8 +7,8 @@ it does not make network calls, manage stable memory or deploy code.
 
 ```toml
 [dependencies]
-ic-wasm-store-protocol = "0.8"
-ic-wire = { version = "0.28", default-features = false }
+ic-wasm-store-protocol = "0.9"
+ic-wire = { version = "0.30.1", default-features = false }
 ```
 
 A release is an application-defined name and version, bound to a SHA-256 digest,
@@ -57,4 +57,4 @@ admits at most 32 active grants.
 
 - [API documentation](https://docs.rs/ic-wasm-store-protocol)
 - [Source and development instructions](https://github.com/dragginzgame/ic-wasm-store)
-- [Compatibility and removal semantics](https://github.com/dragginzgame/ic-wasm-store/blob/v0.5.0/docs/design/extraction.md)
+- [Compatibility and removal semantics](https://github.com/dragginzgame/ic-wasm-store/blob/v0.9.0/docs/design/extraction.md)

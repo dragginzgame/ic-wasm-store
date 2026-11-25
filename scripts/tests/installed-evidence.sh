@@ -37,6 +37,10 @@ expect_mode() { run || { cat target/output; exit 1; }; rg -q "Validation stage c
 expect_mode executed
 expect_mode reused
 [[ $(wc -l < target/count) == 1 ]]
+mv crates target/saved-crates
+if run; then echo 'Missing required source root admitted' >&2; exit 1; fi
+[[ $(wc -l < target/count) == 1 ]]
+mv target/saved-crates crates
 # Recompiled artifact, source inventory and environment changes invalidate evidence.
 printf changed >> target/candidate.wasm
 expect_mode executed

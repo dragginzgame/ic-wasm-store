@@ -15,6 +15,7 @@ struct Client<'a> {
     id: CanisterId,
     operator: CanisterId,
 }
+
 impl Client<'_> {
     async fn update<T: Serialize, R: DeserializeOwned>(
         &self,
@@ -53,46 +54,42 @@ impl Client<'_> {
         .unwrap()
     }
 
-    async fn info(&self) -> store::Info {
+    async fn inspect(&self, request: &store::Inspect) -> store::Inspection {
         let reply = self
             .pic
             .query_call(
                 self.id,
                 self.operator,
-                "info",
-                ic_wire::encode(
-                    &(),
-                    ic_wire::Encoding::Frame {
-                        method: store::INFO,
-                        direction: ic_wire::Direction::Request,
-                    },
-                    store::LIMITS,
-                )
-                .unwrap(),
+                "inspect",
+                frame(store::INSPECT, request),
             )
             .await
             .unwrap();
 
-        ic_wire::decode(
-            &reply,
-            ic_wire::Encoding::Frame {
-                method: store::INFO,
-                direction: ic_wire::Direction::Response,
-            },
-            store::LIMITS,
-        )
-        .unwrap()
+        response::<Result<store::Inspection, store::Error>>(store::INSPECT, &reply).unwrap()
+    }
+
+    async fn info(&self) -> store::Info {
+        let store::Inspection::Info(info) = self.inspect(&store::Inspect::Info).await else {
+            panic!("expected Store info")
+        };
+        info
+    }
+
+    async fn observe(&self, request: &store::Observe) -> Result<store::Observation, store::Error> {
+        self.update("observe", store::OBSERVE, request, store::LIMITS)
+            .await
     }
 
     async fn status(&self, release: &store::Release) -> store::Status {
-        self.update::<_, Result<store::Status, store::Error>>(
-            "observe",
-            store::STATUS,
-            release,
-            store::LIMITS,
-        )
-        .await
-        .unwrap()
+        let store::Observation::Status(status) = self
+            .observe(&store::Observe::Status(release.clone()))
+            .await
+            .unwrap()
+        else {
+            panic!("expected release status")
+        };
+        status
     }
 }
 

@@ -24,7 +24,7 @@ async fn closed_upgrade_preserves_removal_fences_and_exact_activation_owner() {
         ),
     ] {
         let refusal = pic
-            .update_call(id, caller, "observe_info", bytes)
+            .update_call(id, caller, "observe", bytes)
             .await
             .unwrap_err();
         assert_eq!(refusal.reject_code as u64, 5);
@@ -68,7 +68,12 @@ async fn closed_upgrade_preserves_removal_fences_and_exact_activation_owner() {
             result.unwrap();
         } else if index == 2 {
             let result: Result<store::Manifest, store::Error> = client
-                .update("cancel", store::CANCEL, &manifest, store::LIMITS)
+                .update(
+                    "remove",
+                    store::REMOVE,
+                    &store::Remove::Cancel(manifest.clone()),
+                    store::LIMITS,
+                )
                 .await;
             result.unwrap();
         }
@@ -82,11 +87,17 @@ async fn closed_upgrade_preserves_removal_fences_and_exact_activation_owner() {
     // Exercise the installed guards for each removal endpoint. The valid
     // controller calls below distinguish rejected input from a broken endpoint.
     for (method, request) in [
-        ("delete", frame(store::DELETE, &manifests[0])),
-        ("cancel", frame(store::CANCEL, &manifests[1])),
         (
-            "tombstones",
-            frame(store::TOMBSTONES, &Option::<store::Release>::None),
+            "remove",
+            frame(store::REMOVE, &store::Remove::Delete(manifests[0].clone())),
+        ),
+        (
+            "remove",
+            frame(store::REMOVE, &store::Remove::Cancel(manifests[1].clone())),
+        ),
+        (
+            "observe",
+            frame(store::OBSERVE, &store::Observe::Tombstones(None)),
         ),
     ] {
         assert!(
@@ -100,33 +111,34 @@ async fn closed_upgrade_preserves_removal_fences_and_exact_activation_owner() {
                 .is_err()
         );
     }
-    for (method, correct, incorrect, manifest) in [
-        ("delete", store::DELETE, store::CANCEL, &manifests[0]),
-        ("cancel", store::CANCEL, store::DELETE, &manifests[1]),
+    for (action, manifest) in [
+        (store::Remove::Delete as fn(_) -> _, &manifests[0]),
+        (store::Remove::Cancel, &manifests[1]),
     ] {
+        let request = action(manifest.clone());
         assert!(
-            pic.update_call(id, operator, method, frame(incorrect, manifest))
+            pic.update_call(id, operator, "remove", frame(store::OBSERVE, &request))
                 .await
                 .is_err()
         );
-        let reply_frame = ic_wire::encode(
-            manifest,
+        let wrong_direction = ic_wire::encode(
+            &request,
             ic_wire::Encoding::Frame {
-                method: correct,
+                method: store::REMOVE,
                 direction: ic_wire::Direction::Response,
             },
             store::LIMITS,
         )
         .unwrap();
         assert!(
-            pic.update_call(id, operator, method, reply_frame)
+            pic.update_call(id, operator, "remove", wrong_direction)
                 .await
                 .is_err()
         );
         let mut conflicting = manifest.clone();
         conflicting.hash[0] ^= 1;
         let result: Result<store::Manifest, store::Error> = client
-            .update(method, correct, &conflicting, store::LIMITS)
+            .update("remove", store::REMOVE, &action(conflicting), store::LIMITS)
             .await;
         assert_eq!(result, Err(store::Error::Conflict));
     }
@@ -208,14 +220,14 @@ async fn closed_upgrade_preserves_removal_fences_and_exact_activation_owner() {
         .await;
     assert_eq!(observed.unwrap(), closed);
     assert_eq!(preservation_pages(&client, &attempt).await, preserved);
-    for (method, number, manifest) in [
-        ("delete", store::DELETE, &manifests[0]),
-        ("cancel", store::CANCEL, &manifests[1]),
-        // Even an otherwise idempotent tombstone replay is fenced while closed.
-        ("cancel", store::CANCEL, &manifests[2]),
+    for command in [
+        store::Remove::Delete(manifests[0].clone()),
+        store::Remove::Cancel(manifests[1].clone()),
+        store::Remove::Cancel(manifests[2].clone()),
     ] {
-        let result: Result<store::Manifest, store::Error> =
-            client.update(method, number, manifest, store::LIMITS).await;
+        let result: Result<store::Manifest, store::Error> = client
+            .update("remove", store::REMOVE, &command, store::LIMITS)
+            .await;
         assert_eq!(result, Err(store::Error::Closed));
     }
     let result: Result<store::Status, store::Error> = client
@@ -232,15 +244,14 @@ async fn closed_upgrade_preserves_removal_fences_and_exact_activation_owner() {
     );
     assert!(client.status(&manifests[0].release).await.published);
     assert_eq!(client.status(&manifests[1].release).await.missing, vec![0]);
-    let removed: Result<Vec<store::Manifest>, store::Error> = client
-        .update(
-            "tombstones",
-            store::TOMBSTONES,
-            &Option::<store::Release>::None,
-            store::LIMITS,
-        )
-        .await;
-    assert_eq!(removed.unwrap(), vec![manifests[2].clone()]);
+    let store::Observation::Tombstones(removed) = client
+        .observe(&store::Observe::Tombstones(None))
+        .await
+        .unwrap()
+    else {
+        panic!("expected removed releases")
+    };
+    assert_eq!(removed, vec![manifests[2].clone()]);
     let alternate = Client {
         pic,
         id,
@@ -274,11 +285,21 @@ async fn closed_upgrade_preserves_removal_fences_and_exact_activation_owner() {
         .await;
     assert!(!active.unwrap().unwrap().closed);
     let deleted: Result<store::Manifest, store::Error> = client
-        .update("delete", store::DELETE, &manifests[0], store::LIMITS)
+        .update(
+            "remove",
+            store::REMOVE,
+            &store::Remove::Delete(manifests[0].clone()),
+            store::LIMITS,
+        )
         .await;
     assert_eq!(deleted.unwrap(), manifests[0]);
     let cancelled: Result<store::Manifest, store::Error> = client
-        .update("cancel", store::CANCEL, &manifests[1], store::LIMITS)
+        .update(
+            "remove",
+            store::REMOVE,
+            &store::Remove::Cancel(manifests[1].clone()),
+            store::LIMITS,
+        )
         .await;
     assert_eq!(cancelled.unwrap(), manifests[1]);
     let restored: Result<store::Status, store::Error> = client

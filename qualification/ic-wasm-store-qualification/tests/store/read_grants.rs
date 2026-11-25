@@ -93,10 +93,10 @@ async fn pinned_delivery_is_scoped_replayable_and_fenced() {
         .is_err()
     );
     assert!(
-        pic.update_call(
+        pic.query_call(
             id,
             installer,
-            "read_chunk",
+            "read",
             frame(
                 store::READ,
                 &store::Read {

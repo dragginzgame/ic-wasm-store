@@ -1,9 +1,9 @@
 # Toko Tooling snapshot v1
-# version	0.46.0
+# version	0.46.3
 # layout	vendor
 format	1
 source	https://crates.io/crates/toko-tooling
-revision	4601d2785aaa14e01fd8656d6b3a57653337b214e027810c953595f1d91d6a8d
+revision	3f6d677af6c5ed88e3ba9ccf4d7b0c2eaad5f0fc49f0ad5b697e412ea4be600e
 # entrypoint	TOKO-TOOLING.md
 # entrypoint	vendor/toko-tooling/make/consumer.mk
 # entrypoint	vendor/toko-tooling/make/cargo-dependencies.mk
@@ -18,7 +18,7 @@ revision	4601d2785aaa14e01fd8656d6b3a57653337b214e027810c953595f1d91d6a8d
 # entrypoint	vendor/toko-tooling/scripts/ci/SetupDiagnostics.pm
 # entrypoint	vendor/toko-tooling/scripts/dev/prepare-rust-toolchain.sh
 # entrypoint	vendor/toko-tooling/scripts/ci/check-api-baseline.sh
-file	6750a18a92577ae4fea265c60f34cc80e442335c6f9edeccd498f75debbaa283	-	TOKO-TOOLING.md
+file	74a31e560650f34b70e1d8f40131c78c9bc7f9c39e2e36bf6bcbcfdec06e38ae	-	TOKO-TOOLING.md
 file	e5be6f538ee619be119aef9b3fca9d156f35c08732d9775e4e2efd698db8cbd7	-	vendor/toko-tooling/make/consumer.mk
 file	07b59f8cc784c79c648d379561f2493e40bac5b7c2809e8eda960cba661fae7d	-	vendor/toko-tooling/make/cargo-dependencies.mk
 file	1085e5521dfacb38aed065b70f905aab666ab73ef49dd5a25270c2ec2cf63710	x	vendor/toko-tooling/.githooks/pre-commit
@@ -41,7 +41,7 @@ file	46077e4508b98e086e9772ac107b759bb251b3671aa965311c51b35dd71aef8d	x	vendor/t
 file	f6ecd07a9577b0b307d2bef6c8185125c611e05732c119c63bb474cbf50e18d5	-	vendor/toko-tooling/make/execution.mk
 file	37fec4ef571caa7199f284bdcc28e4a5d8c74da300362f48e688654bbda64966	-	vendor/toko-tooling/scripts/dev/cargo-dependencies.pl
 file	3bbcd3458afbeee5803bf4f51e624afd2b11578ee961250522c9332ed0fc7b4f	x	vendor/toko-tooling/scripts/ci/check-make-execution.sh
-file	f52eb75c9b3b7eab6dee5def659bf3e1ea323bc9cc126821d9910740c182dfe6	-	vendor/toko-tooling/scripts/ci/cargo-publication-adapter.sh
+file	757ce0c6d283271aaf6d3d91a7c407b8de28a0d21a8b731315ac36273cc2842c	-	vendor/toko-tooling/scripts/ci/cargo-publication-adapter.sh
 file	33060e8f4a77791ef3c97caca8a983db98a8205f933d17bb08b632ee2e1d9f30	x	vendor/toko-tooling/scripts/ci/tool-catalog-records.pl
 file	d459325be4a47909f1049a7c575c25bacffef02c4739633bd4652470d189960a	-	vendor/toko-tooling/scripts/dev/tool-store.sh
 file	f1916ce5f9727e437efb2c67252a88ec3fd2ebb91ec34507669ae37e27215aac	-	vendor/toko-tooling/scripts/dev/host-platform.sh

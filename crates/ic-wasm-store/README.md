@@ -18,7 +18,7 @@ With Git, rustup and GNU Make installed, use the tagged source and its committed
 lockfile for a reproducible dependency selection:
 
 ```sh
-git clone --branch v0.5.0 https://github.com/dragginzgame/ic-wasm-store.git
+git clone --branch v0.9.0 https://github.com/dragginzgame/ic-wasm-store.git
 cd ic-wasm-store
 rustup toolchain install 1.100.0 --profile minimal --component rustfmt,clippy --target wasm32-unknown-unknown
 make build
@@ -39,8 +39,8 @@ cache copies.
 
 Restoration replaces the tombstone with an active release and rechecks payload
 quota. Missing bytes must be uploaded and publication repeated unless an active
-alias already retains the published artifact. Ordinary status/list calls expose
-active releases; the tombstone endpoint lists removed identities separately.
+alias already retains the published artifact. Queries through `inspect(Status)` and `inspect(List)` expose
+active releases. Use `observe(Tombstones)` to list removed identities.
 
 Artifacts are limited to 8 MiB in 1 MiB chunks. Publication verifies hashes and
 the raw Wasm header, not full module validity. Only `read_granted` accepts
@@ -64,5 +64,5 @@ does not qualify consumer orchestration or live deployment.
 
 - [Protocol API](https://docs.rs/ic-wasm-store-protocol)
 - [Source and development instructions](https://github.com/dragginzgame/ic-wasm-store)
-- [Compatibility and removal semantics](https://github.com/dragginzgame/ic-wasm-store/blob/v0.5.0/docs/design/extraction.md)
-- [Qualification coverage](https://github.com/dragginzgame/ic-wasm-store/blob/v0.5.0/qualification/README.md)
+- [Compatibility and removal semantics](https://github.com/dragginzgame/ic-wasm-store/blob/v0.9.0/docs/design/extraction.md)
+- [Qualification coverage](https://github.com/dragginzgame/ic-wasm-store/blob/v0.9.0/qualification/README.md)

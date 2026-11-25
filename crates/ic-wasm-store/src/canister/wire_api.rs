@@ -21,12 +21,10 @@ impl Endpoint {
         request: Limits,
         reply: Limits,
     ) -> Self {
-        // Some query and update exports share a Wire ID. Each graph represents one
-        // deployed endpoint, so its client descriptors never collide on that ID.
         let mut registry = SchemaRegistry::new(SchemaLimits::default()).expect("schema budget");
         registry.register::<Request>("Request").expect(name);
         registry.register::<Reply>("Reply").expect(name);
-        // Codec identifiers are JavaScript names. Store also exports "delete".
+        // Prefix codec identifiers to keep them valid JavaScript names.
         let codec = format!("wire_{name}");
         let method = Method {
             export: &codec,

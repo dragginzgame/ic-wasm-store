@@ -38,7 +38,7 @@ exclude metadata. A controller can grant a named installer access to one pinned
 release through `read_granted`. The other endpoints require a controller.
 
 Pins retain exact caller-owned operations, with at most 32 pins per artifact.
-Controllers can `delete` a published release or `cancel` an unpublished upload
+Controllers call `remove` with `Delete` for a published release or `Cancel` for an unpublished upload
 by supplying its exact manifest. Both refuse artifacts with retained pins.
 Removal retains the identity as a tombstone: `prepare` replaces it with an active
 release only for the same manifest, and cannot assign different bytes to that
@@ -46,8 +46,8 @@ name/version. Restoration rechecks payload quota; when no active alias retains
 the published artifact, missing bytes must be uploaded and publication repeated.
 Removing the last active alias reclaims its payload reservation and unshared chunks.
 Tombstones still occupy release-label quota; there is no unpin operation.
-The replicated `tombstones` endpoint lists removed manifests in bounded pages.
-Ordinary `status` and `list` expose active releases; `Info.releases` counts active
+The replicated `observe(Tombstones)` operation lists removed manifests in bounded pages.
+Queries `inspect(Status)` and `inspect(List)` expose active releases; `Info.releases` counts active
 labels plus tombstones, and `Info.artifacts` includes retained tombstone metadata.
 See [removal semantics](docs/design/extraction.md#removal-and-restoration) for
 replay, storage and upgrade constraints. Cache readiness is an
@@ -58,8 +58,8 @@ outstanding calls; the consuming application owns quiescence and upgrades.
 With the replacement Platform Runtime, stop the canister and wait for `Stopped`
 before upgrading, then restart it. Controller and oversized-frame guard failures
 trap (IC reject code 5); clients must not rely on the former rejection code 4.
-Init and post-upgrade arguments are limited to 16 KiB. Store endpoint names,
-Wire encodings and retained allocation/record identities are unchanged.
+Init and post-upgrade arguments are limited to 16 KiB. Version 0.9 groups metadata under `inspect` (query) and `observe` (update).
+It changes the external Wire contract and preserves retained allocation and record formats.
 
 This remains experimental. Availability of older code does not imply safe
 application-state rollback.

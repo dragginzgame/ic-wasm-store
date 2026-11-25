@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.9.0] - 2026-11-25
+
+### ⚠️ Breaking
+
+- Consolidate ten Store exports into three. Use query `inspect` (120) for info, status and active pages, update `observe` (121) for replicated info, status, custody, caller-owned pins and removed pages, and update `remove` (122) for phase-checked cancellation or deletion. Existing clients must adopt the matching protocol. Finish outstanding operations with their original pair before switching.
+- Remove the controller update `read_chunk`. Controllers can query published chunks through `read` (104). A named installer can use `read_granted` with a grant for an exact pin.
+- Rust callers passing the protocol crate’s `LIMITS` or `CHUNK_LIMITS` to ic-wire must use the 0.30 line. Store and its qualification workspace use 0.30.1.
+
+### 🔧 Tooling
+
+- Adopt Toko Tooling 0.46.3 in both workspaces and refresh the managed snapshot.
+- Installed qualification now handles deleted working-tree files and refuses to reuse evidence when it cannot inspect a required source directory.
+
+### 🎯 Qualification
+
+- The predecessor rollback test reads progress through the published 0.2.2 API. Store retains its preservation admission, chunk budgets, pin authority and record formats.
+
 ## [0.8.0] - 2026-11-22
 
 ### ⚠️ Breaking
