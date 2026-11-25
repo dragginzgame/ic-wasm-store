@@ -1,4 +1,5 @@
 use super::{CanisterId, Client, frame, store, support};
+use ic_testkit::pocket_ic::ErrorCode;
 
 #[tokio::test(flavor = "current_thread")]
 async fn closed_upgrade_preserves_removal_fences_and_exact_activation_owner() {
@@ -14,33 +15,37 @@ async fn closed_upgrade_preserves_removal_fences_and_exact_activation_owner() {
     pic.set_controllers(id, Some(operator), vec![operator, other])
         .await
         .unwrap();
-    // Runtime's explicit refusal handler traps before decoding or state access.
-    for (caller, bytes, diagnostic) in [
-        (CanisterId::anonymous(), vec![], "Store controller required"),
-        (
-            operator,
-            vec![0; store::LIMITS.bytes + 1],
-            "Store frame too large",
-        ),
+    let balance = pic.cycle_balance(id).await;
+    for (caller, method, bytes) in [
+        (CanisterId::anonymous(), "prepare", vec![]),
+        (CanisterId::anonymous(), "put", vec![]),
+        (operator, "observe", vec![0; store::LIMITS.bytes + 1]),
     ] {
         let refusal = pic
-            .update_call(id, caller, "observe", bytes)
+            .submit_call(id, caller, method, bytes)
             .await
             .unwrap_err();
-        assert_eq!(refusal.reject_code as u64, 5);
-        assert!(refusal.reject_message.contains(diagnostic));
+        assert_eq!(refusal.error_code, ErrorCode::CanisterRejectedMessage);
     }
+    assert_eq!(pic.cycle_balance(id).await, balance);
     let client = Client { pic, id, operator };
     let mut manifests = Vec::new();
     for index in 0..3 {
-        let mut bytes = b"\0asm\x01\0\0\0".to_vec();
+        let header = b"\0asm\x01\0\0\0";
+        let mut bytes = header.to_vec();
         bytes.extend(vec![0; index]);
         let manifest = store::Manifest {
             release: store::Release {
                 name: "closed-upgrade".into(),
                 version: index.to_string(),
             },
-            hash: store::digest(&bytes),
+            // The cancelled layout claims the published digest. Its tombstone must
+            // keep its own geometry throughout preservation and controller recovery.
+            hash: if index == 2 {
+                store::digest(header)
+            } else {
+                store::digest(&bytes)
+            },
             bytes: bytes.len() as u64,
             chunks: vec![store::digest(&bytes)],
         };
@@ -185,24 +190,15 @@ async fn closed_upgrade_preserves_removal_fences_and_exact_activation_owner() {
             assert_eq!(decoded, Err(store::Error::Conflict));
         } else {
             let refusal = reply.unwrap_err();
-            assert_eq!(refusal.reject_code as u64, 5);
-            assert!(refusal.reject_message.contains("Store controller required"));
+            assert_eq!(refusal.error_code, ErrorCode::CanisterRejectedMessage);
         }
     }
-    for (malformed, diagnostic) in [
-        (frame(113, &request), "Decode(Identity)"),
-        (vec![0; store::LIMITS.bytes + 1], "Store frame too large"),
-    ] {
-        let refusal = pic
-            .update_call(id, operator, "observe_preservation", malformed)
-            .await
-            .unwrap_err();
-        assert_eq!(refusal.reject_code as u64, 5);
-        assert!(
-            refusal.reject_message.contains(diagnostic),
-            "expected {diagnostic} in {refusal:?}"
-        );
-    }
+    let refusal = pic
+        .update_call(id, operator, "observe_preservation", frame(113, &request))
+        .await
+        .unwrap_err();
+    assert_eq!(refusal.error_code, ErrorCode::CanisterCalledTrap);
+    assert!(refusal.reject_message.contains("Decode(Identity)"));
     assert_eq!(preservation_pages(&client, &attempt).await, preserved);
     let candidate = std::fs::read(std::env::var_os("IC_WASM_STORE_CANDIDATE").unwrap()).unwrap();
     pic.stop_canister(id, Some(operator)).await.unwrap();
@@ -275,6 +271,23 @@ async fn closed_upgrade_preserves_removal_fences_and_exact_activation_owner() {
         )
         .await;
     assert_eq!(observed.unwrap(), closed);
+    pic.set_controllers(id, Some(operator), vec![other])
+        .await
+        .unwrap();
+    let client = alternate;
+    let stale = store::MaintenanceAttempt {
+        sequence: attempt.sequence,
+        operation: [99; 32],
+    };
+    let refused: Result<Option<store::Admission>, store::Error> = client
+        .update(
+            "admission",
+            store::ADMISSION,
+            &store::AdmissionCommand::Activate(stale),
+            store::LIMITS,
+        )
+        .await;
+    assert_eq!(refused, Err(store::Error::Conflict));
     let active: Result<Option<store::Admission>, store::Error> = client
         .update(
             "admission",
@@ -283,7 +296,10 @@ async fn closed_upgrade_preserves_removal_fences_and_exact_activation_owner() {
             store::LIMITS,
         )
         .await;
-    assert!(!active.unwrap().unwrap().closed);
+    let active = active.unwrap().unwrap();
+    assert!(!active.closed);
+    assert_eq!(active.owner, operator.as_slice());
+    assert_eq!(active.attempt, closed.unwrap().attempt);
     let deleted: Result<store::Manifest, store::Error> = client
         .update(
             "remove",

@@ -104,7 +104,7 @@ fn preservation_pages_require_one_closed_owner_and_keep_aliases_and_partial_uplo
     };
     assert_eq!(state.preservation(&[1], &request), Err(Error::Conflict));
     state
-        .admission(&[1], &AdmissionCommand::Close(attempt.clone()))
+        .admission(&[1], |_| true, &AdmissionCommand::Close(attempt.clone()))
         .unwrap();
     assert_eq!(state.preservation(&[2], &request), Err(Error::Conflict));
     let first_page = state.preservation(&[1], &request).unwrap();
@@ -143,12 +143,13 @@ fn preservation_pages_require_one_closed_owner_and_keep_aliases_and_partial_uplo
     assert_eq!(state.preservation(&[1], &request), Err(Error::Invalid));
     request.after = None;
     state
-        .admission(&[1], &AdmissionCommand::Activate(attempt))
+        .admission(&[1], |_| true, &AdmissionCommand::Activate(attempt))
         .unwrap();
     assert_eq!(state.preservation(&[1], &request), Err(Error::Conflict));
     state
         .admission(
             &[1],
+            |_| true,
             &AdmissionCommand::Close(MaintenanceAttempt {
                 sequence: 2,
                 operation: [2; 32],
@@ -457,7 +458,10 @@ fn pin_capacity_never_evicts() {
         Err(Error::Capacity)
     );
     assert!(state.observe_pin(&[255; 29], &first).is_ok());
-    let mut maximum = state.artifacts.get(&first.manifest.hash).unwrap();
+    let mut maximum = state
+        .artifacts
+        .get(&Artifact::identity(&first.manifest))
+        .unwrap();
     maximum.bytes = (CHUNK_BYTES * ic_wasm_store_protocol::MAX_CHUNKS) as u64;
     maximum.chunks = vec![[255; 32]; ic_wasm_store_protocol::MAX_CHUNKS];
     let encoded = ic_storage::adapter::Storable::to_bytes_checked(&maximum);
@@ -545,6 +549,7 @@ fn cancellation_retains_cross_artifact_chunks_and_respects_admission_and_label_q
     state
         .admission(
             &[1],
+            |_| true,
             &ic_wasm_store_protocol::AdmissionCommand::Close(attempt),
         )
         .unwrap();
@@ -594,10 +599,11 @@ fn four_allocation_store_reopens_without_reinitializing_existing_records() {
     let mut artifacts = StableBTreeMap::<[u8; 32], Artifact, _>::create(memories.next().unwrap());
     let mut chunks = StableBTreeMap::<[u8; 32], Payload, _>::create(memories.next().unwrap());
     let (manifest, bytes) = fixture("pre-removal", 8);
-    releases.insert(Key::new(&manifest.release), manifest.hash);
+    releases.insert(Key::new(&manifest.release), Artifact::identity(&manifest));
     artifacts.insert(
-        manifest.hash,
+        Artifact::identity(&manifest),
         Artifact {
+            hash: manifest.hash,
             bytes: 8,
             chunks: manifest.chunks.clone(),
             published: true,
@@ -640,7 +646,7 @@ fn preservation_enumerates_tombstones_and_active_aliases_once() {
         operation: [1; 32],
     };
     state
-        .admission(&[1], &AdmissionCommand::Close(attempt.clone()))
+        .admission(&[1], |_| true, &AdmissionCommand::Close(attempt.clone()))
         .unwrap();
     let mut after = None;
     let mut seen = std::collections::BTreeSet::new();
@@ -797,7 +803,7 @@ fn preservation_distinguishes_restoration_and_retains_order_across_reopen() {
     };
     assert_eq!(state.preservation(&[1], &request), Err(Error::Conflict));
     state
-        .admission(&[1], &AdmissionCommand::Close(attempt.clone()))
+        .admission(&[1], |_| true, &AdmissionCommand::Close(attempt.clone()))
         .unwrap();
     assert_eq!(state.preservation(&[2], &request), Err(Error::Conflict));
     let first = state.preservation(&[1], &request).unwrap();
@@ -820,7 +826,7 @@ fn preservation_distinguishes_restoration_and_retains_order_across_reopen() {
     assert_eq!(state.preservation(&[1], &request).unwrap(), first);
     assert_eq!(state.preservation(&[1], &next).unwrap(), second);
     state
-        .admission(&[1], &AdmissionCommand::Activate(attempt))
+        .admission(&[1], |_| true, &AdmissionCommand::Activate(attempt))
         .unwrap();
     // All previous removals have returned before explicit restoration.
     state.prepare(&removed).unwrap();
@@ -829,7 +835,7 @@ fn preservation_distinguishes_restoration_and_retains_order_across_reopen() {
         operation: [12; 32],
     };
     state
-        .admission(&[1], &AdmissionCommand::Close(attempt.clone()))
+        .admission(&[1], |_| true, &AdmissionCommand::Close(attempt.clone()))
         .unwrap();
     assert_eq!(state.preservation(&[1], &request), Err(Error::Conflict));
     let restored = state
@@ -845,4 +851,35 @@ fn preservation_distinguishes_restoration_and_retains_order_across_reopen() {
     assert_eq!(restored.entry.as_ref().unwrap().manifest(), &removed);
     assert!(matches!(restored.entry, Some(Entry::Active(_))));
     assert_ne!(restored.entry, second.entry);
+}
+
+#[test]
+fn cancelled_geometry_cannot_reserve_a_content_hash_across_labels() {
+    let backing = VectorMemory::default();
+    let mut state = State::open(backing.clone(), true);
+    let (good, payload) = fixture("good", 10);
+    let mut incorrect = good.clone();
+    incorrect.release.version = "cancelled".into();
+    incorrect.chunks = vec![[9; 32]];
+    state.prepare(&incorrect).unwrap();
+    state.remove_release(&incorrect, false).unwrap();
+    drop(state);
+
+    let mut state = State::open(backing, false);
+    state.prepare(&good).unwrap();
+    upload(&mut state, &good, &payload);
+    state.publish(&good.release).unwrap();
+    assert_eq!(state.tombstones(None).unwrap(), vec![incorrect.clone()]);
+    let relabelled = Manifest {
+        release: incorrect.release.clone(),
+        ..good.clone()
+    };
+    assert_eq!(state.prepare(&relabelled), Err(Error::Conflict));
+    assert_eq!(state.info().reserved_bytes, good.bytes);
+
+    let restored = state.prepare(&incorrect).unwrap();
+    assert!(!restored.published);
+    assert_eq!(restored.missing, vec![0]);
+    assert_eq!(state.info().reserved_bytes, good.bytes + incorrect.bytes);
+    assert!(state.status(&good.release).unwrap().published);
 }

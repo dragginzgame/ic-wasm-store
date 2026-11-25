@@ -18,7 +18,7 @@ With Git, rustup and GNU Make installed, use the tagged source and its committed
 lockfile for a reproducible dependency selection:
 
 ```sh
-git clone --branch v0.9.0 https://github.com/dragginzgame/ic-wasm-store.git
+git clone --branch v0.10.0 https://github.com/dragginzgame/ic-wasm-store.git
 cd ic-wasm-store
 rustup toolchain install 1.100.0 --profile minimal --component rustfmt,clippy --target wasm32-unknown-unknown
 make build
@@ -29,6 +29,12 @@ It does not install or upgrade a canister. The `maintenance-candidate` feature
 is for qualification only; do not enable it for live deployment.
 
 ## Contract
+
+Store 0.10 requires fresh backing. For a 0.9 cutover, retain the old canister
+while republishing trusted bytes and reconciling pins and maintenance obligations.
+Pins survive controller removal. Query reads are uncertified; verify chunk hashes
+against a replicated published manifest. Coordinate management chunk-store
+clearing with outstanding installations.
 
 Release names and versions bind permanently to exact content. Controllers can
 delete published releases or cancel unpublished uploads, then restore the same
@@ -54,9 +60,8 @@ explicit active/removed identities and compare the protocol's exact entry order.
 Method 113 is retired. Finish outstanding maintenance using its original executable before switching.
 
 Before upgrading, stop the canister and wait for `Stopped`, then upgrade and
-restart it. Init and post-upgrade arguments are limited to 16 KiB. Controller
-and oversized-frame refusals trap with IC reject code 5; clients must accept
-that refusal instead of relying on the former explicit rejection code 4.
+restart it. Init and post-upgrade arguments are limited to 16 KiB. Ingress inspection refuses unauthorized or oversized requests before induction
+(IC reject code 4). The handler independently checks authorization and frame limits.
 
 This is experimental software requiring Rust 1.100.0. Hosted CI targets Linux
 and macOS, including final cache-callback fencing. Registry publication
@@ -64,5 +69,5 @@ does not qualify consumer orchestration or live deployment.
 
 - [Protocol API](https://docs.rs/ic-wasm-store-protocol)
 - [Source and development instructions](https://github.com/dragginzgame/ic-wasm-store)
-- [Compatibility and removal semantics](https://github.com/dragginzgame/ic-wasm-store/blob/v0.9.0/docs/design/extraction.md)
-- [Qualification coverage](https://github.com/dragginzgame/ic-wasm-store/blob/v0.9.0/qualification/README.md)
+- [Compatibility and removal semantics](https://github.com/dragginzgame/ic-wasm-store/blob/v0.10.0/docs/design/extraction.md)
+- [Qualification coverage](https://github.com/dragginzgame/ic-wasm-store/blob/v0.10.0/qualification/README.md)

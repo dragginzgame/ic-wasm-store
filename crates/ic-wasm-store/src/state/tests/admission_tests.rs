@@ -45,11 +45,11 @@ fn admission_preserves_closed_attempt_and_fences_replays_and_cache_continuations
         operation: [2; 32],
     };
     assert_eq!(
-        state.admission(&[1], &Command::Close(second.clone())),
+        state.admission(&[1], |_| true, &Command::Close(second.clone())),
         Err(Error::Conflict)
     );
     let closed = state
-        .admission(&[1], &Command::Close(first.clone()))
+        .admission(&[1], |_| true, &Command::Close(first.clone()))
         .unwrap()
         .unwrap();
     assert!(closed.closed);
@@ -75,25 +75,25 @@ fn admission_preserves_closed_attempt_and_fences_replays_and_cache_continuations
     drop(state);
     let mut state = State::open(backing, false);
     assert_eq!(
-        state.admission(&[1], &Command::Observe).unwrap(),
+        state.admission(&[1], |_| true, &Command::Observe).unwrap(),
         Some(closed)
     );
     assert_eq!(
-        state.admission(&[2], &Command::Activate(first.clone())),
+        state.admission(&[2], |_| true, &Command::Activate(first.clone())),
         Err(Error::Conflict)
     );
     assert_eq!(
-        state.admission(&[1], &Command::Close(second.clone())),
+        state.admission(&[1], |_| true, &Command::Close(second.clone())),
         Err(Error::Conflict)
     );
     let active = state
-        .admission(&[1], &Command::Activate(first.clone()))
+        .admission(&[1], |_| true, &Command::Activate(first.clone()))
         .unwrap()
         .unwrap();
     assert!(!active.closed);
     assert_eq!(
         state
-            .admission(&[1], &Command::Close(first.clone()))
+            .admission(&[1], |_| true, &Command::Close(first.clone()))
             .unwrap(),
         Some(active)
     );
@@ -101,20 +101,22 @@ fn admission_preserves_closed_attempt_and_fences_replays_and_cache_continuations
     assert!(state.cache_fence(state.admission_epoch().unwrap()).is_ok());
     state.configure(&info.quota).unwrap(); // Quota changes cannot reset the sequence.
     state
-        .admission(&[1], &Command::Close(second.clone()))
+        .admission(&[1], |_| true, &Command::Close(second.clone()))
         .unwrap();
     assert_eq!(
-        state.admission(&[1], &Command::Activate(first)),
+        state.admission(&[1], |_| true, &Command::Activate(first)),
         Err(Error::Conflict)
     );
     assert!(
         state
-            .admission(&[1], &Command::Observe)
+            .admission(&[1], |_| true, &Command::Observe)
             .unwrap()
             .unwrap()
             .closed
     );
-    state.admission(&[1], &Command::Activate(second)).unwrap();
+    state
+        .admission(&[1], |_| true, &Command::Activate(second))
+        .unwrap();
     assert_eq!(state.custody(&manifest.release).unwrap(), custody);
     // Exhaustion blocks successors rather than wrapping into an old authority epoch.
     let mut settings = state.settings.get().clone();
@@ -123,6 +125,7 @@ fn admission_preserves_closed_attempt_and_fences_replays_and_cache_continuations
     assert_eq!(
         state.admission(
             &[1],
+            |_| true,
             &Command::Close(MaintenanceAttempt {
                 sequence: 1,
                 operation: [3; 32]
@@ -149,24 +152,15 @@ fn admission_settings_round_trip_and_reject_invalid_formats() {
         closed: true,
     });
     let encoded = settings.encode_record().unwrap();
-    let previous = ic_wire::encode(
-        &(
-            &settings.quota,
-            settings.reserved_bytes,
-            &settings.admission,
-        ),
-        ic_wire::Encoding::Payload,
-        ic_wasm_store_protocol::LIMITS,
-    )
-    .unwrap();
-    assert_eq!(encoded.as_ref(), [b"CWS3".as_slice(), &previous].concat());
     let decoded = Settings::decode_record(encoded).unwrap();
     assert_eq!(decoded.admission, settings.admission);
     for (corrupt, expected) in [
         (b"CWS1".as_slice(), "settings schema"),
         (b"CWS2", "settings schema"),
-        (b"CWS3bad", "settings record"),
-        (b"CWS3", "settings record"),
+        (b"CWS3", "settings schema"),
+        (b"CWS4", "settings schema"),
+        (b"CWS6bad", "settings record"),
+        (b"CWS6", "settings record"),
     ] {
         assert_eq!(
             Settings::decode_record(Cow::Borrowed(corrupt)).err(),

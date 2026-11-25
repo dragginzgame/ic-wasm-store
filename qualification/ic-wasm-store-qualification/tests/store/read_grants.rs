@@ -120,15 +120,7 @@ async fn pinned_delivery_is_scoped_replayable_and_fenced() {
         grant: grant.clone(),
         index: 0,
     };
-    let denied: Result<store::Chunk, store::Error> = sibling_client
-        .update(
-            "read_granted",
-            store::READ_GRANTED,
-            &request,
-            store::CHUNK_LIMITS,
-        )
-        .await;
-    assert_eq!(denied, Err(store::Error::NotFound));
+    assert_read_ingress_refused(&sibling_client, &request).await;
     request.grant.pin.manifest = alias;
     assert_eq!(
         read(&installer_client, &request).await,
@@ -157,11 +149,17 @@ async fn pinned_delivery_is_scoped_replayable_and_fenced() {
     pic.start_canister(id, Some(owner)).await.unwrap();
     assert_eq!(read(&installer_client, &request).await.unwrap().0, bytes);
 
+    pic.set_controllers(id, Some(owner), vec![sibling])
+        .await
+        .unwrap();
+    assert_read_ingress_refused(&installer_client, &request).await;
+    pic.set_controllers(id, Some(sibling), vec![owner])
+        .await
+        .unwrap();
+
     pic.advance_time(Duration::from_secs(60)).await;
-    assert_eq!(
-        read(&installer_client, &request).await,
-        Err(store::Error::NotFound)
-    );
+    pic.tick().await;
+    assert_read_ingress_refused(&installer_client, &request).await;
 
     grant.expires_at_ns = pic.get_time().await.as_nanos_since_unix_epoch() + 60_000_000_000;
     let issued: Result<(), store::Error> = controller
@@ -182,10 +180,7 @@ async fn pinned_delivery_is_scoped_replayable_and_fenced() {
         )
         .await;
     assert!(closed.unwrap().unwrap().closed);
-    assert_eq!(
-        read(&installer_client, &request).await,
-        Err(store::Error::NotFound)
-    );
+    assert_read_ingress_refused(&installer_client, &request).await;
     let opened: Result<Option<store::Admission>, store::Error> = controller
         .update(
             "admission",
@@ -195,10 +190,7 @@ async fn pinned_delivery_is_scoped_replayable_and_fenced() {
         )
         .await;
     assert!(!opened.unwrap().unwrap().closed);
-    assert_eq!(
-        read(&installer_client, &request).await,
-        Err(store::Error::NotFound)
-    );
+    assert_read_ingress_refused(&installer_client, &request).await;
     let stale: Result<(), store::Error> = controller
         .update(
             "grant_read",
@@ -222,4 +214,21 @@ async fn read(
             store::CHUNK_LIMITS,
         )
         .await
+}
+
+async fn assert_read_ingress_refused(client: &Client<'_>, request: &store::GrantedRead) {
+    let refusal = client
+        .pic
+        .submit_call(
+            client.id,
+            client.operator,
+            "read_granted",
+            frame(store::READ_GRANTED, request),
+        )
+        .await
+        .unwrap_err();
+    assert_eq!(
+        refusal.error_code,
+        ic_testkit::pocket_ic::ErrorCode::CanisterRejectedMessage
+    );
 }

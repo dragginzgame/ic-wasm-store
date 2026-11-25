@@ -26,7 +26,7 @@ help:
 	  'make doc                   Check documentation for both workspaces' \
 	  'make qualification-setup   Admit the launcher; prepare PocketIC and the released archive' \
 	  'make qualification-test    Test installed custody, cache and maintenance' \
-	  'make qualification-predecessor-test  Test upgrade from published 0.2.2' \
+	  'make qualification-predecessor-test  Test upgrade from published 0.9.0' \
 	  'make test-publication      Test publication admission without uploads' \
 	  'make test-script-paths     Test setup/build paths with CDPATH enabled' \
 	  'make test-setup-evidence   Test CI setup failure collection and launcher selection' \

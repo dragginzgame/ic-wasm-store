@@ -92,9 +92,10 @@ fn write_manifests() {
     );
 
     let endpoints = super::wire_endpoints();
-    // The only canister exports that do not have Wire contracts are the IC lifecycle hooks.
+    // The only canister exports that do not have Wire contracts are the IC inspection and lifecycle hooks.
     let mut expected = BTreeSet::from([
         "canister_init".to_owned(),
+        "canister_inspect_message".to_owned(),
         "canister_post_upgrade".to_owned(),
     ]);
     for endpoint in &endpoints {

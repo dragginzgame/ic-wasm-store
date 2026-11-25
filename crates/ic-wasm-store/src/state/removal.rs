@@ -1,10 +1,10 @@
 //! Exact release removal; retained identities and shared payloads have separate lifetimes.
-use super::{Error, Excluded, Key, Manifest, MemoryBacking, State, Unbounded};
+use super::{Artifact, Error, Excluded, Key, Manifest, MemoryBacking, State, Unbounded};
 use ic_wasm_store_protocol::{PAGE_SIZE, Release};
 use std::collections::BTreeSet;
 
 impl<M: MemoryBacking> State<M> {
-    pub(super) fn active_hashes(&self) -> BTreeSet<[u8; 32]> {
+    pub(super) fn active_artifact_ids(&self) -> BTreeSet<[u8; 32]> {
         self.releases
             .iter()
             .filter(|entry| !entry.key().is_tombstone())
@@ -18,7 +18,7 @@ impl<M: MemoryBacking> State<M> {
 
         Manifest {
             release: key.release(),
-            hash,
+            hash: artifact.hash,
             bytes: artifact.bytes,
             chunks: artifact.chunks,
         }
@@ -64,37 +64,33 @@ impl<M: MemoryBacking> State<M> {
         if status.manifest != *manifest || status.published != published {
             return Err(Error::Conflict);
         }
-        let mut artifact = self
-            .artifacts
-            .get(&manifest.hash)
-            .expect("retained artifact");
+        let identity = Artifact::identity(manifest);
+        let mut artifact = self.artifacts.get(&identity).expect("retained artifact");
         // Protect all aliases of pinned artifacts, including outstanding cache work.
         if !artifact.pins.is_empty() {
             return Err(Error::Conflict);
         }
         let shared = self.releases.iter().any(|entry| {
-            !entry.key().is_tombstone() && entry.key() != &key && entry.value() == manifest.hash
+            !entry.key().is_tombstone() && entry.key() != &key && entry.value() == identity
         });
         let mut unused: BTreeSet<_> = artifact.chunks.iter().copied().collect();
         if !shared {
-            for hash in self.active_hashes() {
-                if hash != manifest.hash {
+            for hash in self.active_artifact_ids() {
+                if hash != identity {
                     for chunk in self.artifacts.get(&hash).expect("active artifact").chunks {
                         unused.remove(&chunk);
                     }
                 }
             }
         }
-        self.releases.insert(tombstone, manifest.hash);
+        self.releases.insert(tombstone, identity);
         self.releases.remove(&key);
         if !shared {
             // Keep geometry and full digest even after the last active alias disappears.
             artifact.published = false;
             let bytes = artifact.bytes;
-            self.artifacts.insert(manifest.hash, artifact);
-            for hash in unused {
-                self.chunks.remove(&hash);
-            }
+            self.artifacts.insert(identity, artifact);
+            self.chunks.remove_many(unused);
             let mut settings = self.settings.get().clone();
             settings.reserved_bytes = settings
                 .reserved_bytes

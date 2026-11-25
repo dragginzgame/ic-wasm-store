@@ -37,10 +37,25 @@ impl<M: MemoryBacking> State<M> {
         }
         settings.read_grants.push(RetainedReadGrant {
             fingerprint,
+            installer: grant.installer.clone(),
+            issuer: owner.to_vec(),
             expires_at_ns: grant.expires_at_ns,
         });
         self.settings.set(settings);
         Ok(())
+    }
+
+    pub fn has_installer_grant(
+        &self,
+        installer: &[u8],
+        now: u64,
+        is_controller: impl Fn(&[u8]) -> bool,
+    ) -> bool {
+        self.settings.get().read_grants.iter().any(|grant| {
+            grant.installer == installer
+                && now < grant.expires_at_ns
+                && is_controller(&grant.issuer)
+        })
     }
 
     pub fn read_granted(

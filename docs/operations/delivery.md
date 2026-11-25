@@ -31,7 +31,7 @@ Fresh source, archive and registry admission still runs on every publication.
 
 `scripts/release-installed.sh` selects two stages through the published shared
 `run-validation-stage.pl`: the complete current installed suite, then the published
-0.2.2 predecessor upgrade refusal and rollback witness. Each has an independent immutable execution
+0.9.0 predecessor upgrade refusal and rollback witness. Each has an independent immutable execution
 proof and a fresh admission. The state is `target/installed-evidence/stages`;
 each invocation retains its environments and admissions in a unique `selection.*`.
 The source label hashes the complete Git-visible working file inventory, including

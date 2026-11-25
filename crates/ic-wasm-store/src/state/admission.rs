@@ -6,6 +6,7 @@ impl<M: MemoryBacking> State<M> {
     pub fn admission(
         &mut self,
         caller: &[u8],
+        is_controller: impl FnOnce(&[u8]) -> bool,
         command: &AdmissionCommand,
     ) -> Result<Option<Admission>, Error> {
         let mut settings = self.settings.get().clone();
@@ -21,19 +22,21 @@ impl<M: MemoryBacking> State<M> {
         {
             return Err(Error::Invalid);
         }
-        if let Some(old) = &settings.admission
-            && old.attempt == *attempt
-            && old.owner == caller
-        {
-            // A delayed Close after activation observes Open; it cannot re-close this attempt.
-            if matches!(command, AdmissionCommand::Close(_)) || !old.closed {
+        if matches!(command, AdmissionCommand::Activate(_)) {
+            let old = settings.admission.as_mut().ok_or(Error::Conflict)?;
+            if old.attempt != *attempt || (old.owner != caller && is_controller(&old.owner)) {
+                return Err(Error::Conflict);
+            }
+            if !old.closed {
                 return Ok(settings.admission);
             }
-        } else if matches!(command, AdmissionCommand::Activate(_)) {
-            return Err(Error::Conflict);
-        }
-        if matches!(command, AdmissionCommand::Close(_)) {
+            // Keep the original owner and sequence, including after controller rotation.
+            old.closed = false;
+        } else {
             let previous = settings.admission.as_ref();
+            if previous.is_some_and(|old| old.attempt == *attempt && old.owner == caller) {
+                return Ok(settings.admission);
+            }
             if previous.is_some_and(|old| old.closed)
                 || previous
                     .map_or(0, |old| old.attempt.sequence)
@@ -43,12 +46,12 @@ impl<M: MemoryBacking> State<M> {
                 return Err(Error::Conflict);
             }
             settings.read_grants.clear();
+            settings.admission = Some(Admission {
+                attempt: attempt.clone(),
+                owner: caller.to_vec(),
+                closed: true,
+            });
         }
-        settings.admission = Some(Admission {
-            attempt: attempt.clone(),
-            owner: caller.to_vec(),
-            closed: matches!(command, AdmissionCommand::Close(_)),
-        });
         let result = settings.admission.clone();
         self.settings.set(settings);
 

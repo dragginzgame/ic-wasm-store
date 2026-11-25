@@ -54,7 +54,7 @@ must settle outstanding delete/cancel requests before restoring the same label:
 a delayed matching removal can affect that restored incarnation. Restoration
 is explicit through `prepare`; this API does not provide an operation journal.
 
-The four checked allocation names and existing active record encodings remain
+In the original 0.2 removal release, the four checked allocation names and existing active record encodings remained
 unchanged. Removed release keys use byte `0x01` instead of `0x00` between name
 and version, within the original key size bound; the artifact record retains
 its original geometry. Existing stores reopen without resetting collections.
@@ -125,7 +125,22 @@ current controller authority, open maintenance sequence, retained pin and
 deadline before returning a verified chunk. Issuing or using a grant has no
 effect on publication, pins or installation authority.
 
-The settings allocation stores at most 32 grant fingerprints. Settings without
-grants retain the original `CWS3` encoding. Settings with grants use `CWS4`,
+The settings allocation stores at most 32 grant fingerprints. In Store 0.9, settings without
+grants retained the original `CWS3` encoding. Settings with grants used `CWS4`,
 which earlier executables refuse. A maintenance closure clears the grants before
 preservation starts and fences any reissued request from the prior sequence.
+
+## Store 0.10 storage cut
+
+Each label references a SHA-256 identity over the domain `Store artifact geometry v1`,
+the claimed 32-byte content digest, the eight-byte big-endian length and the ordered
+32-byte chunk hashes. Exact aliases share quota, progress and pins. A distinct
+layout gets independent metadata and reservation, even if it claims the same
+content digest. Publication verifies the payload against the content digest.
+Tombstones retain their exact layout for replay, restoration and preservation.
+
+The four allocation names are retained. Artifact records use `CWA4`, settings
+use `CWS6` with the issuer and installer alongside each retained grant fingerprint, and a 0.9 image is refused on reopen. Deploy 0.10 on fresh backing.
+A surviving controller can activate an exact orphaned closure after the captured
+owner loses controller status. Preservation stays scoped to the captured owner
+while closed. Activation preserves its owner and sequence and never restores grants.

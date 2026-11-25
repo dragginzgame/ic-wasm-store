@@ -71,11 +71,11 @@ For a focused run, use `make qualification-test QUALIFICATION_TEST=final_cache_c
 or `QUALIFICATION_TEST=removal_at_catalog_capacity`. The owned server has a
 30-minute hard lifetime to accommodate slower hosts and closes after the command.
 
-Setup also downloads the published `ic-wasm-store` 0.2.2 archive. The predecessor
-script pins its SHA-256 (`5ac8eeefd0b49bc36a1e946bc984dcabae974cb6510150296d90ae205d5e1cd0`)
+Setup also downloads the published `ic-wasm-store` 0.9.0 archive. The predecessor
+script pins its SHA-256 (`a432b775975b79c97b3c0b43b327294ac5e34a1b803984665ead44d5c5e02489`)
 and builds its unchanged manifest and packaged lockfile with Rust 1.100.0.
-Its recorded source is `ed89b13cd63d6f4bdf1205f90a83798f3c022d6c`.
-The separate predecessor target verifies that the current candidate rejects that older directory and the old executable can still read the partial upload; `make ci` includes it. Generated historical
+Its recorded source is `05675dbf1e10feee704bf3b7f70fff27f3b61b1a`.
+The separate predecessor target verifies that the current candidate rejects the previous settings format and the old executable can still read the partial upload; `make ci` includes it. Generated historical
 sources stay under ignored `target/` and are excluded from the product workspace.
 
 ## Coverage
@@ -88,8 +88,8 @@ share one client and simulator setup; test-name filters remain available through
 The installed witness exercises:
 
 - Unauthorized requests and oversized upload frames.
-- Replacement Runtime guard traps (reject code 5) with the original refusal
-  diagnostic, before decoding or state mutation. Upgrade scenarios stop and
+- Ingress refusal before induction with an unchanged simulator cycle balance, plus
+  handler rejection of invalid Wire identity after admission. Upgrade scenarios stop and
   await completion of the stop operation before upgrade, then restart.
 - Removal endpoint controller guards and metadata frame limits, plus deletion
   and cancellation rejection of swapped method IDs, response-direction frames
@@ -102,8 +102,9 @@ The installed witness exercises:
 - Refusal of cache work while admission is closed, reopening and delayed-close replay.
 - Upgrade while admission is closed, retaining published and incomplete releases,
   tombstones and the exact activation owner. Deletion, cancellation, tombstone
-  replay and restoration remain blocked until that owner activates the attempt;
-  another authorized controller cannot activate it.
+  replay and restoration remain blocked until activation. A second controller is
+  refused while the captured owner remains a controller, then can recover only
+  the exact attempt after that owner is removed.
 - Admission closure and controller revocation interleaved with outstanding cache calls,
   producing typed `Closed` and `Authority` failures respectively.
 - Final upload callbacks after controller revocation and after a complete close/reopen
@@ -123,12 +124,19 @@ labels. The installed upload payload has a Wasm header
 but is not a validated application module: this proves custody and integrity,
 not application installation.
 
+## Dependency advisories
+
+Run `cargo audit` for the product lockfile and `cargo audit --file qualification/Cargo.lock`
+for the simulator workspace. The November 25 review found two unmaintained
+transitive dependencies in qualification only, `paste` (RUSTSEC-2024-0436) and
+`serde_cbor` (RUSTSEC-2021-0127). Neither is present in the product lockfile.
+
 ## Qualification boundaries
 
 The capacity fixture proves completion under simulator instruction limits for
 that catalog shape. Its elapsed time is a local diagnostic, not an instruction
 count or production latency guarantee; it does not saturate pins on every
-artifact. The released-predecessor test exercises rollback after a refused 0.2.2 upgrade, not the
+artifact. The released-predecessor test exercises rollback after a refused 0.9.0 upgrade, not the
 historical Canic pre-extraction witness.
 
 Canic owns consumer-specific chunked installation, Root control and fleet upgrade

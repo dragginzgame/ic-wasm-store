@@ -26,6 +26,42 @@ mod canister {
     use mount::endpoints;
     use std::{cell::RefCell, convert::Infallible, fmt::Debug};
 
+    // inspect_ingress
+    // Check incoming method, frame size and caller before induction.
+    // limits : method names up to 64 bytes; each mounted method supplies its request limit
+    #[runtime::inspect_message(runtime = runtime, max_method_bytes = 64)]
+    fn inspect_ingress(
+        message: runtime::entrypoints::Inspection<'_>,
+    ) -> runtime::entrypoints::InspectionDecision {
+        use runtime::entrypoints::InspectionDecision::{Accept, Reject};
+
+        if !ingress_size_allowed(message.method_name(), message.argument_size()) {
+            return Reject;
+        }
+        let caller = message.caller();
+        if system::is_controller(&caller)
+            || (message.method_name() == "read_granted"
+                && STATE.with_borrow(|state| {
+                    state.as_ref().is_some_and(|state| {
+                        state.has_installer_grant(
+                            caller.as_slice(),
+                            system::time(),
+                            is_current_controller,
+                        )
+                    })
+                }))
+        {
+            Accept
+        } else {
+            Reject
+        }
+    }
+
+    fn is_current_controller(bytes: &[u8]) -> bool {
+        ic_platform_types::Principal::try_from_slice(bytes)
+            .is_ok_and(|principal| system::is_controller(&principal))
+    }
+
     // init
     // Initializes a fresh Store with its four checked allocations.
     // guard  : lifecycle_admit, with installation authorized by the IC
@@ -188,7 +224,7 @@ mod canister {
         );
 
         // admission
-        // Observes or changes exact maintenance admission. Activation requires the captured owner.
+        // Observes or changes exact maintenance admission. A current controller may recover an attempt after its owner loses controller status.
         // guard  : canister controller
         // limits : 16 KiB request and response frames
         endpoint!(
@@ -200,7 +236,10 @@ mod canister {
             Result<Option<protocol::Admission>, protocol::Error>,
             LIMITS,
             LIMITS,
-            |state, input| state.admission(system::caller().as_slice(), input)
+            |state, input| state.admission(system::caller().as_slice(), |owner| {
+                let principal = ic_platform_types::Principal::try_from_slice(owner).expect("validated admission owner");
+                system::is_controller(&principal)
+            }, input)
         );
 
         // read
@@ -249,9 +288,7 @@ mod canister {
             LIMITS,
             CHUNK_LIMITS,
             |state, input| {
-                let owner = ic_platform_types::Principal::try_from_slice(&input.owner)
-                    .map_err(|_| protocol::Error::NotFound)?;
-                if !system::is_controller(&owner) {
+                if !super::is_current_controller(&input.owner) {
                     return Err(protocol::Error::NotFound);
                 }
                 state.read_granted(system::caller().as_slice(), system::time(), input)

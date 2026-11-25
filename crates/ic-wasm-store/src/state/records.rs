@@ -2,9 +2,10 @@
 
 use ic_storage::adapter::{Bound, Storable};
 use ic_wasm_store_protocol::{
-    CHUNK_BYTES, LIMITS, MAX_CHUNKS, MAX_PINS, MAX_READ_GRANTS, Quota, Release,
+    CHUNK_BYTES, LIMITS, MAX_CHUNKS, MAX_PINS, MAX_READ_GRANTS, Manifest, Quota, Release,
 };
 use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
 use std::borrow::Cow;
 
 pub(super) trait CheckedRecord: Sized {
@@ -104,6 +105,7 @@ stable_record!(Key);
 
 #[derive(Clone, Deserialize, Serialize)]
 pub(super) struct Artifact {
+    pub hash: [u8; 32],
     pub bytes: u64,
     pub chunks: Vec<[u8; 32]>,
     pub published: bool,
@@ -111,6 +113,20 @@ pub(super) struct Artifact {
 }
 
 impl Artifact {
+    // Fixed-width fields followed by an ordered sequence of fixed-width chunk hashes.
+    // Exclude the label so exact aliases still share one reservation and pin set.
+    pub fn identity(manifest: &Manifest) -> [u8; 32] {
+        let mut digest = Sha256::new();
+        digest.update(b"Store artifact geometry v1");
+        digest.update(manifest.hash);
+        digest.update(manifest.bytes.to_be_bytes());
+        for chunk in &manifest.chunks {
+            digest.update(chunk);
+        }
+
+        digest.finalize().into()
+    }
+
     fn valid(&self) -> bool {
         self.bytes >= 8
             && self.bytes <= (CHUNK_BYTES * MAX_CHUNKS) as u64
@@ -138,11 +154,11 @@ impl CheckedRecord for Artifact {
             return Err("artifact invariant");
         }
 
-        encode(self, b"CWA3")
+        encode(self, b"CWA4")
     }
 
     fn decode_record(bytes: Cow<'_, [u8]>) -> Result<Self, &'static str> {
-        let payload = bytes.strip_prefix(b"CWA3").ok_or("artifact schema")?;
+        let payload = bytes.strip_prefix(b"CWA4").ok_or("artifact schema")?;
         let value: Self = ic_wire::decode(payload, ic_wire::Encoding::Payload, RECORD_LIMITS)
             .map_err(|_| "artifact record")?;
         if !value.valid() {
@@ -165,12 +181,13 @@ pub(super) struct Settings {
     pub quota: Quota,
     pub reserved_bytes: u64,
     pub admission: Option<ic_wasm_store_protocol::Admission>,
-    #[serde(skip)]
     pub read_grants: Vec<RetainedReadGrant>,
 }
 
 #[derive(Clone, Deserialize, Serialize)]
 pub(super) struct RetainedReadGrant {
+    pub installer: Vec<u8>,
+    pub issuer: Vec<u8>,
     pub fingerprint: [u8; 32],
     pub expires_at_ns: u64,
 }
@@ -192,7 +209,9 @@ impl Settings {
                 .as_ref()
                 .is_none_or(|gate| !gate.closed || self.read_grants.is_empty())
             && self.read_grants.iter().enumerate().all(|(index, grant)| {
-                grant.expires_at_ns > 0
+                [&grant.installer, &grant.issuer].iter().all(|principal| {
+                    !principal.is_empty() && principal.len() <= 29 && principal.as_slice() != [4]
+                }) && grant.expires_at_ns > 0
                     && !self.read_grants[..index]
                         .iter()
                         .any(|prior| prior.fingerprint == grant.fingerprint)
@@ -208,29 +227,13 @@ impl CheckedRecord for Settings {
             return Err("settings invariant");
         }
 
-        if self.read_grants.is_empty() {
-            encode(self, b"CWS3")
-        } else {
-            encode(&(self, &self.read_grants), b"CWS4")
-        }
+        encode(self, b"CWS6")
     }
 
     fn decode_record(bytes: Cow<'_, [u8]>) -> Result<Self, &'static str> {
-        let value: Self = if let Some(payload) = bytes.strip_prefix(b"CWS3") {
-            ic_wire::decode(payload, ic_wire::Encoding::Payload, LIMITS)
-                .map_err(|_| "settings record")?
-        } else if let Some(payload) = bytes.strip_prefix(b"CWS4") {
-            let (mut settings, grants): (Self, Vec<RetainedReadGrant>) =
-                ic_wire::decode(payload, ic_wire::Encoding::Payload, RECORD_LIMITS)
-                    .map_err(|_| "settings record")?;
-            if grants.is_empty() {
-                return Err("settings invariant");
-            }
-            settings.read_grants = grants;
-            settings
-        } else {
-            return Err("settings schema");
-        };
+        let payload = bytes.strip_prefix(b"CWS6").ok_or("settings schema")?;
+        let value: Self = ic_wire::decode(payload, ic_wire::Encoding::Payload, RECORD_LIMITS)
+            .map_err(|_| "settings record")?;
         if !value.valid() {
             return Err("settings invariant");
         }

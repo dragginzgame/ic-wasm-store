@@ -206,7 +206,7 @@ pub struct MaintenanceAttempt {
 pub struct Admission {
     /// Original attempt, retained after activation to fence stale requests.
     pub attempt: MaintenanceAttempt,
-    /// Actual controller that closed admission; activation requires that same caller.
+    /// Original controller that closed admission, retained after recovery.
     #[serde(with = "serde_bytes")]
     pub owner: Vec<u8>,
     /// All publication, pin, quota and fresh cache work is refused while true.
@@ -221,7 +221,7 @@ pub enum AdmissionCommand {
     Observe,
     /// Close only the next sequence; exact replay returns its retained phase.
     Close(MaintenanceAttempt),
-    /// Reopen only the exact current attempt owned by the captured caller.
+    /// Reopen the exact attempt as its owner or, once that owner loses controller status, another current controller.
     Activate(MaintenanceAttempt),
 }
 
@@ -433,7 +433,7 @@ pub struct Info {
     pub reserved_bytes: u64,
     /// All retained release labels, including tombstones.
     pub releases: u64,
-    /// Unique module identities, including metadata retained only for tombstones.
+    /// Distinct content-digest and chunk layouts, including layouts retained only for tombstones.
     pub artifacts: u64,
     /// Committed distinct chunk payloads.
     pub chunks: u64,

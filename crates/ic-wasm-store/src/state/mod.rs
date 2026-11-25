@@ -115,7 +115,7 @@ impl<M: MemoryBacking> State<M> {
             state.releases.len() <= state.settings.get().quota.releases,
             "release quota"
         );
-        let active = state.active_hashes();
+        let active = state.active_artifact_ids();
         let reserved: u64 = active
             .iter()
             .map(|hash| state.artifacts.get(hash).expect("active artifact").bytes)
@@ -139,16 +139,19 @@ impl<M: MemoryBacking> State<M> {
         if !release.valid() {
             return Err(Error::Invalid);
         }
-        let hash = self
+        let identity = self
             .releases
             .get(&Key::new(release))
             .ok_or(Error::NotFound)?;
 
-        Ok((hash, self.artifacts.get(&hash).expect("retained artifact")))
+        Ok((
+            identity,
+            self.artifacts.get(&identity).expect("retained artifact"),
+        ))
     }
 
     pub fn status(&self, release: &Release) -> Result<Status, Error> {
-        let (hash, artifact) = self.artifact(release)?;
+        let (_, artifact) = self.artifact(release)?;
         let missing = artifact
             .chunks
             .iter()
@@ -160,7 +163,7 @@ impl<M: MemoryBacking> State<M> {
         Ok(Status {
             manifest: Manifest {
                 release: release.clone(),
-                hash,
+                hash: artifact.hash,
                 bytes: artifact.bytes,
                 chunks: artifact.chunks,
             },
@@ -173,7 +176,7 @@ impl<M: MemoryBacking> State<M> {
         let status = self.status(release)?;
         let artifact = self
             .artifacts
-            .get(&status.manifest.hash)
+            .get(&Artifact::identity(&status.manifest))
             .expect("retained artifact");
 
         Ok(ic_wasm_store_protocol::Custody {
@@ -195,33 +198,28 @@ impl<M: MemoryBacking> State<M> {
         if !manifest.valid() {
             return Err(Error::Invalid);
         }
+        let identity = Artifact::identity(manifest);
         let key = Key::new(&manifest.release);
         let tombstone = Key::tombstone(&manifest.release);
         if self
             .releases
             .get(&tombstone)
-            .is_some_and(|hash| hash != manifest.hash)
+            .is_some_and(|hash| hash != identity)
         {
             return Err(Error::Conflict);
         }
         if self
             .releases
             .get(&key)
-            .is_some_and(|existing| existing != manifest.hash)
+            .is_some_and(|existing| existing != identity)
         {
-            return Err(Error::Conflict);
-        }
-        let retained = self.artifacts.get(&manifest.hash);
-        if retained.as_ref().is_some_and(|artifact| {
-            artifact.bytes != manifest.bytes || artifact.chunks != manifest.chunks
-        }) {
             return Err(Error::Conflict);
         }
         if self.releases.contains_key(&key) {
             return self.status(&manifest.release);
         }
         let mut settings = self.settings.get().clone();
-        let extra = if !self.active_hashes().contains(&manifest.hash) {
+        let extra = if !self.active_artifact_ids().contains(&identity) {
             manifest.bytes
         } else {
             0
@@ -232,10 +230,11 @@ impl<M: MemoryBacking> State<M> {
         {
             return Err(Error::Capacity);
         }
-        if retained.is_none() {
+        if !self.artifacts.contains_key(&identity) {
             self.artifacts.insert(
-                manifest.hash,
+                identity,
                 Artifact {
+                    hash: manifest.hash,
                     bytes: manifest.bytes,
                     chunks: manifest.chunks.clone(),
                     published: false,
@@ -246,7 +245,7 @@ impl<M: MemoryBacking> State<M> {
         settings.reserved_bytes += extra;
         self.settings.set(settings);
         self.releases.remove(&tombstone);
-        self.releases.insert(key, manifest.hash);
+        self.releases.insert(key, identity);
 
         self.status(&manifest.release)
     }
@@ -272,7 +271,7 @@ impl<M: MemoryBacking> State<M> {
 
     pub fn publish(&mut self, release: &Release) -> Result<Status, Error> {
         self.admission_epoch()?;
-        let (hash, mut artifact) = self.artifact(release)?;
+        let (identity, mut artifact) = self.artifact(release)?;
         if artifact.published {
             return self.status(release);
         }
@@ -287,11 +286,11 @@ impl<M: MemoryBacking> State<M> {
             }
             full.update(&payload.0);
         }
-        if <[u8; 32]>::from(full.finalize()) != hash {
+        if <[u8; 32]>::from(full.finalize()) != artifact.hash {
             return Err(Error::Hash);
         }
         artifact.published = true;
-        self.artifacts.insert(hash, artifact);
+        self.artifacts.insert(identity, artifact);
 
         self.status(release)
     }
@@ -357,27 +356,32 @@ impl<M: MemoryBacking> State<M> {
         Ok(self.info())
     }
 
-    fn pin_artifact(&self, caller: &[u8], pin: &Pin) -> Result<Artifact, Error> {
+    fn pin_artifact(&self, caller: &[u8], pin: &Pin) -> Result<([u8; 32], Artifact), Error> {
         if caller.is_empty() || caller.len() > 29 || caller == [4] || pin.operation == [0; 32] {
             return Err(Error::Invalid);
         }
-        let status = self.status(&pin.manifest.release)?;
-        if status.manifest != pin.manifest {
+        let (identity, artifact) = self.artifact(&pin.manifest.release)?;
+        if artifact.hash != pin.manifest.hash
+            || artifact.bytes != pin.manifest.bytes
+            || artifact.chunks != pin.manifest.chunks
+        {
             return Err(Error::Conflict);
         }
-        if !status.published || !status.missing.is_empty() {
+        if !artifact.published
+            || artifact
+                .chunks
+                .iter()
+                .any(|hash| !self.chunks.contains_key(hash))
+        {
             return Err(Error::Incomplete);
         }
 
-        Ok(self
-            .artifacts
-            .get(&pin.manifest.hash)
-            .expect("published artifact"))
+        Ok((identity, artifact))
     }
 
     pub fn pin(&mut self, caller: &[u8], pin: &Pin) -> Result<PinReceipt, Error> {
         self.admission_epoch()?;
-        let mut artifact = self.pin_artifact(caller, pin)?;
+        let (identity, mut artifact) = self.pin_artifact(caller, pin)?;
         if let Some(old) = artifact
             .pins
             .iter()
@@ -395,7 +399,7 @@ impl<M: MemoryBacking> State<M> {
                 operation: pin.operation,
                 release: pin.manifest.release.clone(),
             });
-            self.artifacts.insert(pin.manifest.hash, artifact);
+            self.artifacts.insert(identity, artifact);
         }
 
         Ok(PinReceipt {
@@ -405,7 +409,7 @@ impl<M: MemoryBacking> State<M> {
     }
 
     pub fn observe_pin(&self, caller: &[u8], pin: &Pin) -> Result<PinReceipt, Error> {
-        let artifact = self.pin_artifact(caller, pin)?;
+        let (_, artifact) = self.pin_artifact(caller, pin)?;
         let retained = artifact
             .pins
             .iter()

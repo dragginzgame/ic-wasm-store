@@ -3,8 +3,8 @@
 set -euo pipefail
 root=$(CDPATH='' cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
 cd "$root"
-version=0.2.2
-checksum=5ac8eeefd0b49bc36a1e946bc984dcabae974cb6510150296d90ae205d5e1cd0
+version=0.9.0
+checksum=a432b775975b79c97b3c0b43b327294ac5e34a1b803984665ead44d5c5e02489
 archive="$root/target/qualification/ic-wasm-store-$version.crate"
 mkdir -p target/qualification
 case "${1:-}" in

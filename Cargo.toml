@@ -4,7 +4,7 @@ exclude = ["qualification", "target"]
 resolver = "3"
 
 [workspace.package]
-version = "0.9.0"
+version = "0.10.0"
 edition = "2024"
 rust-version = "1.100.0"
 publish = ["crates-io"]
@@ -13,20 +13,20 @@ repository = "https://github.com/dragginzgame/ic-wasm-store"
 
 [workspace.dependencies]
 # Production
-ic-platform-protocol = { version = "0.3.2", default-features = false }
-ic-platform-runtime = { version = "0.23.21", default-features = false }
-ic-platform-types = { version = "0.21.2", default-features = false }
+ic-platform-protocol = { version = "0.3.10", default-features = false }
+ic-platform-runtime = { version = "0.23.27", default-features = false }
+ic-platform-types = { version = "0.21.5", default-features = false }
 serde_bytes = "0.11.19"
 
 # Production and tests
-ic-storage = "0.78.0"
-ic-wasm-store-protocol = { version = "0.9.0", path = "crates/ic-wasm-store-protocol" }
-ic-wire = { version = "0.30.1", default-features = false }
+ic-storage = "0.80.0"
+ic-wasm-store-protocol = { version = "0.10.0", path = "crates/ic-wasm-store-protocol" }
+ic-wire = { version = "0.30.2", default-features = false }
 serde = { version = "1.0.229", features = ["derive"] }
 sha2 = "0.11.1"
 
 # Tests and tooling
-toko-tooling = "=0.46.3"
+toko-tooling = "=0.46.4"
 
 [workspace.lints.cargo]
 unused_dependencies = "deny"

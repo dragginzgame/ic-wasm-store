@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.10.0] - 2026-11-25
+
+### ⚠️ Breaking
+
+- Install on fresh backing. Retained artifact identity now includes the full chunk layout, so a cancelled upload cannot prevent another label publishing valid content. A removed label still requires its exact original manifest. [Wasm Store #9 — Unverified manifest geometry retained in a tombstone](https://github.com/dragginzgame/ic-wasm-store/issues/9)
+
+### 📦 Dependencies
+
+- Adopt Platform Runtime 0.23.27, Protocol 0.3.10, Types 0.21.5, Storage 0.80.0, Wire 0.30.2 and Toko Tooling 0.46.4. Payload reclamation uses Storage’s batch deletion.
+
+### 🐛 Fixed
+
+- Reject unauthorized and oversized external ingress before induction. Grant-scoped installer reads retain full authorization in the handler. [Wasm Store #8 — Reject non-controller ingress before induction](https://github.com/dragginzgame/ic-wasm-store/issues/8)
+- A current controller can activate the exact maintenance attempt after its captured owner loses controller status. Recovery preserves the original owner and sequence. [Wasm Store #10 — Maintenance admission cannot be reopened after controller rotation](https://github.com/dragginzgame/ic-wasm-store/issues/10)
+
+### 📚 Documentation
+
+- Update the repository and both published crates to the Toko Studios Network Licence v1.1.
+- Explain pin retention after controller rotation, verification of uncertified reads and coordinated management-cache cleanup. [Wasm Store #11 — Security review notes](https://github.com/dragginzgame/ic-wasm-store/issues/11)
+
 ## [0.9.0] - 2026-11-25
 
 ### ⚠️ Breaking

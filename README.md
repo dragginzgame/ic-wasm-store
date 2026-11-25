@@ -1,7 +1,9 @@
 # IC Wasm Store
 
-The current Storage 0.78 line requires fresh backing. Existing Store installations
-on Storage 0.74.1 require explicit export and migration before adoption.
+Store 0.10 requires fresh backing. Keep an existing 0.9 Store intact while preparing
+a separate Store, republishing trusted artifacts and reconciling callers, pins and
+maintenance obligations before cutover. In-place upgrades from 0.9 refuse the old
+image. Reinstalling on the same canister erases its state.
 
 A standalone, controller-authorized Internet Computer canister for immutable,
 versioned Wasm custody. It retains resumable uploads, shared chunks, quotas and
@@ -30,14 +32,23 @@ the complete artifact digest. Publication does **not** validate the full Wasm
 module or approve installation. Release labels cannot be reassigned to different
 content; labels sharing an artifact reuse its stored bytes.
 
-Artifacts are limited to 8 MiB, transferred in 1 MiB chunks. Version 0.7 requires a fresh Store.
+Artifacts are limited to 8 MiB, transferred in 1 MiB chunks.
 To republish an earlier artifact, rebuild its manifest from the original Wasm. Default quotas are
 128 MiB of reserved artifact payload and 1,024 releases; configurable ceilings
 are 256 MiB and 4,096 releases. Reservations include incomplete artifacts and
 exclude metadata. A controller can grant a named installer access to one pinned
 release through `read_granted`. The other endpoints require a controller.
+Store inspects external ingress before induction. It accepts known methods within
+their declared request budgets from controllers. For `read_granted`, it also
+admits a named installer with an unexpired grant from a current controller.
+Inspection reads the method, caller and size without copying the payload.
+The handler checks the complete grant, caller, deadline and issuer again.
+Queries and inter-canister calls go straight to the handler.
 
 Pins retain exact caller-owned operations, with at most 32 pins per artifact.
+Removing a controller leaves its pins in place. They still prevent removal of
+every alias and retain the artifact’s payload reservation. Account for those
+obligations before rotating controllers.
 Controllers call `remove` with `Delete` for a published release or `Cancel` for an unpublished upload
 by supplying its exact manifest. Both refuse artifacts with retained pins.
 Removal retains the identity as a tombstone: `prepare` replaces it with an active
@@ -54,12 +65,27 @@ replay, storage and upgrade constraints. Cache readiness is an
 observation, not a guarantee that the management cache will remain available.
 Closing maintenance admission blocks new mutation work but does not drain
 outstanding calls; the consuming application owns quiescence and upgrades.
+To recover a closed attempt after its owner loses controller status, a current
+controller reads `admission(Observe)`, reconciles outstanding maintenance with
+the operator, then submits `Activate` with that exact sequence and operation.
+The original owner and sequence remain recorded, and closed-era grants stay invalid.
+
+`inspect` and `read` queries return uncertified data. For integrity-sensitive
+reads, obtain the exact published manifest via replicated `observe(Status)`,
+check each chunk against its hash and verify the assembled length and digest.
+Use a replicated observation for decisions that depend on current Store state.
+
+`prepare_cache` adds missing chunks to the management chunk store. Distinct
+artifacts can fill it even after Store releases are removed. A controller can
+call `clear_chunk_store` on the management canister for this Store. It clears
+all cached chunks, so coordinate with pending installations first and prepare
+the pinned artifacts again afterward. Stable Store payloads survive cache clearing.
 
 With the replacement Platform Runtime, stop the canister and wait for `Stopped`
-before upgrading, then restart it. Controller and oversized-frame guard failures
-trap (IC reject code 5); clients must not rely on the former rejection code 4.
+before upgrading, then restart it. External ingress refused by inspection receives IC reject code 4. A guard refusal
+during handler execution traps with code 5.
 Init and post-upgrade arguments are limited to 16 KiB. Version 0.9 groups metadata under `inspect` (query) and `observe` (update).
-It changes the external Wire contract and preserves retained allocation and record formats.
+Store 0.10 keeps those Wire methods and introduces the storage cut described above.
 
 This remains experimental. Availability of older code does not imply safe
 application-state rollback.
@@ -97,7 +123,7 @@ The main checks are:
 | `make build` | Standalone Store Wasm, without qualification features |
 | `make qualification-setup` | Explicit PocketIC server and released-archive preparation |
 | `make qualification-test` | Builds both qualification Wasms and runs installed tests. Set `QUALIFICATION_TEST` to a test name for focused execution |
-| `make qualification-predecessor-test` | Builds published 0.2.2 and verifies refusal and rollback when upgrading its old image |
+| `make qualification-predecessor-test` | Builds published 0.9.0 and verifies refusal and rollback when upgrading its old image |
 | `make release-verify` | Formatting, tooling admission, product tests, lints, docs and both installed qualification suites |
 | `make check-wire-api` | Compare mounted Wire contracts and release Wasm exports with the reviewed baseline |
 | `make test-tooling` | Publication, setup, diagnostics, path and delivery caller fixtures |
@@ -123,8 +149,8 @@ launcher-selection failure paths without network access.
 
 PR CI regenerates [the Wire manifests](api/wire) from the mounted requests,
 replies, method IDs and limits. It verifies the name and call mode of every
-method against the same release Wasm used for installed qualification. The two
-non-Wire exports are the IC lifecycle hooks. Each filename records the method's
+method against the same release Wasm used for installed qualification. The other three canister exports are
+initialization, post-upgrade and ingress inspection. Each filename records the method's
 call mode.
 
 To check a standalone build from the repository root:

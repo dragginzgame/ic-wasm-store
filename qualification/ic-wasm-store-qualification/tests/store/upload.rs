@@ -1,20 +1,4 @@
-use super::{CanisterId, Client, frame, response, store, support};
-
-// Wire identities of the published 0.2.2 fixture, including after a refused upgrade.
-const PREDECESSOR_INFO: u64 = 106;
-const PREDECESSOR_STATUS: u64 = 103;
-
-async fn predecessor_status(client: &Client<'_>, release: &store::Release) -> store::Status {
-    client
-        .update::<_, Result<store::Status, store::Error>>(
-            "observe",
-            PREDECESSOR_STATUS,
-            release,
-            store::LIMITS,
-        )
-        .await
-        .unwrap()
-}
+use super::{CanisterId, Client, frame, store, support};
 
 #[tokio::test(flavor = "current_thread")]
 async fn versioned_upload_resumes_across_two_executables_and_reuses_bytes() {
@@ -27,7 +11,7 @@ async fn predecessor_image_is_rejected_without_losing_upload() {
     exercise_upload(true).await;
 }
 
-async fn exercise_upload(legacy_image: bool) {
+async fn exercise_upload(refuses_upgrade: bool) {
     let original = support::wasm();
     let candidate = std::fs::read(
         std::env::var_os("IC_WASM_STORE_CANDIDATE").expect("run make qualification-test"),
@@ -44,14 +28,8 @@ async fn exercise_upload(legacy_image: bool) {
         .await;
     let client = Client { pic, id, operator };
     // More than the old combined Root budget. Integrity publication is not Wasm validation.
-    // Published predecessors use the 256 KiB release geometry.
-    let chunk_bytes = if legacy_image {
-        256 * 1024
-    } else {
-        store::CHUNK_BYTES
-    };
     let mut bytes = vec![0; store::CHUNK_BYTES * store::MAX_CHUNKS];
-    for (index, chunk) in bytes.chunks_mut(chunk_bytes).enumerate() {
+    for (index, chunk) in bytes.chunks_mut(store::CHUNK_BYTES).enumerate() {
         chunk.fill(index as u8);
     }
     bytes[..8].copy_from_slice(b"\0asm\x01\0\0\0");
@@ -62,7 +40,10 @@ async fn exercise_upload(legacy_image: bool) {
         },
         hash: store::digest(&bytes),
         bytes: bytes.len() as u64,
-        chunks: bytes.chunks(chunk_bytes).map(store::digest).collect(),
+        chunks: bytes
+            .chunks(store::CHUNK_BYTES)
+            .map(store::digest)
+            .collect(),
     };
     assert!(
         pic.update_call(
@@ -87,16 +68,7 @@ async fn exercise_upload(legacy_image: bool) {
             .await
             .is_err()
     );
-    let initial = if legacy_image {
-        let reply = pic
-            .query_call(id, operator, "info", frame(PREDECESSOR_INFO, &()))
-            .await
-            .unwrap();
-        response(PREDECESSOR_INFO, &reply)
-    } else {
-        client.info().await
-    };
-    assert_eq!(initial.releases, 0);
+    assert_eq!(client.info().await.releases, 0);
     let prepared: Result<store::Status, store::Error> = client
         .update("prepare", store::PREPARE, &manifest, store::LIMITS)
         .await;
@@ -104,7 +76,7 @@ async fn exercise_upload(legacy_image: bool) {
     let first = store::Put {
         release: manifest.release.clone(),
         index: 0,
-        bytes: bytes[..chunk_bytes].to_vec(),
+        bytes: bytes[..store::CHUNK_BYTES].to_vec(),
     };
     let partial = client
         .update::<_, Result<store::Status, store::Error>>(
@@ -124,18 +96,19 @@ async fn exercise_upload(legacy_image: bool) {
     let upgraded = pic
         .upgrade_canister(id, candidate, vec![], Some(operator))
         .await;
-    if legacy_image {
+    if refuses_upgrade {
         let error = upgraded.expect_err("legacy Storage image must be refused");
+        assert_eq!(
+            error.error_code,
+            ic_testkit::pocket_ic::ErrorCode::CanisterTrapped
+        );
         assert!(
             error.reject_message.contains("canister_post_upgrade")
                 && error.reject_message.contains("ic_wasm_store::state::State"),
             "{error:?}"
         );
         pic.start_canister(id, Some(operator)).await.unwrap();
-        assert_eq!(
-            predecessor_status(&client, &manifest.release).await,
-            partial
-        );
+        assert_eq!(client.status(&manifest.release).await, partial);
 
         return;
     }

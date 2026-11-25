@@ -108,6 +108,13 @@ macro_rules! endpoints {
     )*) => {
         $(mount::$mount!($name, $export, $kind, $id, $request, $reply, $input_limits, $output_limits, $operation);)*
 
+        fn ingress_size_allowed(method: &str, bytes: usize) -> bool {
+            match method {
+                $($export => bytes <= protocol::$input_limits.bytes,)*
+                _ => false,
+            }
+        }
+
         #[cfg(test)]
         fn wire_endpoints() -> Vec<wire_api::Endpoint> {
             vec![$(
