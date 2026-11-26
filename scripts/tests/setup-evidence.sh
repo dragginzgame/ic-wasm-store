@@ -134,7 +134,7 @@ cat > "$LAUNCHER" <<'STUB'
 #!/usr/bin/env bash
 printf 'probed\n' >> "$MARKER"
 [[ "$1" == --version ]]
-echo 'ic-testkit-server 0.110.0'
+echo 'ic-testkit-server 0.110.5'
 STUB
 chmod +x "$LAUNCHER"
 cat > vendor/toko-tooling/scripts/dev/install-rust-tools.sh <<'STUB'
@@ -146,7 +146,7 @@ STUB
 for mode in setup check; do
     selected=$(bash scripts/testkit-launcher.sh "$mode")
     [[ "$selected" == "$LAUNCHER" ]]
-    printf '%s\n' --consumer "$repo" --package ic-testkit --version 0.110.0 \
+    printf '%s\n' --consumer "$repo" --package ic-testkit --version 0.110.5 \
         --bin ic-testkit-server --profile release --features cli > "$fixture/expected-calls"
     if [[ "$mode" == check ]]; then printf '%s\n' --check >> "$fixture/expected-calls"; fi
     cmp "$CALLS" "$fixture/expected-calls"

@@ -102,7 +102,7 @@ make tools-check
 make install-hooks
 ```
 
-`make install-tools` also prepares the frozen Testkit 0.110.0 launcher through
+`make install-tools` also prepares the frozen Testkit 0.110.5 launcher through
 the shared Cargo installer. `make tools-check` admits that selection offline.
 Existing checkouts using the former `.tools/testkit-bootstrap` copy must rerun
 `make install-tools`; qualification no longer selects that copy automatically.
@@ -135,7 +135,7 @@ For focused work, use `make test-protocol` or `make test-store`, and select
 Wasm-only and are checked by `make clippy-wasm`. `make help` lists these targets.
 
 Run `make qualification-setup` after tool installation and before the installed
-test or `make ci` on a fresh checkout. Setup admits the prepared 0.110.0 launcher
+test or `make ci` on a fresh checkout. Setup admits the prepared 0.110.5 launcher
 and may download the server. Tests use the Testkit client from the qualification
 lockfile with that prepared bundle.
 The launcher owns one server for the test command. Alternatively, supply

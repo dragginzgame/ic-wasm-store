@@ -7,8 +7,8 @@ it does not make network calls, manage stable memory or deploy code.
 
 ```toml
 [dependencies]
-ic-wasm-store-protocol = "0.10"
-ic-wire = { version = "0.30.2", default-features = false }
+ic-wasm-store-protocol = "0.11"
+ic-wire = { version = "0.31.1", default-features = false }
 ```
 
 A release is an application-defined name and version, bound to a SHA-256 digest,

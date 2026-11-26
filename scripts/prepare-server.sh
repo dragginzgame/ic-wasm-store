@@ -6,7 +6,7 @@ root=$(CDPATH='' cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
 cd "$root"
 status=0
 launcher=$(bash scripts/testkit-launcher.sh check)
-directory=${IC_TESTKIT_SERVER_DIRECTORY:-$root/target/qualification/server-0.110.0}
+directory=${IC_TESTKIT_SERVER_DIRECTORY:-$root/target/qualification/server-0.110.5}
 [[ "$directory" == /* ]] || directory="$root/$directory"
 directory=${directory%/}
 mkdir -p target/qualification/setup-evidence

@@ -58,7 +58,7 @@ fi
 # The reporting command must not replace a specific setup status (or run on success).
 cat > "$fixture/bin/launcher" <<'STUB'
 #!/usr/bin/env bash
-if [[ "${1:-}" == --version ]]; then echo "ic-testkit-server 0.110.0"; exit 0; fi
+if [[ "${1:-}" == --version ]]; then echo "ic-testkit-server 0.110.5"; exit 0; fi
 if [[ "${1:-}" == check ]]; then exit "${CHECK_STATUS:-0}"; fi
 exit "${SETUP_STATUS:?}"
 STUB

@@ -15,7 +15,7 @@ They create instances on that server and explicitly attempt instance deletion
 on normal completion; upstream deletion does not confirm remote cleanup.
 
 The runner owns the external server through the reviewed `ic-testkit-server`
-0.110.0 launcher, installed by `make install-tools` through Toko Tooling's shared
+0.110.5 launcher, installed by `make install-tools` through Toko Tooling's shared
 Cargo installer with the `cli` feature. Setup and tests resolve its admitted path
 through the same installer's offline `--check`; they never install implicitly.
 Rerun `make install-tools` when migrating from `.tools/testkit-bootstrap`; the old
@@ -23,9 +23,9 @@ copy is left untouched and is no longer selected automatically.
 This is a deliberately frozen development bootstrap,
 as specified by the supplier's [simulator ownership contract](https://github.com/dragginzgame/ic-tooling/blob/main/docs/simulator-ownership.md),
 not an old Testkit dependency in the qualification graph. Set
-`TESTKIT_RELEASE_LAUNCHER` to use a separately prepared 0.110.0 executable.
+`TESTKIT_RELEASE_LAUNCHER` to use a separately prepared 0.110.5 executable.
 `IC_TESTKIT_SERVER_DIRECTORY` selects the bundle directory, defaulting to
-`target/qualification/server-0.110.0`. Setup provisions it explicitly; ordinary tests
+`target/qualification/server-0.110.5`. Setup provisions it explicitly; ordinary tests
 only admit prepared assets offline. The launcher outlives the test command and
 owns server shutdown on completion or failure. Local spawning requires loopback
 permission. Supplying `IC_TESTKIT_POCKET_IC_URL` instead borrows that server;

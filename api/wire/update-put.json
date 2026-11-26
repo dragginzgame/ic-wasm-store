@@ -11,11 +11,11 @@
     "Wire_Put_bf558845052c1cd2":{"k":"record","fields":[
       {"name":"release","value":{"k":"ref","name":"Wire_Release_e3a6c4e0d6c2bd12"}},
       {"name":"index","value":{"k":"ref","name":"Wire_u32_4d2bdf193e8526d1"}},
-      {"name":"bytes","value":{"k":"ref","name":"Wire_ByteBuf_164392c7b0017b64"}}]},
+      {"name":"bytes","value":{"k":"ref","name":"Wire_ByteBuf_164392c7b0017b64"}}],"fixed":true},
     "Wire_ByteBuf_164392c7b0017b64":{"k":"bytes"},
     "Wire_Release_e3a6c4e0d6c2bd12":{"k":"record","fields":[
       {"name":"name","value":{"k":"ref","name":"Wire_String_76e26e9121e02e46"}},
-      {"name":"version","value":{"k":"ref","name":"Wire_String_76e26e9121e02e46"}}]},
+      {"name":"version","value":{"k":"ref","name":"Wire_String_76e26e9121e02e46"}}],"fixed":true},
     "Wire_Result_7116f94cb141bc48":{"k":"result","ok":{"k":"ref","name":"Wire_Status_4f068a6b2a10ff13"},"err":{"k":"ref","name":"Wire_Error_2703fb430e01c1f5"}},
     "Wire_Error_2703fb430e01c1f5":{"k":"enum","variants":[
       {"name":"Invalid","id":0,"value":{"k":"unit"}},
@@ -28,12 +28,12 @@
     "Wire_Status_4f068a6b2a10ff13":{"k":"record","fields":[
       {"name":"manifest","value":{"k":"ref","name":"Wire_Manifest_62fe1ea223a21398"}},
       {"name":"published","value":{"k":"ref","name":"Wire_bool_cd2fd49bc6b014bd"}},
-      {"name":"missing","value":{"k":"ref","name":"Wire_Vec_edd3b04d9184b526"}}]},
+      {"name":"missing","value":{"k":"ref","name":"Wire_Vec_edd3b04d9184b526"}}],"fixed":true},
     "Wire_Manifest_62fe1ea223a21398":{"k":"record","fields":[
       {"name":"release","value":{"k":"ref","name":"Wire_Release_e3a6c4e0d6c2bd12"}},
       {"name":"hash","value":{"k":"ref","name":"Wire__u8__32__a6c3ffa4fc6f7348"}},
       {"name":"bytes","value":{"k":"ref","name":"Wire_u64_4d35d3193e8d66f2"}},
-      {"name":"chunks","value":{"k":"ref","name":"Wire_Vec_5e0c6805bf276bb7"}}]},
+      {"name":"chunks","value":{"k":"ref","name":"Wire_Vec_5e0c6805bf276bb7"}}],"fixed":true},
     "Wire_String_76e26e9121e02e46":{"k":"text"},
     "Wire_Vec_5e0c6805bf276bb7":{"k":"list","item":{"k":"ref","name":"Wire__u8__32__a6c3ffa4fc6f7348"}},
     "Wire_Vec_edd3b04d9184b526":{"k":"list","item":{"k":"ref","name":"Wire_u32_4d2bdf193e8526d1"}},

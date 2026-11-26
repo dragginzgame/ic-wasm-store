@@ -17,15 +17,15 @@
     "Wire_Option_95d1035dbc3e8f5f":{"k":"option","item":{"k":"ref","name":"Wire_Release_e3a6c4e0d6c2bd12"}},
     "Wire_Pin_bf997e450565d8a0":{"k":"record","fields":[
       {"name":"operation","value":{"k":"ref","name":"Wire__u8__32__a6c3ffa4fc6f7348"}},
-      {"name":"manifest","value":{"k":"ref","name":"Wire_Manifest_62fe1ea223a21398"}}]},
+      {"name":"manifest","value":{"k":"ref","name":"Wire_Manifest_62fe1ea223a21398"}}],"fixed":true},
     "Wire_Manifest_62fe1ea223a21398":{"k":"record","fields":[
       {"name":"release","value":{"k":"ref","name":"Wire_Release_e3a6c4e0d6c2bd12"}},
       {"name":"hash","value":{"k":"ref","name":"Wire__u8__32__a6c3ffa4fc6f7348"}},
       {"name":"bytes","value":{"k":"ref","name":"Wire_u64_4d35d3193e8d66f2"}},
-      {"name":"chunks","value":{"k":"ref","name":"Wire_Vec_5e0c6805bf276bb7"}}]},
+      {"name":"chunks","value":{"k":"ref","name":"Wire_Vec_5e0c6805bf276bb7"}}],"fixed":true},
     "Wire_Release_e3a6c4e0d6c2bd12":{"k":"record","fields":[
       {"name":"name","value":{"k":"ref","name":"Wire_String_76e26e9121e02e46"}},
-      {"name":"version","value":{"k":"ref","name":"Wire_String_76e26e9121e02e46"}}]},
+      {"name":"version","value":{"k":"ref","name":"Wire_String_76e26e9121e02e46"}}],"fixed":true},
     "Wire_Result_c638fb07295d4b10":{"k":"result","ok":{"k":"ref","name":"Wire_Observation_7d0aa16a34ab49b1"},"err":{"k":"ref","name":"Wire_Error_2703fb430e01c1f5"}},
     "Wire_Error_2703fb430e01c1f5":{"k":"enum","variants":[
       {"name":"Invalid","id":0,"value":{"k":"unit"}},
@@ -43,25 +43,25 @@
       {"name":"Tombstones","id":4,"value":{"k":"ref","name":"Wire_Vec_d22bf0061ead9c33"}}]},
     "Wire_Custody_8757a88daed20a74":{"k":"record","fields":[
       {"name":"status","value":{"k":"ref","name":"Wire_Status_4f068a6b2a10ff13"}},
-      {"name":"pins","value":{"k":"ref","name":"Wire_Vec_eae1ec8c42875786"}}]},
+      {"name":"pins","value":{"k":"ref","name":"Wire_Vec_eae1ec8c42875786"}}],"fixed":true},
     "Wire_Info_de3888068430f989":{"k":"record","fields":[
       {"name":"quota","value":{"k":"ref","name":"Wire_Quota_10bc9cfef31e2fe7"}},
       {"name":"reserved_bytes","value":{"k":"ref","name":"Wire_u64_4d35d3193e8d66f2"}},
       {"name":"releases","value":{"k":"ref","name":"Wire_u64_4d35d3193e8d66f2"}},
       {"name":"artifacts","value":{"k":"ref","name":"Wire_u64_4d35d3193e8d66f2"}},
       {"name":"chunks","value":{"k":"ref","name":"Wire_u64_4d35d3193e8d66f2"}},
-      {"name":"maintenance_candidate","value":{"k":"ref","name":"Wire_bool_cd2fd49bc6b014bd"}}]},
+      {"name":"maintenance_candidate","value":{"k":"ref","name":"Wire_bool_cd2fd49bc6b014bd"}}],"fixed":true},
     "Wire_PinReceipt_b0e8256b4612be44":{"k":"record","fields":[
       {"name":"owner","value":{"k":"ref","name":"Wire_ByteBuf_164392c7b0017b64"}},
-      {"name":"pin","value":{"k":"ref","name":"Wire_Pin_bf997e450565d8a0"}}]},
+      {"name":"pin","value":{"k":"ref","name":"Wire_Pin_bf997e450565d8a0"}}],"fixed":true},
     "Wire_ByteBuf_164392c7b0017b64":{"k":"bytes"},
     "Wire_Quota_10bc9cfef31e2fe7":{"k":"record","fields":[
       {"name":"reserved_bytes","value":{"k":"ref","name":"Wire_u64_4d35d3193e8d66f2"}},
-      {"name":"releases","value":{"k":"ref","name":"Wire_u64_4d35d3193e8d66f2"}}]},
+      {"name":"releases","value":{"k":"ref","name":"Wire_u64_4d35d3193e8d66f2"}}],"fixed":true},
     "Wire_Status_4f068a6b2a10ff13":{"k":"record","fields":[
       {"name":"manifest","value":{"k":"ref","name":"Wire_Manifest_62fe1ea223a21398"}},
       {"name":"published","value":{"k":"ref","name":"Wire_bool_cd2fd49bc6b014bd"}},
-      {"name":"missing","value":{"k":"ref","name":"Wire_Vec_edd3b04d9184b526"}}]},
+      {"name":"missing","value":{"k":"ref","name":"Wire_Vec_edd3b04d9184b526"}}],"fixed":true},
     "Wire_String_76e26e9121e02e46":{"k":"text"},
     "Wire_Vec_5e0c6805bf276bb7":{"k":"list","item":{"k":"ref","name":"Wire__u8__32__a6c3ffa4fc6f7348"}},
     "Wire_Vec_d22bf0061ead9c33":{"k":"list","item":{"k":"ref","name":"Wire_Manifest_62fe1ea223a21398"}},
@@ -69,7 +69,7 @@
     "Wire_Retention_ac303bd6e107213d":{"k":"record","fields":[
       {"name":"owner","value":{"k":"ref","name":"Wire_ByteBuf_164392c7b0017b64"}},
       {"name":"operation","value":{"k":"ref","name":"Wire__u8__32__a6c3ffa4fc6f7348"}},
-      {"name":"release","value":{"k":"ref","name":"Wire_Release_e3a6c4e0d6c2bd12"}}]},
+      {"name":"release","value":{"k":"ref","name":"Wire_Release_e3a6c4e0d6c2bd12"}}],"fixed":true},
     "Wire_Vec_edd3b04d9184b526":{"k":"list","item":{"k":"ref","name":"Wire_u32_4d2bdf193e8526d1"}},
     "Wire__u8__32__a6c3ffa4fc6f7348":{"k":"array","max":32,"item":{"k":"ref","name":"Wire_u8_08c48207b56753d8"}},
     "Wire_bool_cd2fd49bc6b014bd":{"k":"bool"},

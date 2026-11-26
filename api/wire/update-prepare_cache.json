@@ -10,18 +10,18 @@
     "Request":{"k":"ref","name":"Wire_PrepareCache_573a2b8bd1699f9a"},
     "Wire_PrepareCache_573a2b8bd1699f9a":{"k":"record","fields":[
       {"name":"pin","value":{"k":"ref","name":"Wire_Pin_bf997e450565d8a0"}},
-      {"name":"expires_at_ns","value":{"k":"ref","name":"Wire_u64_4d35d3193e8d66f2"}}]},
+      {"name":"expires_at_ns","value":{"k":"ref","name":"Wire_u64_4d35d3193e8d66f2"}}],"fixed":true},
     "Wire_Pin_bf997e450565d8a0":{"k":"record","fields":[
       {"name":"operation","value":{"k":"ref","name":"Wire__u8__32__a6c3ffa4fc6f7348"}},
-      {"name":"manifest","value":{"k":"ref","name":"Wire_Manifest_62fe1ea223a21398"}}]},
+      {"name":"manifest","value":{"k":"ref","name":"Wire_Manifest_62fe1ea223a21398"}}],"fixed":true},
     "Wire_Manifest_62fe1ea223a21398":{"k":"record","fields":[
       {"name":"release","value":{"k":"ref","name":"Wire_Release_e3a6c4e0d6c2bd12"}},
       {"name":"hash","value":{"k":"ref","name":"Wire__u8__32__a6c3ffa4fc6f7348"}},
       {"name":"bytes","value":{"k":"ref","name":"Wire_u64_4d35d3193e8d66f2"}},
-      {"name":"chunks","value":{"k":"ref","name":"Wire_Vec_5e0c6805bf276bb7"}}]},
+      {"name":"chunks","value":{"k":"ref","name":"Wire_Vec_5e0c6805bf276bb7"}}],"fixed":true},
     "Wire_Release_e3a6c4e0d6c2bd12":{"k":"record","fields":[
       {"name":"name","value":{"k":"ref","name":"Wire_String_76e26e9121e02e46"}},
-      {"name":"version","value":{"k":"ref","name":"Wire_String_76e26e9121e02e46"}}]},
+      {"name":"version","value":{"k":"ref","name":"Wire_String_76e26e9121e02e46"}}],"fixed":true},
     "Wire_Result_805b875a06e054cf":{"k":"result","ok":{"k":"ref","name":"Wire_CacheReady_56f6c723d0bcaf28"},"err":{"k":"ref","name":"Wire_CacheError_5304782328541305"}},
     "Wire_CacheError_5304782328541305":{"k":"enum","variants":[
       {"name":"Pin","id":0,"value":{"k":"ref","name":"Wire_Error_2703fb430e01c1f5"}},
@@ -32,7 +32,7 @@
       {"name":"Uncertain","id":5,"value":{"k":"unit"}}]},
     "Wire_CacheReady_56f6c723d0bcaf28":{"k":"record","fields":[
       {"name":"pin","value":{"k":"ref","name":"Wire_Pin_bf997e450565d8a0"}},
-      {"name":"uploaded","value":{"k":"ref","name":"Wire_u32_4d2bdf193e8526d1"}}]},
+      {"name":"uploaded","value":{"k":"ref","name":"Wire_u32_4d2bdf193e8526d1"}}],"fixed":true},
     "Wire_Error_2703fb430e01c1f5":{"k":"enum","variants":[
       {"name":"Invalid","id":0,"value":{"k":"unit"}},
       {"name":"Conflict","id":1,"value":{"k":"unit"}},

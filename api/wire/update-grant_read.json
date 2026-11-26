@@ -12,19 +12,19 @@
       {"name":"pin","value":{"k":"ref","name":"Wire_Pin_bf997e450565d8a0"}},
       {"name":"installer","value":{"k":"ref","name":"Wire_ByteBuf_164392c7b0017b64"}},
       {"name":"epoch","value":{"k":"ref","name":"Wire_u64_4d35d3193e8d66f2"}},
-      {"name":"expires_at_ns","value":{"k":"ref","name":"Wire_u64_4d35d3193e8d66f2"}}]},
+      {"name":"expires_at_ns","value":{"k":"ref","name":"Wire_u64_4d35d3193e8d66f2"}}],"fixed":true},
     "Wire_ByteBuf_164392c7b0017b64":{"k":"bytes"},
     "Wire_Pin_bf997e450565d8a0":{"k":"record","fields":[
       {"name":"operation","value":{"k":"ref","name":"Wire__u8__32__a6c3ffa4fc6f7348"}},
-      {"name":"manifest","value":{"k":"ref","name":"Wire_Manifest_62fe1ea223a21398"}}]},
+      {"name":"manifest","value":{"k":"ref","name":"Wire_Manifest_62fe1ea223a21398"}}],"fixed":true},
     "Wire_Manifest_62fe1ea223a21398":{"k":"record","fields":[
       {"name":"release","value":{"k":"ref","name":"Wire_Release_e3a6c4e0d6c2bd12"}},
       {"name":"hash","value":{"k":"ref","name":"Wire__u8__32__a6c3ffa4fc6f7348"}},
       {"name":"bytes","value":{"k":"ref","name":"Wire_u64_4d35d3193e8d66f2"}},
-      {"name":"chunks","value":{"k":"ref","name":"Wire_Vec_5e0c6805bf276bb7"}}]},
+      {"name":"chunks","value":{"k":"ref","name":"Wire_Vec_5e0c6805bf276bb7"}}],"fixed":true},
     "Wire_Release_e3a6c4e0d6c2bd12":{"k":"record","fields":[
       {"name":"name","value":{"k":"ref","name":"Wire_String_76e26e9121e02e46"}},
-      {"name":"version","value":{"k":"ref","name":"Wire_String_76e26e9121e02e46"}}]},
+      {"name":"version","value":{"k":"ref","name":"Wire_String_76e26e9121e02e46"}}],"fixed":true},
     "Wire_Result_09f995a1c8bdc315":{"k":"result","ok":{"k":"ref","name":"Wire____07e11f07b4a6665a"},"err":{"k":"ref","name":"Wire_Error_2703fb430e01c1f5"}},
     "Wire_Error_2703fb430e01c1f5":{"k":"enum","variants":[
       {"name":"Invalid","id":0,"value":{"k":"unit"}},

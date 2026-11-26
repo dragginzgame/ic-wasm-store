@@ -15,7 +15,7 @@
     "Wire_Option_95d1035dbc3e8f5f":{"k":"option","item":{"k":"ref","name":"Wire_Release_e3a6c4e0d6c2bd12"}},
     "Wire_Release_e3a6c4e0d6c2bd12":{"k":"record","fields":[
       {"name":"name","value":{"k":"ref","name":"Wire_String_76e26e9121e02e46"}},
-      {"name":"version","value":{"k":"ref","name":"Wire_String_76e26e9121e02e46"}}]},
+      {"name":"version","value":{"k":"ref","name":"Wire_String_76e26e9121e02e46"}}],"fixed":true},
     "Wire_Result_57d1912418e3a20c":{"k":"result","ok":{"k":"ref","name":"Wire_Inspection_db4247c6b4b0f667"},"err":{"k":"ref","name":"Wire_Error_2703fb430e01c1f5"}},
     "Wire_Error_2703fb430e01c1f5":{"k":"enum","variants":[
       {"name":"Invalid","id":0,"value":{"k":"unit"}},
@@ -35,19 +35,19 @@
       {"name":"releases","value":{"k":"ref","name":"Wire_u64_4d35d3193e8d66f2"}},
       {"name":"artifacts","value":{"k":"ref","name":"Wire_u64_4d35d3193e8d66f2"}},
       {"name":"chunks","value":{"k":"ref","name":"Wire_u64_4d35d3193e8d66f2"}},
-      {"name":"maintenance_candidate","value":{"k":"ref","name":"Wire_bool_cd2fd49bc6b014bd"}}]},
+      {"name":"maintenance_candidate","value":{"k":"ref","name":"Wire_bool_cd2fd49bc6b014bd"}}],"fixed":true},
     "Wire_Quota_10bc9cfef31e2fe7":{"k":"record","fields":[
       {"name":"reserved_bytes","value":{"k":"ref","name":"Wire_u64_4d35d3193e8d66f2"}},
-      {"name":"releases","value":{"k":"ref","name":"Wire_u64_4d35d3193e8d66f2"}}]},
+      {"name":"releases","value":{"k":"ref","name":"Wire_u64_4d35d3193e8d66f2"}}],"fixed":true},
     "Wire_Status_4f068a6b2a10ff13":{"k":"record","fields":[
       {"name":"manifest","value":{"k":"ref","name":"Wire_Manifest_62fe1ea223a21398"}},
       {"name":"published","value":{"k":"ref","name":"Wire_bool_cd2fd49bc6b014bd"}},
-      {"name":"missing","value":{"k":"ref","name":"Wire_Vec_edd3b04d9184b526"}}]},
+      {"name":"missing","value":{"k":"ref","name":"Wire_Vec_edd3b04d9184b526"}}],"fixed":true},
     "Wire_Manifest_62fe1ea223a21398":{"k":"record","fields":[
       {"name":"release","value":{"k":"ref","name":"Wire_Release_e3a6c4e0d6c2bd12"}},
       {"name":"hash","value":{"k":"ref","name":"Wire__u8__32__a6c3ffa4fc6f7348"}},
       {"name":"bytes","value":{"k":"ref","name":"Wire_u64_4d35d3193e8d66f2"}},
-      {"name":"chunks","value":{"k":"ref","name":"Wire_Vec_5e0c6805bf276bb7"}}]},
+      {"name":"chunks","value":{"k":"ref","name":"Wire_Vec_5e0c6805bf276bb7"}}],"fixed":true},
     "Wire_String_76e26e9121e02e46":{"k":"text"},
     "Wire_Vec_1c7f4641717da072":{"k":"list","item":{"k":"ref","name":"Wire_Status_4f068a6b2a10ff13"}},
     "Wire_Vec_5e0c6805bf276bb7":{"k":"list","item":{"k":"ref","name":"Wire__u8__32__a6c3ffa4fc6f7348"}},

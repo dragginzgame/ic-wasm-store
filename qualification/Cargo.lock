@@ -772,9 +772,9 @@ dependencies = [
 
 [[package]]
 name = "ic-testkit"
-version = "0.110.4"
+version = "0.110.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5617b2cbdc7adf055c6c7f4bdcbca8ad0ef5b367b65996acda10cad7fb79bb13"
+checksum = "f72c4ef2bc7cb1244d20e10d64416b8d8da4c5afda5018c476ae8253a75aadc6"
 dependencies = [
  "pocket-ic",
 ]
@@ -799,12 +799,12 @@ dependencies = [
 
 [[package]]
 name = "ic-wasm-store-protocol"
-version = "0.10.0"
+version = "0.11.0"
 dependencies = [
  "ic-wire",
  "serde",
  "serde_bytes",
- "sha2 0.11.1",
+ "sha2 0.11.2",
 ]
 
 [[package]]
@@ -821,9 +821,9 @@ dependencies = [
 
 [[package]]
 name = "ic-wire"
-version = "0.30.2"
+version = "0.31.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7e0402f79c98770304fcae9c9e747342127d53a1210ed9c8eab3de10ade39331"
+checksum = "668657755a54c068fb0d26155be33de30ad7fc46f32cfdfba3c3b0b24ccb8700"
 dependencies = [
  "bytemuck",
  "postcard",
@@ -1813,9 +1813,9 @@ dependencies = [
 
 [[package]]
 name = "sha2"
-version = "0.11.1"
+version = "0.11.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "47d7069beb7d6ac7b9acd1039986e73443f24234f41074da099d6f994ac9ad19"
+checksum = "5b0e5c7d67bc53f435386b2130fdc900488c5703770f6d8a4633060e34288a27"
 dependencies = [
  "cfg-if",
  "cpufeatures 0.3.1",
@@ -2160,9 +2160,9 @@ dependencies = [
 
 [[package]]
 name = "toko-tooling"
-version = "0.46.4"
+version = "0.46.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d3889bff0f8ff6dc8c80b161c908f4b598125b55bf55f18146471f9ac3294cff"
+checksum = "ca949d2e86d8c3c6e208e744ae2a807e038afcac0145d148adb8b44bf42cf885"
 
 [[package]]
 name = "tower"

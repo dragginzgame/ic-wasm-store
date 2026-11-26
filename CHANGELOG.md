@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.11.0] - 2026-11-26
+
+### ⚠️ Breaking
+
+- The protocol’s public `LIMITS` and `CHUNK_LIMITS` now use IC Wire 0.31 types. Rust clients passing either constant to IC Wire should update to the 0.31 line.
+
+### 📦 Dependencies
+
+- Adopt IC Wire 0.31.1, Platform Protocol 0.3.11 and Types 0.21.6. Use Testkit 0.110.5 for the qualification client and server launcher, and refresh Toko Tooling to 0.46.8.
+
 ## [0.10.0] - 2026-11-25
 
 ### ⚠️ Breaking

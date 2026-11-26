@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 
 /// Caller must own the exact currently closed attempt on every page.
 #[cfg_attr(feature = "wire-schema", derive(ic_wire::typescript::Wire))]
+#[cfg_attr(feature = "wire-schema", wire(fixed))]
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Request {
     /// Exact closure, never inferred from current state.
@@ -14,6 +15,7 @@ pub struct Request {
 
 /// Stable metadata counters, deliberately excluding executable identity and cache state.
 #[cfg_attr(feature = "wire-schema", derive(ic_wire::typescript::Wire))]
+#[cfg_attr(feature = "wire-schema", wire(fixed))]
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Catalog {
     /// Configured limits, including incomplete releases.
@@ -64,6 +66,7 @@ impl Entry {
 
 /// One catalog page retaining the exact state of each label.
 #[cfg_attr(feature = "wire-schema", derive(ic_wire::typescript::Wire))]
+#[cfg_attr(feature = "wire-schema", wire(fixed))]
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Page {
     /// Unchanged quota/counters across the closed scan, including removed labels.

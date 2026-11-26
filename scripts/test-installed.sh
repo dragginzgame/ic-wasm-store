@@ -32,7 +32,7 @@ run_tests() {
     else
         local launcher
         launcher=$(bash scripts/testkit-launcher.sh check)
-        bash scripts/run-server.sh "$launcher" "${IC_TESTKIT_SERVER_DIRECTORY:-$root/target/qualification/server-0.110.0}" \
+        bash scripts/run-server.sh "$launcher" "${IC_TESTKIT_SERVER_DIRECTORY:-$root/target/qualification/server-0.110.5}" \
             "${command[@]}"
     fi
 }

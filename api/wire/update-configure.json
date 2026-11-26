@@ -10,7 +10,7 @@
     "Request":{"k":"ref","name":"Wire_Quota_10bc9cfef31e2fe7"},
     "Wire_Quota_10bc9cfef31e2fe7":{"k":"record","fields":[
       {"name":"reserved_bytes","value":{"k":"ref","name":"Wire_u64_4d35d3193e8d66f2"}},
-      {"name":"releases","value":{"k":"ref","name":"Wire_u64_4d35d3193e8d66f2"}}]},
+      {"name":"releases","value":{"k":"ref","name":"Wire_u64_4d35d3193e8d66f2"}}],"fixed":true},
     "Wire_Result_badfed8fa618baba":{"k":"result","ok":{"k":"ref","name":"Wire_Info_de3888068430f989"},"err":{"k":"ref","name":"Wire_Error_2703fb430e01c1f5"}},
     "Wire_Error_2703fb430e01c1f5":{"k":"enum","variants":[
       {"name":"Invalid","id":0,"value":{"k":"unit"}},
@@ -26,7 +26,7 @@
       {"name":"releases","value":{"k":"ref","name":"Wire_u64_4d35d3193e8d66f2"}},
       {"name":"artifacts","value":{"k":"ref","name":"Wire_u64_4d35d3193e8d66f2"}},
       {"name":"chunks","value":{"k":"ref","name":"Wire_u64_4d35d3193e8d66f2"}},
-      {"name":"maintenance_candidate","value":{"k":"ref","name":"Wire_bool_cd2fd49bc6b014bd"}}]},
+      {"name":"maintenance_candidate","value":{"k":"ref","name":"Wire_bool_cd2fd49bc6b014bd"}}],"fixed":true},
     "Wire_bool_cd2fd49bc6b014bd":{"k":"bool"},
     "Wire_u64_4d35d3193e8d66f2":{"k":"u","bits":64}
   }
