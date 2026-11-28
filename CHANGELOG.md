@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.12.0] - 2026-11-28
+
+### ⚠️ Breaking
+
+- Adopt IC Wire 0.32.0. Rust clients that pass the protocol’s `LIMITS` or `CHUNK_LIMITS` to IC Wire should update to the 0.32 line.
+
 ## [0.11.0] - 2026-11-26
 
 ### ⚠️ Breaking

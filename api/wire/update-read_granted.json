@@ -30,7 +30,7 @@
       {"name":"name","value":{"k":"ref","name":"Wire_String_76e26e9121e02e46"}},
       {"name":"version","value":{"k":"ref","name":"Wire_String_76e26e9121e02e46"}}],"fixed":true},
     "Wire_Result_13ec7748ab158443":{"k":"result","ok":{"k":"ref","name":"Wire_Chunk_4b71c991e888f106"},"err":{"k":"ref","name":"Wire_Error_2703fb430e01c1f5"}},
-    "Wire_Chunk_4b71c991e888f106":{"k":"newtype","item":{"k":"ref","name":"Wire_ByteBuf_164392c7b0017b64"}},
+    "Wire_Chunk_4b71c991e888f106":{"k":"newtype","item":{"k":"ref","name":"Wire_ByteBuf_164392c7b0017b64"},"fixed":true},
     "Wire_Error_2703fb430e01c1f5":{"k":"enum","variants":[
       {"name":"Invalid","id":0,"value":{"k":"unit"}},
       {"name":"Conflict","id":1,"value":{"k":"unit"}},
