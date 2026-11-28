@@ -1,17 +1,102 @@
 use super::{CanisterId, Client, frame, store, support};
 
 #[tokio::test(flavor = "current_thread")]
-async fn versioned_upload_resumes_across_two_executables_and_reuses_bytes() {
-    exercise_upload(false).await;
+#[ignore = "requires the published predecessor as the original Wasm"]
+async fn predecessor_image_is_rejected_without_losing_upload() {
+    let candidate = std::fs::read(
+        std::env::var_os("IC_WASM_STORE_CANDIDATE").expect("run make qualification-test"),
+    )
+    .unwrap();
+    let owner = support::instance().await;
+    let pic = &owner;
+    let operator = CanisterId::self_authenticating(b"store qualification controller");
+    let id = pic
+        .create_canister_with_settings(Some(operator), None)
+        .await;
+    pic.install_canister(id, support::wasm(), vec![], Some(operator))
+        .await;
+
+    // The archived 0.9 canister uses fixed Postcard frames. Keep its encoding
+    // confined to this historical rollback witness.
+    fn predecessor_request(method: u64, value: &impl serde::Serialize) -> Vec<u8> {
+        let mut bytes = b"IW".to_vec();
+        bytes.extend_from_slice(&method.to_le_bytes());
+        bytes.push(0);
+        bytes.extend(postcard::to_allocvec(value).unwrap());
+        bytes
+    }
+
+    let bytes = b"\0asm\x01\0\0\0";
+    let manifest = store::Manifest {
+        release: store::Release {
+            name: "app".into(),
+            version: "1.0.0".into(),
+        },
+        hash: store::digest(bytes),
+        bytes: bytes.len() as u64,
+        chunks: vec![store::digest(bytes)],
+    };
+    let prepared = pic
+        .update_call(
+            id,
+            operator,
+            "prepare",
+            predecessor_request(store::PREPARE, &manifest),
+        )
+        .await
+        .unwrap();
+    let (result, tail) =
+        postcard::take_from_bytes::<Result<store::Status, store::Error>>(&prepared[11..]).unwrap();
+    assert!(tail.is_empty());
+    assert_eq!(result.unwrap().missing, vec![0]);
+    let put = store::Put {
+        release: manifest.release.clone(),
+        index: 0,
+        bytes: bytes.to_vec(),
+    };
+    let uploaded = pic
+        .update_call(id, operator, "put", predecessor_request(store::PUT, &put))
+        .await
+        .unwrap();
+    let (result, tail) =
+        postcard::take_from_bytes::<Result<store::Status, store::Error>>(&uploaded[11..]).unwrap();
+    assert!(tail.is_empty());
+    let status = result.unwrap();
+    assert!(status.missing.is_empty());
+
+    pic.stop_canister(id, Some(operator)).await.unwrap();
+    let error = pic
+        .upgrade_canister(id, candidate, vec![], Some(operator))
+        .await
+        .expect_err("legacy Storage image must be refused");
+    assert_eq!(
+        error.error_code,
+        ic_testkit::pocket_ic::ErrorCode::CanisterTrapped
+    );
+    assert!(
+        error.reject_message.contains("canister_post_upgrade")
+            && error.reject_message.contains("ic_wasm_store::state::State"),
+        "{error:?}"
+    );
+    pic.start_canister(id, Some(operator)).await.unwrap();
+    let observed = pic
+        .update_call(
+            id,
+            operator,
+            "observe",
+            predecessor_request(store::OBSERVE, &store::Observe::Status(manifest.release)),
+        )
+        .await
+        .unwrap();
+    let (result, tail) =
+        postcard::take_from_bytes::<Result<store::Observation, store::Error>>(&observed[11..])
+            .unwrap();
+    assert!(tail.is_empty());
+    assert_eq!(result, Ok(store::Observation::Status(status)));
 }
 
 #[tokio::test(flavor = "current_thread")]
-#[ignore = "requires the published predecessor as the original Wasm"]
-async fn predecessor_image_is_rejected_without_losing_upload() {
-    exercise_upload(true).await;
-}
-
-async fn exercise_upload(refuses_upgrade: bool) {
+async fn versioned_upload_resumes_across_two_executables_and_reuses_bytes() {
     let original = support::wasm();
     let candidate = std::fs::read(
         std::env::var_os("IC_WASM_STORE_CANDIDATE").expect("run make qualification-test"),
@@ -50,13 +135,13 @@ async fn exercise_upload(refuses_upgrade: bool) {
             id,
             CanisterId::anonymous(),
             "prepare",
-            ic_wire::encode(
+            super::encode_frame(
                 &manifest,
                 ic_wire::Encoding::Frame {
                     method: store::PREPARE,
                     direction: ic_wire::Direction::Request
                 },
-                store::LIMITS
+                crate::wire_limits(store::LIMITS)
             )
             .unwrap()
         )
@@ -65,6 +150,14 @@ async fn exercise_upload(refuses_upgrade: bool) {
     );
     assert!(
         pic.update_call(id, operator, "put", vec![0; store::CHUNK_LIMITS.bytes + 1])
+            .await
+            .is_err()
+    );
+    let mut old_frame = frame(store::PREPARE, &manifest);
+    // A 0.12 request ended at the fixed payload, before the sparse block.
+    assert_eq!(old_frame.pop(), Some(0));
+    assert!(
+        pic.update_call(id, operator, "prepare", old_frame)
             .await
             .is_err()
     );
@@ -96,22 +189,6 @@ async fn exercise_upload(refuses_upgrade: bool) {
     let upgraded = pic
         .upgrade_canister(id, candidate, vec![], Some(operator))
         .await;
-    if refuses_upgrade {
-        let error = upgraded.expect_err("legacy Storage image must be refused");
-        assert_eq!(
-            error.error_code,
-            ic_testkit::pocket_ic::ErrorCode::CanisterTrapped
-        );
-        assert!(
-            error.reject_message.contains("canister_post_upgrade")
-                && error.reject_message.contains("ic_wasm_store::state::State"),
-            "{error:?}"
-        );
-        pic.start_canister(id, Some(operator)).await.unwrap();
-        assert_eq!(client.status(&manifest.release).await, partial);
-
-        return;
-    }
     upgraded.unwrap();
     pic.start_canister(id, Some(operator)).await.unwrap();
     assert!(client.info().await.maintenance_candidate);
@@ -186,13 +263,13 @@ async fn exercise_upload(refuses_upgrade: bool) {
             .query_call(id, operator, "read", frame(store::READ, &input))
             .await
             .unwrap();
-        let chunk: Result<store::Chunk, store::Error> = ic_wire::decode(
+        let chunk: Result<store::Chunk, store::Error> = super::decode_frame(
             &reply,
             ic_wire::Encoding::Frame {
                 method: store::READ,
                 direction: ic_wire::Direction::Response,
             },
-            store::CHUNK_LIMITS,
+            crate::wire_limits(store::CHUNK_LIMITS),
         )
         .unwrap();
         recovered.extend(chunk.unwrap().0);
@@ -364,13 +441,13 @@ async fn exercise_upload(refuses_upgrade: bool) {
     // Submit without driving the call to completion, then interleave closure.
     pic.clear_chunk_store(id, Some(operator)).await.unwrap();
     let submit = || {
-        ic_wire::encode(
+        super::encode_frame(
             &request,
             ic_wire::Encoding::Frame {
                 method: store::PREPARE_CACHE,
                 direction: ic_wire::Direction::Request,
             },
-            store::LIMITS,
+            crate::wire_limits(store::LIMITS),
         )
         .unwrap()
     };
@@ -394,13 +471,13 @@ async fn exercise_upload(refuses_upgrade: bool) {
         .await;
     assert!(closed.unwrap().unwrap().closed);
     let reply = pic.await_call(pending).await.unwrap();
-    let result: Result<store::CacheReady, store::CacheError> = ic_wire::decode(
+    let result: Result<store::CacheReady, store::CacheError> = super::decode_frame(
         &reply,
         ic_wire::Encoding::Frame {
             method: store::PREPARE_CACHE,
             direction: ic_wire::Direction::Response,
         },
-        store::LIMITS,
+        crate::wire_limits(store::LIMITS),
     )
     .unwrap();
     assert_eq!(result, Err(store::CacheError::Pin(store::Error::Closed)));
@@ -427,13 +504,13 @@ async fn exercise_upload(refuses_upgrade: bool) {
         .await
         .unwrap();
     let reply = pic.await_call(pending).await.unwrap();
-    let result: Result<store::CacheReady, store::CacheError> = ic_wire::decode(
+    let result: Result<store::CacheReady, store::CacheError> = super::decode_frame(
         &reply,
         ic_wire::Encoding::Frame {
             method: store::PREPARE_CACHE,
             direction: ic_wire::Direction::Response,
         },
-        store::LIMITS,
+        crate::wire_limits(store::LIMITS),
     )
     .unwrap();
     assert_eq!(result, Err(store::CacheError::Authority));

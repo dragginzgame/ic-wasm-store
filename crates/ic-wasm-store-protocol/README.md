@@ -7,8 +7,8 @@ it does not make network calls, manage stable memory or deploy code.
 
 ```toml
 [dependencies]
-ic-wasm-store-protocol = "0.12"
-ic-wire = { version = "0.32.0", default-features = false }
+ic-wasm-store-protocol = { version = "0.13", features = ["wire-codec"] }
+ic-wire = { version = "0.33.1", default-features = false }
 ```
 
 A release is an application-defined name and version, bound to a SHA-256 digest,
@@ -58,3 +58,33 @@ admits at most 32 active grants.
 - [API documentation](https://docs.rs/ic-wasm-store-protocol)
 - [Source and development instructions](https://github.com/dragginzgame/ic-wasm-store)
 - [Compatibility and removal semantics](https://github.com/dragginzgame/ic-wasm-store/blob/v0.9.0/docs/design/extraction.md)
+## Wire frames
+
+Store 0.13 uses IC Wire 0.33 sparse envelopes. Switch the client and canister
+together. Enable this crate's `wire-codec` feature for Rust clients that encode
+or decode Store messages. Enable `wire-schema` when generating client metadata.
+
+Use the protocol's numeric budgets to construct limits for the Wire version in
+your client. For chunk replies, use the same conversion with `CHUNK_LIMITS`.
+
+```rust
+let budget = ic_wasm_store_protocol::LIMITS;
+let limits = ic_wire::Limits {
+    bytes: budget.bytes,
+    allocation: budget.allocation,
+    nodes: budget.nodes,
+    depth: budget.depth,
+};
+let request = ic_wire::encode(
+    &ic_wire::Message(ic_wasm_store_protocol::Inspect::Info),
+    ic_wire::Encoding::Frame {
+        method: ic_wasm_store_protocol::INSPECT,
+        direction: ic_wire::Direction::Request,
+    },
+    limits,
+)?;
+```
+
+Decode the reply as `ic_wire::Message<Result<Inspection, Error>>` with the same
+method ID and `Direction::Response`. The decoded message's first field contains
+the result.

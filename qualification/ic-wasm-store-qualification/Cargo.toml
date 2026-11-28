@@ -14,8 +14,9 @@ ignored = ["toko-tooling"]
 
 [dev-dependencies]
 ic-testkit.workspace = true
-ic-wasm-store-protocol.workspace = true
+ic-wasm-store-protocol = { workspace = true, features = ["wire-codec"] }
 ic-wire.workspace = true
+postcard.workspace = true
 serde.workspace = true
 tokio.workspace = true
 toko-tooling.workspace = true

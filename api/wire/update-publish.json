@@ -6,8 +6,10 @@
   "request":{"root":"Request","payload_limits":{"bytes":16373,"nodes":32768,"depth":16}},
   "response":{"root":"Reply","payload_limits":{"bytes":16373,"nodes":32768,"depth":16}},
   "schemas":{
-    "Reply":{"k":"ref","name":"Wire_Result_7116f94cb141bc48"},
-    "Request":{"k":"ref","name":"Wire_Release_e3a6c4e0d6c2bd12"},
+    "Reply":{"k":"ref","name":"Wire_Message_02b6255f369537c9"},
+    "Request":{"k":"ref","name":"Wire_Message_03c76826449985ff"},
+    "Wire_Message_02b6255f369537c9":{"k":"extension-tuple","items":[{"k":"ref","name":"Wire_Result_7116f94cb141bc48"}],"extensions":[],"projected":true},
+    "Wire_Message_03c76826449985ff":{"k":"extension-tuple","items":[{"k":"ref","name":"Wire_Release_e3a6c4e0d6c2bd12"}],"extensions":[],"projected":true},
     "Wire_Release_e3a6c4e0d6c2bd12":{"k":"record","fields":[
       {"name":"name","value":{"k":"ref","name":"Wire_String_76e26e9121e02e46"}},
       {"name":"version","value":{"k":"ref","name":"Wire_String_76e26e9121e02e46"}}],"fixed":true},

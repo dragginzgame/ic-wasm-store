@@ -6,8 +6,10 @@
   "request":{"root":"Request","payload_limits":{"bytes":16373,"nodes":32768,"depth":16}},
   "response":{"root":"Reply","payload_limits":{"bytes":16373,"nodes":32768,"depth":16}},
   "schemas":{
-    "Reply":{"k":"ref","name":"Wire_Result_805b875a06e054cf"},
-    "Request":{"k":"ref","name":"Wire_PrepareCache_573a2b8bd1699f9a"},
+    "Reply":{"k":"ref","name":"Wire_Message_976ead2305d1367a"},
+    "Request":{"k":"ref","name":"Wire_Message_b9cf82311140252d"},
+    "Wire_Message_976ead2305d1367a":{"k":"extension-tuple","items":[{"k":"ref","name":"Wire_Result_805b875a06e054cf"}],"extensions":[],"projected":true},
+    "Wire_Message_b9cf82311140252d":{"k":"extension-tuple","items":[{"k":"ref","name":"Wire_PrepareCache_573a2b8bd1699f9a"}],"extensions":[],"projected":true},
     "Wire_PrepareCache_573a2b8bd1699f9a":{"k":"record","fields":[
       {"name":"pin","value":{"k":"ref","name":"Wire_Pin_bf997e450565d8a0"}},
       {"name":"expires_at_ns","value":{"k":"ref","name":"Wire_u64_4d35d3193e8d66f2"}}],"fixed":true},

@@ -126,13 +126,13 @@ async fn closed_upgrade_preserves_removal_fences_and_exact_activation_owner() {
                 .await
                 .is_err()
         );
-        let wrong_direction = ic_wire::encode(
+        let wrong_direction = super::encode_frame(
             &request,
             ic_wire::Encoding::Frame {
                 method: store::REMOVE,
                 direction: ic_wire::Direction::Response,
             },
-            store::LIMITS,
+            crate::wire_limits(store::LIMITS),
         )
         .unwrap();
         assert!(
@@ -178,13 +178,13 @@ async fn closed_upgrade_preserves_removal_fences_and_exact_activation_owner() {
             .await;
 
         if caller == other {
-            let decoded: Result<store::preservation::Page, store::Error> = ic_wire::decode(
+            let decoded: Result<store::preservation::Page, store::Error> = super::decode_frame(
                 &reply.unwrap(),
                 ic_wire::Encoding::Frame {
                     method: store::PRESERVATION,
                     direction: ic_wire::Direction::Response,
                 },
-                store::LIMITS,
+                crate::wire_limits(store::LIMITS),
             )
             .unwrap();
             assert_eq!(decoded, Err(store::Error::Conflict));

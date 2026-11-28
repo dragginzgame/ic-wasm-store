@@ -2,7 +2,7 @@
 
 use ic_storage::adapter::{Bound, Storable};
 use ic_wasm_store_protocol::{
-    CHUNK_BYTES, LIMITS, MAX_CHUNKS, MAX_PINS, MAX_READ_GRANTS, Manifest, Quota, Release,
+    CHUNK_BYTES, MAX_CHUNKS, MAX_PINS, MAX_READ_GRANTS, Manifest, Quota, Release,
 };
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -159,8 +159,7 @@ impl CheckedRecord for Artifact {
 
     fn decode_record(bytes: Cow<'_, [u8]>) -> Result<Self, &'static str> {
         let payload = bytes.strip_prefix(b"CWA4").ok_or("artifact schema")?;
-        let value: Self = ic_wire::decode(payload, ic_wire::Encoding::Payload, RECORD_LIMITS)
-            .map_err(|_| "artifact record")?;
+        let value: Self = decode(payload).map_err(|_| "artifact record")?;
         if !value.valid() {
             return Err("artifact invariant");
         }
@@ -232,8 +231,7 @@ impl CheckedRecord for Settings {
 
     fn decode_record(bytes: Cow<'_, [u8]>) -> Result<Self, &'static str> {
         let payload = bytes.strip_prefix(b"CWS6").ok_or("settings schema")?;
-        let value: Self = ic_wire::decode(payload, ic_wire::Encoding::Payload, RECORD_LIMITS)
-            .map_err(|_| "settings record")?;
+        let value: Self = decode(payload).map_err(|_| "settings record")?;
         if !value.valid() {
             return Err("settings invariant");
         }
@@ -266,22 +264,30 @@ impl RetainedPin {
     }
 }
 
-const RECORD_LIMITS: ic_wire::Limits = ic_wire::Limits {
-    allocation: 1_048_576,
-    nodes: 65_536,
-    ..LIMITS
-};
+const METADATA_BYTES: u32 = 16_384;
 const METADATA_BOUND: Bound = Bound::Bounded {
-    max_size: 16_384,
+    max_size: METADATA_BYTES,
     is_fixed_size: false,
 };
 
+// Retained metadata uses the original tagged Postcard format.
+fn decode<T: serde::de::DeserializeOwned>(payload: &[u8]) -> Result<T, &'static str> {
+    if payload.len() > METADATA_BYTES as usize - 4 {
+        return Err("store record size");
+    }
+    let (value, remaining) = postcard::take_from_bytes(payload).map_err(|_| "store record")?;
+    if !remaining.is_empty() {
+        return Err("store record trailing bytes");
+    }
+    Ok(value)
+}
+
 fn encode<T: Serialize>(value: &T, tag: &[u8]) -> Result<Cow<'static, [u8]>, &'static str> {
     let mut bytes = tag.to_vec();
-    bytes.extend(
-        ic_wire::encode(value, ic_wire::Encoding::Payload, RECORD_LIMITS)
-            .map_err(|_| "store record")?,
-    );
+    bytes.extend(postcard::to_allocvec(value).map_err(|_| "store record")?);
+    if bytes.len() > METADATA_BYTES as usize {
+        return Err("store record size");
+    }
 
     Ok(Cow::Owned(bytes))
 }

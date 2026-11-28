@@ -20,24 +20,24 @@ macro_rules! mount_endpoint {
             }
 
             fn decode(bytes: &[u8]) -> Result<$request, ic_wire::Error> {
-                ic_wire::decode(
+                ic_wire::decode::<ic_wire::Message<$request>>(
                     bytes,
                     ic_wire::Encoding::Frame {
                         method: protocol::$id,
                         direction: ic_wire::Direction::Request,
                     },
-                    protocol::$input_limits,
-                )
+                    $crate::wire_limits(protocol::$input_limits),
+                ).map(|message| message.0)
             }
 
             fn encode(reply: $reply) -> Result<Vec<u8>, ic_wire::Error> {
                 ic_wire::encode(
-                    &reply,
+                    &ic_wire::Message(reply),
                     ic_wire::Encoding::Frame {
                         method: protocol::$id,
                         direction: ic_wire::Direction::Response,
                     },
-                    protocol::$output_limits,
+                    $crate::wire_limits(protocol::$output_limits),
                 )
             }
 
@@ -118,12 +118,12 @@ macro_rules! endpoints {
         #[cfg(test)]
         fn wire_endpoints() -> Vec<wire_api::Endpoint> {
             vec![$(
-                wire_api::Endpoint::new::<$request, $reply>(
+                wire_api::Endpoint::new::<ic_wire::Message<$request>, ic_wire::Message<$reply>>(
                     $export,
                     stringify!($kind),
                     protocol::$id,
-                    protocol::$input_limits,
-                    protocol::$output_limits,
+                    $crate::wire_limits(protocol::$input_limits),
+                    $crate::wire_limits(protocol::$output_limits),
                 ),
             )*]
         }

@@ -2,7 +2,8 @@
 
 use ic_wire::{
     Direction, Encoding, Limits,
-    typescript::{Method, PayloadLimits, SchemaLimits, SchemaRegistry, Wire},
+    evolution::__private::EvolvingSchema,
+    typescript::{PayloadLimits, SchemaLimits, SchemaRegistry},
 };
 use std::{collections::BTreeSet, env, fs, path::PathBuf};
 use wasmparser::{ExternalKind, Parser, Payload};
@@ -14,7 +15,7 @@ pub(super) struct Endpoint {
 }
 
 impl Endpoint {
-    pub(super) fn new<Request: Wire, Reply: Wire>(
+    pub(super) fn new<Request: EvolvingSchema, Reply: EvolvingSchema>(
         name: &'static str,
         mode: &'static str,
         id: u64,
@@ -22,18 +23,18 @@ impl Endpoint {
         reply: Limits,
     ) -> Self {
         let mut registry = SchemaRegistry::new(SchemaLimits::default()).expect("schema budget");
-        registry.register::<Request>("Request").expect(name);
-        registry.register::<Reply>("Reply").expect(name);
         // Prefix codec identifiers to keep them valid JavaScript names.
         let codec = format!("wire_{name}");
-        let method = Method {
-            export: &codec,
-            id,
-            request: "Request",
-            response: "Reply",
-            request_limits: payload_limits(request, id, Direction::Request),
-            response_limits: payload_limits(reply, id, Direction::Response),
-        };
+        let mut method = registry
+            .register_evolving_method(
+                &ic_wire::Method::<Request, Reply>::new(name, request, reply),
+                &codec,
+                ("Request", payload_limits(request, id, Direction::Request)),
+                ("Reply", payload_limits(reply, id, Direction::Response)),
+            )
+            .expect(name);
+        // Store already assigns explicit numeric method IDs.
+        method.id = id;
         let mut documents = registry
             .finish()
             .expect(name)
@@ -49,10 +50,13 @@ impl Endpoint {
 }
 
 fn payload_limits(limits: Limits, method: u64, direction: Direction) -> PayloadLimits {
-    let header = ic_wire::encoded_len(&(), Encoding::Frame { method, direction }, limits)
+    let empty = ic_wire::Message(());
+    let framed = ic_wire::encoded_len(&empty, Encoding::Frame { method, direction }, limits)
         .expect("an empty frame fits the endpoint budget");
+    let payload = ic_wire::encoded_len(&empty, Encoding::Payload, limits)
+        .expect("an empty message fits the endpoint budget");
     PayloadLimits {
-        bytes: (limits.bytes - header) as u64,
+        bytes: (limits.bytes - (framed - payload)) as u64,
         nodes: limits.nodes as u64,
         depth: limits.depth as u64,
     }

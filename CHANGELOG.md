@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.13.0] - 2026-11-28
+
+### ⚠️ Breaking
+
+- Adopt IC Wire 0.33.1. All Store requests and replies use the sparse `ic_wire::Message<T>` envelope. Upgrade clients and the canister together. Method IDs and frame size limits are preserved. Codec allocation allowances account for the new projection and encoding passes.
+- The protocol exports numeric `FrameBudget` values for `LIMITS` and `CHUNK_LIMITS`. Copy their four fields into the client codec’s limits. Passive consumers can use the protocol without IC Wire.
+
 ## [0.12.0] - 2026-11-28
 
 ### ⚠️ Breaking

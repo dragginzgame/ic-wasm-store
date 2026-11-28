@@ -6,8 +6,10 @@
   "request":{"root":"Request","payload_limits":{"bytes":16373,"nodes":32768,"depth":16}},
   "response":{"root":"Reply","payload_limits":{"bytes":16373,"nodes":32768,"depth":16}},
   "schemas":{
-    "Reply":{"k":"ref","name":"Wire_Result_65a13c7ddbfce383"},
-    "Request":{"k":"ref","name":"Wire_Request_2f681b5040b9625c"},
+    "Reply":{"k":"ref","name":"Wire_Message_c37bd65afa2f6b88"},
+    "Request":{"k":"ref","name":"Wire_Message_b4e499e9063fe2b9"},
+    "Wire_Message_b4e499e9063fe2b9":{"k":"extension-tuple","items":[{"k":"ref","name":"Wire_Request_2f681b5040b9625c"}],"extensions":[],"projected":true},
+    "Wire_Message_c37bd65afa2f6b88":{"k":"extension-tuple","items":[{"k":"ref","name":"Wire_Result_65a13c7ddbfce383"}],"extensions":[],"projected":true},
     "Wire_Request_2f681b5040b9625c":{"k":"record","fields":[
       {"name":"attempt","value":{"k":"ref","name":"Wire_MaintenanceAttempt_45074e55a1eeadf5"}},
       {"name":"after","value":{"k":"ref","name":"Wire_Option_95d1035dbc3e8f5f"}}],"fixed":true},

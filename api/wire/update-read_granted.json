@@ -6,13 +6,15 @@
   "request":{"root":"Request","payload_limits":{"bytes":16373,"nodes":32768,"depth":16}},
   "response":{"root":"Reply","payload_limits":{"bytes":1052661,"nodes":4096,"depth":16}},
   "schemas":{
-    "Reply":{"k":"ref","name":"Wire_Result_13ec7748ab158443"},
-    "Request":{"k":"ref","name":"Wire_GrantedRead_ea0885dfc2e5e6c4"},
+    "Reply":{"k":"ref","name":"Wire_Message_46d083f8aa598806"},
+    "Request":{"k":"ref","name":"Wire_Message_092f070b8aa746b5"},
+    "Wire_Message_092f070b8aa746b5":{"k":"extension-tuple","items":[{"k":"ref","name":"Wire_GrantedRead_ea0885dfc2e5e6c4"}],"extensions":[],"projected":true},
     "Wire_GrantedRead_ea0885dfc2e5e6c4":{"k":"record","fields":[
       {"name":"owner","value":{"k":"ref","name":"Wire_ByteBuf_164392c7b0017b64"}},
       {"name":"grant","value":{"k":"ref","name":"Wire_ReadGrant_f41f65db49644679"}},
       {"name":"index","value":{"k":"ref","name":"Wire_u32_4d2bdf193e8526d1"}}],"fixed":true},
     "Wire_ByteBuf_164392c7b0017b64":{"k":"bytes"},
+    "Wire_Message_46d083f8aa598806":{"k":"extension-tuple","items":[{"k":"ref","name":"Wire_Result_13ec7748ab158443"}],"extensions":[],"projected":true},
     "Wire_ReadGrant_f41f65db49644679":{"k":"record","fields":[
       {"name":"pin","value":{"k":"ref","name":"Wire_Pin_bf997e450565d8a0"}},
       {"name":"installer","value":{"k":"ref","name":"Wire_ByteBuf_164392c7b0017b64"}},

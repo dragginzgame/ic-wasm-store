@@ -13,6 +13,15 @@
 
 mod state;
 
+const fn wire_limits(budget: ic_wasm_store_protocol::FrameBudget) -> ic_wire::Limits {
+    ic_wire::Limits {
+        bytes: budget.bytes,
+        allocation: budget.allocation,
+        nodes: budget.nodes,
+        depth: budget.depth,
+    }
+}
+
 mod canister {
     mod cache;
     mod mount;

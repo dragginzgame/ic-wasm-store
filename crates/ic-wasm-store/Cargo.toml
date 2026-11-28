@@ -26,8 +26,9 @@ ic-platform-protocol = { workspace = true, features = ["management-chunks"] }
 ic-platform-runtime = { workspace = true, features = ["entrypoint-macros"] }
 ic-platform-types.workspace = true
 ic-storage.workspace = true
-ic-wasm-store-protocol.workspace = true
+ic-wasm-store-protocol = { workspace = true, features = ["wire-codec"] }
 ic-wire.workspace = true
+postcard.workspace = true
 serde.workspace = true
 sha2.workspace = true
 

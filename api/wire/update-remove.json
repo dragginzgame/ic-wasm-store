@@ -6,8 +6,10 @@
   "request":{"root":"Request","payload_limits":{"bytes":16373,"nodes":32768,"depth":16}},
   "response":{"root":"Reply","payload_limits":{"bytes":16373,"nodes":32768,"depth":16}},
   "schemas":{
-    "Reply":{"k":"ref","name":"Wire_Result_fd17e6a2acb3a1e7"},
-    "Request":{"k":"ref","name":"Wire_Remove_7dd5248c660d3f41"},
+    "Reply":{"k":"ref","name":"Wire_Message_76b80d526003ab88"},
+    "Request":{"k":"ref","name":"Wire_Message_f572ac9765782fa0"},
+    "Wire_Message_76b80d526003ab88":{"k":"extension-tuple","items":[{"k":"ref","name":"Wire_Result_fd17e6a2acb3a1e7"}],"extensions":[],"projected":true},
+    "Wire_Message_f572ac9765782fa0":{"k":"extension-tuple","items":[{"k":"ref","name":"Wire_Remove_7dd5248c660d3f41"}],"extensions":[],"projected":true},
     "Wire_Remove_7dd5248c660d3f41":{"k":"enum","variants":[
       {"name":"Cancel","id":0,"value":{"k":"ref","name":"Wire_Manifest_62fe1ea223a21398"}},
       {"name":"Delete","id":1,"value":{"k":"ref","name":"Wire_Manifest_62fe1ea223a21398"}}]},

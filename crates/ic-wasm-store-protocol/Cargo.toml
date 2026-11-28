@@ -17,15 +17,17 @@ categories = ["wasm", "encoding"]
 ignored = ["serde_bytes", "toko-tooling"]
 
 [features]
-wire-schema = ["ic-wire/derive"]
+wire-codec = ["dep:ic-wire"]
+wire-schema = ["wire-codec", "ic-wire/typescript"]
 
 [dependencies]
-ic-wire.workspace = true
+ic-wire = { workspace = true, optional = true }
 serde.workspace = true
 serde_bytes.workspace = true
 sha2.workspace = true
 
 [dev-dependencies]
+ic-wire.workspace = true
 toko-tooling.workspace = true
 
 [lints]

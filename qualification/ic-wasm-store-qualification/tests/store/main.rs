@@ -8,7 +8,20 @@ mod upload;
 
 use ic_testkit::pocket_ic::{CanisterId, nonblocking::PocketIc};
 use ic_wasm_store_protocol as store;
+use ic_wire::{
+    Encoding, Limits, Message,
+    evolution::inline::{Fixed, Inline},
+};
 use serde::{Serialize, de::DeserializeOwned};
+
+const fn wire_limits(budget: store::FrameBudget) -> ic_wire::Limits {
+    ic_wire::Limits {
+        bytes: budget.bytes,
+        allocation: budget.allocation,
+        nodes: budget.nodes,
+        depth: budget.depth,
+    }
+}
 
 struct Client<'a> {
     pic: &'a PocketIc,
@@ -17,12 +30,12 @@ struct Client<'a> {
 }
 
 impl Client<'_> {
-    async fn update<T: Serialize, R: DeserializeOwned>(
+    async fn update<T: Clone + Fixed + Serialize + DeserializeOwned, R: for<'de> Inline<'de>>(
         &self,
         method: &str,
         id: u64,
         input: &T,
-        limits: ic_wire::Limits,
+        limits: store::FrameBudget,
     ) -> R {
         let reply = self
             .pic
@@ -30,26 +43,26 @@ impl Client<'_> {
                 self.id,
                 self.operator,
                 method,
-                ic_wire::encode(
+                encode_frame(
                     input,
                     ic_wire::Encoding::Frame {
                         method: id,
                         direction: ic_wire::Direction::Request,
                     },
-                    limits,
+                    crate::wire_limits(limits),
                 )
                 .unwrap(),
             )
             .await
             .unwrap();
 
-        ic_wire::decode(
+        decode_frame(
             &reply,
             ic_wire::Encoding::Frame {
                 method: id,
                 direction: ic_wire::Direction::Response,
             },
-            limits,
+            crate::wire_limits(limits),
         )
         .unwrap()
     }
@@ -93,26 +106,42 @@ impl Client<'_> {
     }
 }
 
-fn frame<T: Serialize>(method: u64, input: &T) -> Vec<u8> {
-    ic_wire::encode(
+fn frame<T: Clone + Fixed + Serialize + DeserializeOwned>(method: u64, input: &T) -> Vec<u8> {
+    encode_frame(
         input,
         ic_wire::Encoding::Frame {
             method,
             direction: ic_wire::Direction::Request,
         },
-        store::LIMITS,
+        crate::wire_limits(store::LIMITS),
     )
     .unwrap()
 }
 
-fn response<T: DeserializeOwned>(method: u64, bytes: &[u8]) -> T {
-    ic_wire::decode(
+fn response<T: for<'de> Inline<'de>>(method: u64, bytes: &[u8]) -> T {
+    decode_frame(
         bytes,
         ic_wire::Encoding::Frame {
             method,
             direction: ic_wire::Direction::Response,
         },
-        store::LIMITS,
+        crate::wire_limits(store::LIMITS),
     )
     .unwrap()
+}
+
+fn encode_frame<T: Clone + Fixed + Serialize + DeserializeOwned>(
+    value: &T,
+    encoding: Encoding,
+    limits: Limits,
+) -> Result<Vec<u8>, ic_wire::Error> {
+    ic_wire::encode(&Message(value.clone()), encoding, limits)
+}
+
+fn decode_frame<'de, T: Inline<'de>>(
+    bytes: &'de [u8],
+    encoding: Encoding,
+    limits: Limits,
+) -> Result<T, ic_wire::Error> {
+    ic_wire::decode::<Message<T>>(bytes, encoding, limits).map(|message| message.0)
 }

@@ -6,8 +6,10 @@
   "request":{"root":"Request","payload_limits":{"bytes":16373,"nodes":32768,"depth":16}},
   "response":{"root":"Reply","payload_limits":{"bytes":16373,"nodes":32768,"depth":16}},
   "schemas":{
-    "Reply":{"k":"ref","name":"Wire_Result_7116f94cb141bc48"},
-    "Request":{"k":"ref","name":"Wire_Manifest_62fe1ea223a21398"},
+    "Reply":{"k":"ref","name":"Wire_Message_02b6255f369537c9"},
+    "Request":{"k":"ref","name":"Wire_Message_6d135cad82ac392f"},
+    "Wire_Message_02b6255f369537c9":{"k":"extension-tuple","items":[{"k":"ref","name":"Wire_Result_7116f94cb141bc48"}],"extensions":[],"projected":true},
+    "Wire_Message_6d135cad82ac392f":{"k":"extension-tuple","items":[{"k":"ref","name":"Wire_Manifest_62fe1ea223a21398"}],"extensions":[],"projected":true},
     "Wire_Manifest_62fe1ea223a21398":{"k":"record","fields":[
       {"name":"release","value":{"k":"ref","name":"Wire_Release_e3a6c4e0d6c2bd12"}},
       {"name":"hash","value":{"k":"ref","name":"Wire__u8__32__a6c3ffa4fc6f7348"}},

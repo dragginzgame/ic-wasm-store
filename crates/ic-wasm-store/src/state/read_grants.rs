@@ -2,7 +2,7 @@
 
 use super::{Error, MemoryBacking, State, records::RetainedReadGrant};
 use ic_wasm_store_protocol::{
-    Chunk, GrantedRead, LIMITS, MAX_READ_GRANT_NS, MAX_READ_GRANTS, Read, ReadGrant, digest,
+    Chunk, GrantedRead, MAX_READ_GRANT_NS, MAX_READ_GRANTS, Read, ReadGrant, digest,
 };
 
 impl<M: MemoryBacking> State<M> {
@@ -89,11 +89,7 @@ impl<M: MemoryBacking> State<M> {
 }
 
 fn fingerprint(owner: &[u8], grant: &ReadGrant) -> Result<[u8; 32], Error> {
-    let bytes = ic_wire::encode(
-        &(b"Store read grant v1", owner, grant),
-        ic_wire::Encoding::Payload,
-        LIMITS,
-    )
-    .map_err(|_| Error::Invalid)?;
+    let bytes = postcard::to_allocvec(&(b"Store read grant v1", owner, grant))
+        .map_err(|_| Error::Invalid)?;
     Ok(digest(&bytes))
 }

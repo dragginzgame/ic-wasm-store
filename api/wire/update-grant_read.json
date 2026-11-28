@@ -6,8 +6,10 @@
   "request":{"root":"Request","payload_limits":{"bytes":16373,"nodes":32768,"depth":16}},
   "response":{"root":"Reply","payload_limits":{"bytes":16373,"nodes":32768,"depth":16}},
   "schemas":{
-    "Reply":{"k":"ref","name":"Wire_Result_09f995a1c8bdc315"},
-    "Request":{"k":"ref","name":"Wire_ReadGrant_f41f65db49644679"},
+    "Reply":{"k":"ref","name":"Wire_Message_c0481e21e6f35a2a"},
+    "Request":{"k":"ref","name":"Wire_Message_1420e352daf6756a"},
+    "Wire_Message_1420e352daf6756a":{"k":"extension-tuple","items":[{"k":"ref","name":"Wire_ReadGrant_f41f65db49644679"}],"extensions":[],"projected":true},
+    "Wire_Message_c0481e21e6f35a2a":{"k":"extension-tuple","items":[{"k":"ref","name":"Wire_Result_09f995a1c8bdc315"}],"extensions":[],"projected":true},
     "Wire_ReadGrant_f41f65db49644679":{"k":"record","fields":[
       {"name":"pin","value":{"k":"ref","name":"Wire_Pin_bf997e450565d8a0"}},
       {"name":"installer","value":{"k":"ref","name":"Wire_ByteBuf_164392c7b0017b64"}},

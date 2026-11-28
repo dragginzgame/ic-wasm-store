@@ -3,8 +3,7 @@ use crate::{Custody, MaintenanceAttempt, Quota, Release};
 use serde::{Deserialize, Serialize};
 
 /// Caller must own the exact currently closed attempt on every page.
-#[cfg_attr(feature = "wire-schema", derive(ic_wire::typescript::Wire))]
-#[cfg_attr(feature = "wire-schema", wire(fixed))]
+#[cfg_attr(any(test, feature = "wire-codec"), derive(ic_wire::WireSchema))]
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Request {
     /// Exact closure, never inferred from current state.
@@ -14,8 +13,7 @@ pub struct Request {
 }
 
 /// Stable metadata counters, deliberately excluding executable identity and cache state.
-#[cfg_attr(feature = "wire-schema", derive(ic_wire::typescript::Wire))]
-#[cfg_attr(feature = "wire-schema", wire(fixed))]
+#[cfg_attr(any(test, feature = "wire-codec"), derive(ic_wire::WireSchema))]
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Catalog {
     /// Configured limits, including incomplete releases.
@@ -31,7 +29,7 @@ pub struct Catalog {
 }
 
 /// Exact retained label state; removal is distinct from an empty upload.
-#[cfg_attr(feature = "wire-schema", derive(ic_wire::typescript::Wire))]
+#[cfg_attr(any(test, feature = "wire-codec"), derive(ic_wire::WireSchema))]
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub enum Entry {
     /// Active upload or published release, including all shared artifact pins.
@@ -65,8 +63,7 @@ impl Entry {
 }
 
 /// One catalog page retaining the exact state of each label.
-#[cfg_attr(feature = "wire-schema", derive(ic_wire::typescript::Wire))]
-#[cfg_attr(feature = "wire-schema", wire(fixed))]
+#[cfg_attr(any(test, feature = "wire-codec"), derive(ic_wire::WireSchema))]
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Page {
     /// Unchanged quota/counters across the closed scan, including removed labels.

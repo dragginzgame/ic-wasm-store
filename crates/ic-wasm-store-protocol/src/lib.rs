@@ -52,18 +52,33 @@ pub const CHUNK_BYTES: usize = 1024 * 1024;
 pub const MAX_CHUNKS: usize = (8 * 1024 * 1024) / CHUNK_BYTES;
 /// Maximum releases returned by one metadata page.
 pub const PAGE_SIZE: usize = 4;
+/// Numeric frame budgets for clients and endpoints using the Store protocol.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct FrameBudget {
+    /// Maximum encoded frame bytes, including its header.
+    pub bytes: usize,
+    /// Maximum allocation charged during traversal.
+    pub allocation: usize,
+    /// Maximum visited nodes.
+    pub nodes: usize,
+    /// Maximum traversal depth.
+    pub depth: usize,
+}
+
 /// Small metadata and pagination frames.
-pub const LIMITS: ic_wire::Limits = ic_wire::Limits {
+pub const LIMITS: FrameBudget = FrameBudget {
     bytes: 16_384,
-    allocation: 262_144,
+    // Wire charges both projected sizing and encoding for the largest custody reply.
+    allocation: 524_288,
     // Covers Wire traversal of four full manifests, including fixed hash arrays.
     nodes: 32_768,
     depth: 16,
 };
 /// One raw chunk plus its bounded envelope; Wire charges allocation per blob byte.
-pub const CHUNK_LIMITS: ic_wire::Limits = ic_wire::Limits {
+pub const CHUNK_LIMITS: FrameBudget = FrameBudget {
     bytes: CHUNK_BYTES + 4096,
-    allocation: CHUNK_BYTES * 9 + 65_536,
+    // Charge both passes over the blob and leave room for the frame envelope.
+    allocation: CHUNK_BYTES * 17 + 65_536,
     nodes: 4096,
     depth: 16,
 };
@@ -73,7 +88,7 @@ pub const CHUNK_LIMITS: ic_wire::Limits = ic_wire::Limits {
 /// Metadata available through query execution.
 ///
 
-#[cfg_attr(feature = "wire-schema", derive(ic_wire::typescript::Wire))]
+#[cfg_attr(any(test, feature = "wire-codec"), derive(ic_wire::WireSchema))]
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub enum Inspect {
     /// Store usage and quotas.
@@ -89,7 +104,7 @@ pub enum Inspect {
 /// Evidence obtained through replicated execution.
 ///
 
-#[cfg_attr(feature = "wire-schema", derive(ic_wire::typescript::Wire))]
+#[cfg_attr(any(test, feature = "wire-codec"), derive(ic_wire::WireSchema))]
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub enum Observe {
     /// Store usage and quotas.
@@ -109,7 +124,7 @@ pub enum Observe {
 /// Result of the corresponding inspection.
 ///
 
-#[cfg_attr(feature = "wire-schema", derive(ic_wire::typescript::Wire))]
+#[cfg_attr(any(test, feature = "wire-codec"), derive(ic_wire::WireSchema))]
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub enum Inspection {
     /// Usage and quotas.
@@ -125,7 +140,7 @@ pub enum Inspection {
 /// Result of the corresponding observation.
 ///
 
-#[cfg_attr(feature = "wire-schema", derive(ic_wire::typescript::Wire))]
+#[cfg_attr(any(test, feature = "wire-codec"), derive(ic_wire::WireSchema))]
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub enum Observation {
     /// Usage and quotas.
@@ -145,7 +160,7 @@ pub enum Observation {
 /// Remove one exact manifest, retaining its immutable identity.
 ///
 
-#[cfg_attr(feature = "wire-schema", derive(ic_wire::typescript::Wire))]
+#[cfg_attr(any(test, feature = "wire-codec"), derive(ic_wire::WireSchema))]
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub enum Remove {
     /// Expect an unpublished upload.
@@ -159,8 +174,7 @@ pub enum Remove {
 /// Controller-issued authority for a named installer to read one pinned release.
 ///
 
-#[cfg_attr(feature = "wire-schema", derive(ic_wire::typescript::Wire))]
-#[cfg_attr(feature = "wire-schema", wire(fixed))]
+#[cfg_attr(any(test, feature = "wire-codec"), derive(ic_wire::WireSchema))]
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct ReadGrant {
     /// Exact manifest and operation of the issuing controller's retained pin.
@@ -179,8 +193,7 @@ pub struct ReadGrant {
 /// Replicated read of one chunk under a previously issued grant.
 ///
 
-#[cfg_attr(feature = "wire-schema", derive(ic_wire::typescript::Wire))]
-#[cfg_attr(feature = "wire-schema", wire(fixed))]
+#[cfg_attr(any(test, feature = "wire-codec"), derive(ic_wire::WireSchema))]
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct GrantedRead {
     /// Raw principal bytes of the controller that issued the grant.
@@ -193,8 +206,7 @@ pub struct GrantedRead {
 }
 
 /// Monotonic maintenance identity; a new attempt uses the previous sequence plus one.
-#[cfg_attr(feature = "wire-schema", derive(ic_wire::typescript::Wire))]
-#[cfg_attr(feature = "wire-schema", wire(fixed))]
+#[cfg_attr(any(test, feature = "wire-codec"), derive(ic_wire::WireSchema))]
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct MaintenanceAttempt {
     /// Nonzero sequence; never wraps or resets after activation.
@@ -204,8 +216,7 @@ pub struct MaintenanceAttempt {
 }
 
 /// Latest retained admission transition. Closed does not mean in-flight calls have drained.
-#[cfg_attr(feature = "wire-schema", derive(ic_wire::typescript::Wire))]
-#[cfg_attr(feature = "wire-schema", wire(fixed))]
+#[cfg_attr(any(test, feature = "wire-codec"), derive(ic_wire::WireSchema))]
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Admission {
     /// Original attempt, retained after activation to fence stale requests.
@@ -218,7 +229,7 @@ pub struct Admission {
 }
 
 /// Explicit local admission operations; no installation or automatic activation.
-#[cfg_attr(feature = "wire-schema", derive(ic_wire::typescript::Wire))]
+#[cfg_attr(any(test, feature = "wire-codec"), derive(ic_wire::WireSchema))]
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub enum AdmissionCommand {
     /// Read the latest attempt, or None before the first closure.
@@ -231,8 +242,7 @@ pub enum AdmissionCommand {
 
 /// One immutable retention obligation, scoped by caller and artifact hash.
 /// An operation may pin several artifacts, but cannot relabel an existing pin.
-#[cfg_attr(feature = "wire-schema", derive(ic_wire::typescript::Wire))]
-#[cfg_attr(feature = "wire-schema", wire(fixed))]
+#[cfg_attr(any(test, feature = "wire-codec"), derive(ic_wire::WireSchema))]
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Pin {
     /// Digest of the caller's retained operation; nonzero and never inferred from “latest”.
@@ -242,8 +252,7 @@ pub struct Pin {
 }
 
 /// Durable retention evidence, independent of cache availability and deployment approval.
-#[cfg_attr(feature = "wire-schema", derive(ic_wire::typescript::Wire))]
-#[cfg_attr(feature = "wire-schema", wire(fixed))]
+#[cfg_attr(any(test, feature = "wire-codec"), derive(ic_wire::WireSchema))]
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct PinReceipt {
     /// Authenticated caller that owns this obligation.
@@ -255,8 +264,7 @@ pub struct PinReceipt {
 
 /// One retained obligation on the artifact identified by a custody observation.
 /// Labels may differ from the requested release when several versions share bytes.
-#[cfg_attr(feature = "wire-schema", derive(ic_wire::typescript::Wire))]
-#[cfg_attr(feature = "wire-schema", wire(fixed))]
+#[cfg_attr(any(test, feature = "wire-codec"), derive(ic_wire::WireSchema))]
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Retention {
     /// Actual principal captured when the pin was admitted.
@@ -269,8 +277,7 @@ pub struct Retention {
 }
 
 /// One bounded observation, not an atomic catalog snapshot or maintenance approval.
-#[cfg_attr(feature = "wire-schema", derive(ic_wire::typescript::Wire))]
-#[cfg_attr(feature = "wire-schema", wire(fixed))]
+#[cfg_attr(any(test, feature = "wire-codec"), derive(ic_wire::WireSchema))]
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Custody {
     /// Requested release's progress, including staged and unpublished content.
@@ -281,8 +288,7 @@ pub struct Custody {
 }
 
 /// One explicitly bounded, idempotent cache preparation request; never installs code.
-#[cfg_attr(feature = "wire-schema", derive(ic_wire::typescript::Wire))]
-#[cfg_attr(feature = "wire-schema", wire(fixed))]
+#[cfg_attr(any(test, feature = "wire-codec"), derive(ic_wire::WireSchema))]
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct PrepareCache {
     /// Must already be retained for this caller.
@@ -292,8 +298,7 @@ pub struct PrepareCache {
 }
 
 /// Cache preparation evidence; cache availability must still hold at installation.
-#[cfg_attr(feature = "wire-schema", derive(ic_wire::typescript::Wire))]
-#[cfg_attr(feature = "wire-schema", wire(fixed))]
+#[cfg_attr(any(test, feature = "wire-codec"), derive(ic_wire::WireSchema))]
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct CacheReady {
     /// Exact caller-owned artifact.
@@ -303,7 +308,7 @@ pub struct CacheReady {
 }
 
 /// Cache failures preserve pins and never authorize another installation.
-#[cfg_attr(feature = "wire-schema", derive(ic_wire::typescript::Wire))]
+#[cfg_attr(any(test, feature = "wire-codec"), derive(ic_wire::WireSchema))]
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub enum CacheError {
     /// Exact caller-owned pin is absent or mismatched.
@@ -321,8 +326,7 @@ pub enum CacheError {
 }
 
 /// Logical release identity; labels have no implicit ordering or “latest” behavior.
-#[cfg_attr(feature = "wire-schema", derive(ic_wire::typescript::Wire))]
-#[cfg_attr(feature = "wire-schema", wire(fixed))]
+#[cfg_attr(any(test, feature = "wire-codec"), derive(ic_wire::WireSchema))]
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Release {
     /// Application-owned artifact name, at most 64 ASCII label bytes.
@@ -344,8 +348,7 @@ impl Release {
 }
 
 /// Exact uncompressed module identity. Publication does not approve installation.
-#[cfg_attr(feature = "wire-schema", derive(ic_wire::typescript::Wire))]
-#[cfg_attr(feature = "wire-schema", wire(fixed))]
+#[cfg_attr(any(test, feature = "wire-codec"), derive(ic_wire::WireSchema))]
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Manifest {
     /// Immutable logical release label.
@@ -369,8 +372,7 @@ impl Manifest {
 }
 
 /// One chunk belonging to an already prepared release.
-#[cfg_attr(feature = "wire-schema", derive(ic_wire::typescript::Wire))]
-#[cfg_attr(feature = "wire-schema", wire(fixed))]
+#[cfg_attr(any(test, feature = "wire-codec"), derive(ic_wire::WireSchema))]
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Put {
     /// Exact prepared release.
@@ -383,8 +385,7 @@ pub struct Put {
 }
 
 /// A chunk read from a published release.
-#[cfg_attr(feature = "wire-schema", derive(ic_wire::typescript::Wire))]
-#[cfg_attr(feature = "wire-schema", wire(fixed))]
+#[cfg_attr(any(test, feature = "wire-codec"), derive(ic_wire::WireSchema))]
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Read {
     /// Exact published release.
@@ -394,8 +395,7 @@ pub struct Read {
 }
 
 /// Metadata-only resume information, not an installation receipt.
-#[cfg_attr(feature = "wire-schema", derive(ic_wire::typescript::Wire))]
-#[cfg_attr(feature = "wire-schema", wire(fixed))]
+#[cfg_attr(any(test, feature = "wire-codec"), derive(ic_wire::WireSchema))]
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Status {
     /// Exact retained identity.
@@ -407,13 +407,11 @@ pub struct Status {
 }
 
 /// Read response preserves the blob codec and avoids per-byte node admission.
-#[cfg_attr(feature = "wire-schema", derive(ic_wire::typescript::Wire))]
-#[cfg_attr(feature = "wire-schema", wire(fixed))]
+#[cfg_attr(any(test, feature = "wire-codec"), derive(ic_wire::WireSchema))]
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Chunk(#[serde(with = "serde_bytes")] pub Vec<u8>);
 /// First catalog limits are payload reservations and logical release count.
-#[cfg_attr(feature = "wire-schema", derive(ic_wire::typescript::Wire))]
-#[cfg_attr(feature = "wire-schema", wire(fixed))]
+#[cfg_attr(any(test, feature = "wire-codec"), derive(ic_wire::WireSchema))]
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Quota {
     /// Sum of unique artifact lengths, including incomplete uploads; excludes metadata.
@@ -441,8 +439,7 @@ impl Quota {
 }
 
 /// Current quota usage and executable witness.
-#[cfg_attr(feature = "wire-schema", derive(ic_wire::typescript::Wire))]
-#[cfg_attr(feature = "wire-schema", wire(fixed))]
+#[cfg_attr(any(test, feature = "wire-codec"), derive(ic_wire::WireSchema))]
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Info {
     /// Configured admission ceilings.
@@ -460,7 +457,7 @@ pub struct Info {
 }
 
 /// Typed refusal without partial mutation. Backing/codec failures trap instead.
-#[cfg_attr(feature = "wire-schema", derive(ic_wire::typescript::Wire))]
+#[cfg_attr(any(test, feature = "wire-codec"), derive(ic_wire::WireSchema))]
 #[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub enum Error {
     /// Malformed identity, geometry or unsupported raw Wasm framing.

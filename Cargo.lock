@@ -178,7 +178,7 @@ dependencies = [
 
 [[package]]
 name = "ic-wasm-store"
-version = "0.12.0"
+version = "0.13.0"
 dependencies = [
  "ic-platform-protocol",
  "ic-platform-runtime",
@@ -186,6 +186,7 @@ dependencies = [
  "ic-storage",
  "ic-wasm-store-protocol",
  "ic-wire",
+ "postcard",
  "serde",
  "sha2",
  "toko-tooling",
@@ -194,7 +195,7 @@ dependencies = [
 
 [[package]]
 name = "ic-wasm-store-protocol"
-version = "0.12.0"
+version = "0.13.0"
 dependencies = [
  "ic-wire",
  "serde",
@@ -205,9 +206,9 @@ dependencies = [
 
 [[package]]
 name = "ic-wire"
-version = "0.32.0"
+version = "0.33.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "476f78d119b0ac0bb77eac71938d1fb9421596e76d9739c1a4dde26c80bedfd8"
+checksum = "fbe99a03e083340899084fef793e95c617803117c7067b86f5b372f876357cb8"
 dependencies = [
  "bytemuck",
  "ic-wire-derive",
@@ -219,9 +220,9 @@ dependencies = [
 
 [[package]]
 name = "ic-wire-derive"
-version = "0.32.0"
+version = "0.33.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6534e552a7cd45dd87055be4906011fcefc711ad6c1d86677d488f02c8fda0c1"
+checksum = "a9d4c198e0163c12b23cb4ccfab660439fd895c6cbacd6a15c3f5e8f6595edfc"
 dependencies = [
  "proc-macro2",
  "quote",

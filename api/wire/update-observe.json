@@ -6,8 +6,10 @@
   "request":{"root":"Request","payload_limits":{"bytes":16373,"nodes":32768,"depth":16}},
   "response":{"root":"Reply","payload_limits":{"bytes":16373,"nodes":32768,"depth":16}},
   "schemas":{
-    "Reply":{"k":"ref","name":"Wire_Result_c638fb07295d4b10"},
-    "Request":{"k":"ref","name":"Wire_Observe_836f99d6e839ab93"},
+    "Reply":{"k":"ref","name":"Wire_Message_c40c3d884771a483"},
+    "Request":{"k":"ref","name":"Wire_Message_81e147fbc40a2f58"},
+    "Wire_Message_81e147fbc40a2f58":{"k":"extension-tuple","items":[{"k":"ref","name":"Wire_Observe_836f99d6e839ab93"}],"extensions":[],"projected":true},
+    "Wire_Message_c40c3d884771a483":{"k":"extension-tuple","items":[{"k":"ref","name":"Wire_Result_c638fb07295d4b10"}],"extensions":[],"projected":true},
     "Wire_Observe_836f99d6e839ab93":{"k":"enum","variants":[
       {"name":"Info","id":0,"value":{"k":"unit"}},
       {"name":"Status","id":1,"value":{"k":"ref","name":"Wire_Release_e3a6c4e0d6c2bd12"}},
